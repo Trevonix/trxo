@@ -14,8 +14,8 @@ This guide describes how to install the **TRXO** CLI tool.
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/techcanopysl/ping-aic-config-tool.git
-   cd ping-aic-config-tool
+   git clone https://github.com/Trevonix/trxo.git
+   cd trxo
    ```
 
 2. Install the package:
@@ -29,8 +29,8 @@ For contributors:
 
 1. Clone and enter directory:
    ```bash
-   git clone https://github.com/techcanopysl/ping-aic-config-tool.git
-   cd ping-aic-config-tool
+   git clone https://github.com/Trevonix/trxo.git
+   cd trxo
    ```
 
 2. Create virtual environment:
