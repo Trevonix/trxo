@@ -61,8 +61,8 @@ Detailed tracking of every operation with privacy-focused data sanitization.
 Quick start:
 
 ```bash
-git clone https://github.com/techcanopysl/ping-aic-config-tool.git
-cd ping-aic-config-tool
+git clone https://github.com/Trevonix/trxo.git
+cd trxo
 pip install -e .
 ```
 
