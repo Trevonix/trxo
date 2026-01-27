@@ -1,0 +1,9 @@
+typer>=0.9.0
+rich>=13.0.0
+httpx>=0.23.0
+pyjwt==2.10.1
+jwcrypto==1.5.6
+tqdm==4.67.1
+py-file-versioning>=0.10.0
+keyring>=25.6.0
+deepdiff>=6.0.0
