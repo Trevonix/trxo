@@ -891,7 +891,9 @@ def setup_git_for_export(
                 validate_sync=True,
                 operation="export",
             )
-            info(f"🌿 Using branch: {branch}")
+            info(
+                f"🌿 Using branch: {branch}, to change branch use --branch <branch_name>"
+            )
         else:
             # Use legacy ensure_work_branch for backward compatibility
             # git_manager.ensure_work_branch()
@@ -958,7 +960,9 @@ def setup_git_for_import(
                 validate_sync=True,
                 operation="import",
             )
-            info(f"🌿 Using branch: {branch}")
+            info(
+                f"🌿 Using branch: {branch}, to change branch use --branch <branch_name>"
+            )
         else:
             # Use current branch with validation
             current_branch = (
@@ -974,7 +978,9 @@ def setup_git_for_import(
                     validate_sync=True,
                     operation="import",
                 )
-                info(f"🌿 Using branch: {current_branch}")
+                info(
+                    f"🌿 Using branch: {current_branch}, to change branch use --branch <branch_name>"
+                )
             else:
                 # Fallback to work branch
                 git_manager.ensure_work_branch()

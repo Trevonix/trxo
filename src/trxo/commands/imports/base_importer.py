@@ -72,7 +72,9 @@ class BaseImporter(BaseCommand):
                 onprem_password=onprem_password,
                 onprem_realm=onprem_realm,
             )
-            self.logger.debug(f"Authentication initialized for {item_type} import, auth_mode: {self.auth_mode}")
+            self.logger.debug(
+                f"Authentication initialized for {item_type} import, auth_mode: {self.auth_mode}"
+            )
 
             # Handle diff mode - show differences and exit
             if diff:
@@ -290,10 +292,6 @@ class BaseImporter(BaseCommand):
         if not all_items:
             self._handle_no_git_files_found(item_type, effective_realm, realm)
             return []
-
-        # For Git mode, skip hash validation (Git provides integrity)
-        if not force_import:
-            info("Git mode: Skipping hash validation (Git provides data integrity)")
 
         return all_items
 
