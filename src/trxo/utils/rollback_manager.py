@@ -121,7 +121,10 @@ class RollbackManager:
                         f"Baseline snapshot for {self.command_name} "
                         f"({self.realm}) at {timestamp}"
                     )
-                    git_manager.commit_and_push([str(rel)], commit_msg)
+                    # Branch sync validation is done in setup_git_for_import
+                    git_manager.commit_and_push(
+                        [str(rel)], commit_msg, smart_pull=False
+                    )
                     self.git_branch = branch_name
                 except Exception as e:
                     warning(f"Failed to persist baseline snapshot to Git: {e}")
