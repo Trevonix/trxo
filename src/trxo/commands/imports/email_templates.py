@@ -57,7 +57,9 @@ def create_email_templates_import_command():
         cherry_pick: str = typer.Option(
             None,
             "--cherry-pick",
-            help="Cherry-pick specific email templates by ID (Note: provide complete _id e.g., emailTemplate/registration) for multiple IDs, use comma-separated list e.g., id1,id2,id3",
+            help="Cherry-pick specific email templates by ID (Note: provide complete _id e.g., "
+            "emailTemplate/registration) for multiple IDs,"
+            " use comma-separated list e.g., id1,id2,id3",
         ),
         file: str = typer.Option(
             None, "--file", help="Path to JSON file containing email templates"

@@ -5,7 +5,7 @@ Handles sync mode deletion of orphaned items.
 """
 
 from typing import Optional, Dict, Any
-from trxo.utils.console import info, warning, success, error
+from trxo.utils.console import info, warning, success
 from trxo.utils.diff.diff_manager import DiffManager
 from trxo.utils.deletion_manager import DeletionManager
 

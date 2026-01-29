@@ -64,7 +64,7 @@ class RealmImporter(BaseImporter):
         payload = self._build_payload(item_data)
 
         try:
-            resp = self.make_http_request(url, method, headers, payload)
+            self.make_http_request(url, method, headers, payload)
             if method == "PUT":
                 info(f"Updated realm: {item_name} (id={item_id})")
             else:

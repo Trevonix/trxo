@@ -1,7 +1,8 @@
 """
 OAuth export commands.
 
-This module provides export functionality for PingOne Advanced Identity Cloud OAuth2 clients with script dependencies.
+This module provides export functionality for
+PingOne Advanced Identity Cloud OAuth2 clients with script dependencies.
 """
 
 import base64
@@ -87,7 +88,8 @@ class OAuthExporter(BaseExporter):
         """Fetch individual OAuth client data by ID"""
         url = self._construct_api_url(
             base_url,
-            f"/am/json/realms/root/realms/{self.realm}/realm-config/agents/OAuth2Client/{client_id}",
+            f"/am/json/realms/root/realms/{self.realm}"
+            f"/realm-config/agents/OAuth2Client/{client_id}",
         )
         headers = {
             "Accept-API-Version": "protocol=2.1,resource=1.0",

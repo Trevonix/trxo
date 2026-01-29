@@ -73,7 +73,9 @@ export_esv_secrets, export_esv_variables = create_esv_commands()
 esv_app.command(
     "secrets",
     help="""Export Environment Secrets \n
-                 NOTE: The exported JSON will not include the actual secret value (e.g., passwords, API keys). Only metadata (ID, description, encoding) is returned for security reasons.""",
+                 NOTE: The exported JSON will not include the actual secret value ""
+                 "(e.g., passwords, API keys).""
+                 " Only metadata (ID, description, encoding) is returned for security reasons.""",
 )(export_esv_secrets)
 esv_app.command(
     "variables",

@@ -39,10 +39,12 @@ class OnPremAuth:
                 data = resp.json()
                 token_id = data.get("tokenId")
                 if not token_id:
-                    self.logger.error(f"No tokenId returned from AM authenticate endpoint for user {username}")
+                    self.logger.error("No tokenId returned from AM authenticate "
+                                      f"endpoint for user {username}")
                     raise ValueError("No tokenId returned from AM authenticate endpoint")
 
-                self.logger.info(f"Successfully authenticated user {username} in realm {self.realm}")
+                self.logger.info("Successfully authenticated user"
+                                 f" {username} in realm {self.realm}")
                 return {
                     "tokenId": token_id,
                     "successUrl": data.get("successUrl", ""),

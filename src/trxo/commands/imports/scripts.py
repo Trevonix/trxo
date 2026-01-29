@@ -124,7 +124,7 @@ class ScriptImporter(BaseImporter):
         headers = {**headers, **self.build_auth_headers(token)}
 
         try:
-            response = self.make_http_request(url, "PUT", headers, payload)
+            self.make_http_request(url, "PUT", headers, payload)
             info(f"Successfully updated script: {item_name} (ID: {item_id})")
             return True
 
@@ -142,7 +142,7 @@ class ScriptImporter(BaseImporter):
         headers = {**headers, **self.build_auth_headers(token)}
 
         try:
-            response = self.make_http_request(url, "DELETE", headers)
+            self.make_http_request(url, "DELETE", headers)
             info(f"Successfully deleted script: {item_id}")
             return True
         except Exception as e:

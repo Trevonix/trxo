@@ -130,7 +130,8 @@ class AuthManager:
         realm: Optional[str] = None,
         project_name: Optional[str] = None,
     ) -> str:
-        """Initialize in argument mode for on-prem with provided credentials (no password stored)."""
+        """Initialize in argument mode for on-prem with provided credentials "
+        "(no password stored)."""
         # Create temporary project name for this session
         temp_project_name = (
             f"temp_{project_name}" if project_name else f"temp_{uuid.uuid4().hex[:8]}"

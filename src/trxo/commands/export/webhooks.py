@@ -1,7 +1,8 @@
 """
 Webhooks export command.
 
-Exports AM realm webhooks from /am/json/realms/root/realms/{realm}/realm-config/webhooks?_queryFilter=true
+Exports AM realm webhooks from /am/json/realms/root/realms/{realm}/realm-config/webhooks?
+_queryFilter=true
 """
 
 import typer

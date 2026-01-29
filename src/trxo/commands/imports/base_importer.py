@@ -72,7 +72,8 @@ class BaseImporter(BaseCommand):
                 onprem_password=onprem_password,
                 onprem_realm=onprem_realm,
             )
-            self.logger.debug(f"Authentication initialized for {item_type} import, auth_mode: {self.auth_mode}")
+            self.logger.debug(f"Authentication initialized for {item_type} import, "
+                              f"auth_mode: {self.auth_mode}")
 
             # Handle diff mode - show differences and exit
             if diff:
@@ -424,7 +425,8 @@ class BaseImporter(BaseCommand):
 
             if not created:
                 warning(
-                    "Could not create baseline snapshot - rollback will be unavailable if import fails"
+                    "Could not create baseline snapshot - "
+                    "rollback will be unavailable if import fails"
                 )
 
             return rollback_manager

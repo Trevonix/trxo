@@ -115,7 +115,8 @@ class ManagedObjectsImporter(BaseImporter):
         token: str,
         base_url: str,
     ):
-        """Delete properties that exist on server but not in source to ensure source and destination are identical"""
+        """Delete properties that exist on server but not in
+        source to ensure source and destination are identical"""
         info(f"[DEBUG] Checking for orphaned properties for '{object_name}'...")
 
         # Get all properties from server
@@ -124,7 +125,8 @@ class ManagedObjectsImporter(BaseImporter):
         )
         if not server_properties:
             info(
-                f"[DEBUG] No server properties found for '{object_name}', skipping orphaned property check"
+                f"[DEBUG] No server properties found for '{object_name}',"
+                " skipping orphaned property check"
             )
             return
 
@@ -149,12 +151,14 @@ class ManagedObjectsImporter(BaseImporter):
 
         if not orphaned_props:
             info(
-                f"[DEBUG] No orphaned properties found for '{object_name}' - source and server are in sync"
+                f"[DEBUG] No orphaned properties found for '{object_name}' "
+                "- source and server are in sync"
             )
             return
 
         info(
-            f"[DEBUG] Found {len(orphaned_props)} orphaned property/properties to delete for '{object_name}': {sorted(orphaned_props)}"
+            f"[DEBUG] Found {len(orphaned_props)} orphaned property/"
+            f"properties to delete for '{object_name}': {sorted(orphaned_props)}"
         )
 
         headers = {
@@ -166,7 +170,8 @@ class ManagedObjectsImporter(BaseImporter):
         for prop_name in orphaned_props:
             url = f"{base_url}/openidm/schema/managed/{object_name}/properties/{prop_name}"
             info(
-                f"[DEBUG] Deleting orphaned property '{prop_name}' from '{object_name}' via DELETE: {url}"
+                f"[DEBUG] Deleting orphaned property '{prop_name}' from '{object_name}' "
+                f"via DELETE: {url}"
             )
             try:
                 self.make_http_request(url, "DELETE", headers, timeout=60.0)
@@ -192,14 +197,16 @@ class ManagedObjectsImporter(BaseImporter):
         schema = object_data.get("schema", {})
         if not schema or not isinstance(schema, dict):
             info(
-                f"[DEBUG] No schema found for '{object_name}', skipping relationship property updates"
+                f"[DEBUG] No schema found for '{object_name}',"
+                "skipping relationship property updates"
             )
             return
 
         properties = schema.get("properties", {})
         if not properties or not isinstance(properties, dict):
             info(
-                f"[DEBUG] No properties found in schema for '{object_name}', skipping relationship property updates"
+                f"[DEBUG] No properties found in schema for '{object_name}', "
+                "skipping relationship property updates"
             )
             return
 
@@ -211,12 +218,14 @@ class ManagedObjectsImporter(BaseImporter):
 
         if not relationship_props:
             info(
-                f"[DEBUG] No relationship properties found for '{object_name}', skipping relationship property updates"
+                f"[DEBUG] No relationship properties found for '{object_name}', "
+                "skipping relationship property updates"
             )
             return
 
         info(
-            f"[DEBUG] Found {len(relationship_props)} relationship property/properties to update for '{object_name}': {relationship_props}"
+            f"[DEBUG] Found {len(relationship_props)} relationship property/"
+            f"properties to update for '{object_name}': {relationship_props}"
         )
 
         for prop_name, prop_data in properties.items():
@@ -244,9 +253,11 @@ class ManagedObjectsImporter(BaseImporter):
                         f"[DEBUG] Successfully fetched existing property schema for '{prop_name}'"
                     )
                 except Exception as e:
-                    # Likely property doesn't exist yet or other error; ignore and proceed with fresh data
+                    # Likely property doesn't exist yet or other error;
+                    # ignore and proceed with fresh data
                     info(
-                        f"[DEBUG] Could not fetch existing property schema for '{prop_name}' (may be new): {e}"
+                        f"[DEBUG] Could not fetch existing property schema for '{prop_name}' "
+                        f"(may be new): {e}"
                     )
 
                 # Fix for Schema endpoint strictness on reverse relationships
@@ -254,13 +265,15 @@ class ManagedObjectsImporter(BaseImporter):
                 # matching 'reversePropertyName' when reverseRelationship is True.
                 if prop_data.get("reverseRelationship") is True:
                     info(
-                        f"[DEBUG] Property '{prop_name}' has reverseRelationship=True, processing reverse property logic"
+                        f"[DEBUG] Property '{prop_name}' has reverseRelationship=True, "
+                        "processing reverse property logic"
                     )
                     rev_name = prop_data.get("reversePropertyName")
                     res_collection = prop_data.get("resourceCollection")
 
                     if rev_name and isinstance(res_collection, list):
-                        # We work on a copy to avoid modifying the original data structure unexpectedly
+                        # We work on a copy to avoid modifying
+                        # the original data structure unexpectedly
                         prop_data = prop_data.copy()
                         new_res_collection = []
 
@@ -270,7 +283,8 @@ class ManagedObjectsImporter(BaseImporter):
                             and "resourceCollection" in existing_prop_data
                         ):
                             info(
-                                f"[DEBUG] Building existing collection map from server data for '{prop_name}'"
+                                f"[DEBUG] Building existing collection map from "
+                                f"server data for '{prop_name}'"
                             )
                             for item in existing_prop_data["resourceCollection"]:
                                 if isinstance(item, dict) and "path" in item:
@@ -289,15 +303,19 @@ class ManagedObjectsImporter(BaseImporter):
                                         and "reverseProperty" in matched_existing
                                     ):
                                         info(
-                                            f"[DEBUG] Recovered reverseProperty from server config for path '{res_copy.get('path')}'"
+                                            f"[DEBUG] Recovered reverseProperty from "
+                                            f"server config for path '{res_copy.get('path')}'"
                                         )
                                         res_copy["reverseProperty"] = matched_existing[
                                             "reverseProperty"
                                         ]
                                     else:
-                                        # Strategy 2: Inject default structure required by schema endpoint
+                                        # Strategy 2: Inject default structure
+                                        # required by schema endpoint
                                         info(
-                                            f"[DEBUG] Injecting default 'reverseProperty' schema for relationship '{prop_name}' (path: {res_copy.get('path')})"
+                                            f"[DEBUG] Injecting default 'reverseProperty' schema "
+                                            f"for relationship '{prop_name}' "
+                                            f"(path: {res_copy.get('path')})"
                                         )
                                         res_copy["reverseProperty"] = {
                                             "type": "relationship",
@@ -318,7 +336,8 @@ class ManagedObjectsImporter(BaseImporter):
                 try:
                     payload = json.dumps(prop_data)
                     info(
-                        f"[DEBUG] Waiting 15 seconds before updating property '{prop_name}' to allow schema changes to propagate..."
+                        f"[DEBUG] Waiting 15 seconds before updating property '{prop_name}' "
+                        f"to allow schema changes to propagate..."
                     )
                     import time
 
@@ -334,12 +353,14 @@ class ManagedObjectsImporter(BaseImporter):
                     # Use a longer timeout (60s) for property updates as they trigger schema reloads
                     self.make_http_request(url, "PUT", headers, payload, timeout=60.0)
                     info(
-                        f"✓ Updated relationship property: {prop_name} for managed object: {object_name}"
+                        f"✓ Updated relationship property: {prop_name} "
+                        f"for managed object: {object_name}"
                     )
                 except Exception as e:
                     # We log error but don't fail the entire operation as the main object is updated
                     error(
-                        f"✗ Failed to update relationship property '{prop_name}' for '{object_name}': {e}"
+                        f"✗ Failed to update relationship"
+                        f"property '{prop_name}' for '{object_name}': {e}"
                     )
 
         info(f"[DEBUG] Completed relationship properties update for '{object_name}'")
@@ -380,7 +401,8 @@ class ManagedObjectsImporter(BaseImporter):
                 idx, existing_object = self._find_object_by_name(current_objects, name)
                 if idx >= 0:
                     info(
-                        f"[DEBUG] Managed object '{name}' exists at index {idx}, generating PATCH operations..."
+                        f"[DEBUG] Managed object '{name}' exists at index {idx}, "
+                        "generating PATCH operations..."
                     )
                     patch_operations = self._generate_patch_operations(
                         existing_object, obj, f"/objects/{idx}"
@@ -402,11 +424,13 @@ class ManagedObjectsImporter(BaseImporter):
                         payload = json.dumps(patch_operations)
                         try:
                             info(
-                                f"[DEBUG] Applying PATCH to update '{name}' with {len(patch_operations)} operations..."
+                                f"[DEBUG] Applying PATCH to update '{name}' "
+                                f"with {len(patch_operations)} operations..."
                             )
                             self.make_http_request(url, "PATCH", headers, payload)
                             info(
-                                f"✓ Updated existing managed object: {name} ({len(patch_operations)} changes)"
+                                f"✓ Updated existing managed object: "
+                                f"{name} ({len(patch_operations)} changes)"
                             )
 
                             # Update relationship properties (required to update repo.ds config)
@@ -423,7 +447,8 @@ class ManagedObjectsImporter(BaseImporter):
                                 name, obj, token, base_url
                             )
 
-                            # Delete orphaned properties to ensure source and destination are identical
+                            # Delete orphaned properties to
+                            # ensure source and destination are identical
                             self._delete_orphaned_properties(
                                 name, source_properties, token, base_url
                             )
@@ -503,7 +528,8 @@ class ManagedObjectsImporter(BaseImporter):
         if index >= 0:
             # Object exists - use PATCH for efficient updates
             info(
-                f"[DEBUG] Managed object '{object_name}' exists at index {index}, generating PATCH operations..."
+                f"[DEBUG] Managed object '{object_name}' exists at index {index}, "
+                "generating PATCH operations..."
             )
             patch_operations = self._generate_patch_operations(
                 existing_object, selected_object, f"/objects/{index}"
@@ -528,11 +554,13 @@ class ManagedObjectsImporter(BaseImporter):
 
             try:
                 info(
-                    f"[DEBUG] Applying PATCH to update '{object_name}' with {len(patch_operations)} operations..."
+                    f"[DEBUG] Applying PATCH to update '{object_name}' "
+                    f"with {len(patch_operations)} operations..."
                 )
                 self.make_http_request(url, "PATCH", headers, payload)
                 info(
-                    f"✓ Updated existing managed object: {object_name} ({len(patch_operations)} changes)"
+                    "✓ Updated existing managed object: "
+                    f"{object_name} ({len(patch_operations)} changes)"
                 )
 
                 # Update relationship properties (required to update repo.ds config)

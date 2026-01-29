@@ -262,7 +262,8 @@ def create_batch_import_command():
                     if cmd_scope == "realm":
                         import_params["realm"] = cmd_realm
 
-                # if command in {"themes", "scripts", "services", "journeys", "webhooks", "endpoints", "privileges"}:
+                # if command in {"themes", "scripts", "services", "journeys",
+                #  "webhooks", "endpoints", "privileges"}:
                 #     import_params["realm"] = cmd_realm
 
                 # Execute the import command (handle sub-commands with dot notation)

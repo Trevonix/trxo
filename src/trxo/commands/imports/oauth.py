@@ -1,7 +1,8 @@
 """
 OAuth import commands.
 
-This module provides import functionality for PingOne Advanced Identity Cloud OAuth2 clients with script dependencies.
+This module provides import functionality for PingOne Advanced Identity Cloud OAuth2
+clients with script dependencies.
 """
 
 import json
@@ -14,7 +15,8 @@ from .scripts import ScriptImporter
 
 
 class OAuthImporter(BaseImporter):
-    """Enhanced importer for PingOne Advanced Identity Cloud OAuth2 Clients with script dependencies"""
+    """Enhanced importer for PingOne Advanced Identity Cloud OAuth2
+      Clients with script dependencies"""
 
     def __init__(self, realm: str = DEFAULT_REALM):
         super().__init__()
@@ -96,7 +98,8 @@ class OAuthImporter(BaseImporter):
                     clients = [data]
 
             # Trigger hash validation
-            # For OAuth structs, we use _oauth_export_data (handled in validate_import_hash override)
+            # For OAuth structs, we use _oauth_export_data
+            # (handled in validate_import_hash override)
             # For list of clients, we validate the list
             self._validate_items(clients)
 

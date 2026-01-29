@@ -21,7 +21,8 @@ def create_managed_export_command():
         view_columns: str = typer.Option(
             None,
             "--view-columns",
-            help="Comma-separated list of columns to display (e.g., 'name,schema.title,schema.icon')",
+            help="Comma-separated list of columns to display"
+            " (e.g., 'name,schema.title,schema.icon')",
         ),
         version: str = typer.Option(
             None, "--version", help="Custom version name (default: auto)"
