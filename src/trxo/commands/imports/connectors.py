@@ -99,11 +99,8 @@ class ConnectorsImporter(BaseImporter):
                     info(
                         f"Error analysis for '{item_id}': metadata_error={is_metadata_error}"
                     )
-                    info(
-                        f"Error message contains: {[p
-                                                    for p in metadata_error_patterns
-                                                    if p in error_message]}"
-                    )
+                    matches = [p for p in metadata_error_patterns if p in error_message]
+                    info("Error message contains: %s", matches)
 
                 if is_metadata_error:
                     if attempt < self.max_retries - 1:
