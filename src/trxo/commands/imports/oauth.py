@@ -9,6 +9,7 @@ from typing import List, Dict, Any, Optional
 import typer
 from trxo.utils.console import error, info, warning
 from .base_importer import BaseImporter
+from pathlib import Path
 from trxo.constants import DEFAULT_REALM
 from .scripts import ScriptImporter
 
@@ -36,6 +37,98 @@ class OAuthImporter(BaseImporter):
             f"realm-config/agents/OAuth2Client/{item_id}",
         )
 
+    def _parse_oauth_data(self, data: Any) -> List[Dict[str, Any]]:
+        """Helper to parse OAuth data structure from file content"""
+        clients = []
+
+        # Check for new structure with 'data'
+        if isinstance(data, dict) and "data" in data:
+            data_section = data["data"]
+            if (
+                isinstance(data_section, dict)
+                and "clients" in data_section
+                and "scripts" in data_section
+            ):
+                info("Detected OAuth export format (standard) with clients and scripts")
+                self._oauth_export_data = data_section
+
+                # Add scripts to pending
+                new_scripts = data_section.get("scripts", [])
+                if new_scripts:
+                    self._pending_scripts.extend(new_scripts)
+
+                clients = data_section.get("clients", [])
+            elif isinstance(data_section, list):
+                # Standard list format
+                clients = data_section
+            elif isinstance(data_section, dict) and "result" in data_section:
+                # Standard result wrapper
+                clients = data_section.get("result", [])
+            else:
+                # Single item?
+                clients = [data_section]
+
+        # Check for legacy structure
+        elif isinstance(data, dict) and "clients" in data and "scripts" in data:
+            info("Detected OAuth export format (legacy) with clients and scripts")
+            self._oauth_export_data = data
+
+            new_scripts = data.get("scripts", [])
+            if new_scripts:
+                self._pending_scripts.extend(new_scripts)
+
+            clients = data.get("clients", [])
+
+        else:
+            # Fallback to standard loading
+            if isinstance(data, list):
+                clients = data
+            else:
+                clients = [data]
+
+        return clients
+
+    def _import_from_git(
+        self, realm: Optional[str], force_import: bool, branch: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Override to handle OAuth structure from Git files"""
+        item_type = self.get_item_type()
+
+        # Determine effective realm
+        effective_realm = self._determine_effective_realm(realm, item_type, branch)
+
+        # Setup Git manager
+        git_manager = self._setup_git_manager(branch)
+        repo_path = Path(git_manager.local_path)
+
+        # Discover files
+        discovered_files = self.file_loader.discover_git_files(
+            repo_path, item_type, effective_realm
+        )
+
+        if not discovered_files:
+            self._handle_no_git_files_found(item_type, effective_realm, realm)
+            return []
+
+        all_clients = []
+
+        for file_path in discovered_files:
+            try:
+                info(f"Loading from: {file_path.relative_to(repo_path)}")
+
+                with open(file_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+
+                # Parse
+                parsed_clients = self._parse_oauth_data(data)
+                all_clients.extend(parsed_clients)
+
+            except Exception as e:
+                warning(f"Failed to load {file_path.name}: {e}")
+                continue
+
+        return all_clients
+
     def _import_from_local(
         self, file_path: str, force_import: bool
     ) -> List[Dict[str, Any]]:
@@ -52,52 +145,9 @@ class OAuthImporter(BaseImporter):
             with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
 
-            clients = []
-
-            # Check for new structure with 'data'
-            if isinstance(data, dict) and "data" in data:
-                data_section = data["data"]
-                if (
-                    isinstance(data_section, dict)
-                    and "clients" in data_section
-                    and "scripts" in data_section
-                ):
-                    info(
-                        "Detected OAuth export format (standard) with clients and scripts"
-                    )
-                    self._oauth_export_data = data_section
-                    self._pending_scripts = data_section.get("scripts", [])
-                    clients = data_section.get("clients", [])
-                elif isinstance(data_section, list):
-                    # Standard list format (just clients?)
-                    clients = data_section
-                elif isinstance(data_section, dict) and "result" in data_section:
-                    # Standard result wrapper
-                    clients = data_section.get("result", [])
-                else:
-                    # Single item?
-                    clients = [data_section]
-
-            # Check for legacy structure
-            elif isinstance(data, dict) and "clients" in data and "scripts" in data:
-                info("Detected OAuth export format (legacy) with clients and scripts")
-                self._oauth_export_data = data
-                self._pending_scripts = data.get("scripts", [])
-                clients = data.get("clients", [])
-
-            else:
-                # Fallback to standard loading if it looks like a simple list or dict
-                if isinstance(data, list):
-                    clients = data
-                else:
-                    # Try using FileLoader for generic handling if not one of the above
-                    # But we already loaded json.
-                    # If it's a single dict, wrap it
-                    clients = [data]
+            clients = self._parse_oauth_data(data)
 
             # Trigger hash validation
-            # For OAuth structs, we use _oauth_export_data (handled in validate_import_hash override)
-            # For list of clients, we validate the list
             self._validate_items(clients)
 
             if not self.validate_import_hash(clients, force_import):
