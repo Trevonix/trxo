@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from trxo.utils.console import error, info, warning
-from trxo.utils.git_manager import GitManager
+from trxo.utils.git import GitManager
 from .component_mapper import ComponentMapper
 
 

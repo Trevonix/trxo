@@ -15,7 +15,7 @@ from trxo.utils.hash_manager import (
     HashManager,
     get_command_name_from_item_type,
 )
-from trxo.utils.git_manager import setup_git_for_import, GitManager
+from trxo.utils.git import setup_git_for_import, GitManager
 from ..shared.base_command import BaseCommand
 from trxo.utils.imports.component_mapper import ComponentMapper
 from trxo.utils.imports.file_loader import FileLoader

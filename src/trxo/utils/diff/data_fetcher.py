@@ -186,7 +186,7 @@ class DataFetcher:
     ) -> Optional[Dict[str, Any]]:
         """Fetch data from Git repository"""
         try:
-            from trxo.utils.git_manager import get_repo_base_path
+            from trxo.utils.git import get_repo_base_path
             from trxo.utils.config_store import ConfigStore
 
             config_store = ConfigStore()

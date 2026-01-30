@@ -11,7 +11,7 @@ from typing import Dict, Any, Optional
 from datetime import datetime, timezone
 from tqdm import tqdm
 from trxo.utils.console import info, error
-from trxo.utils.git_manager import setup_git_for_export
+from trxo.utils.git import setup_git_for_export
 
 
 class GitExportHandler:

@@ -12,7 +12,7 @@ import json
 from datetime import datetime
 from trxo.utils.console import info, error, warning
 from trxo.utils.data_fetcher import DataFetcher, get_command_api_endpoint
-from trxo.utils.git_manager import GitManager
+from trxo.utils.git import GitManager
 from trxo.constants import DEFAULT_REALM
 
 
