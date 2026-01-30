@@ -11,7 +11,7 @@ from typing import Dict, Any, List, Optional
 import json
 from datetime import datetime
 from trxo.utils.console import info, error, warning
-from trxo.utils.data_fetcher import DataFetcher, get_command_api_endpoint
+from trxo.utils.diff.data_fetcher import DataFetcher, get_command_api_endpoint
 from trxo.utils.git_manager import GitManager
 from trxo.constants import DEFAULT_REALM
 
@@ -44,7 +44,7 @@ class RollbackManager:
             )
 
             # Get API endpoint for this command
-            from trxo.utils.data_fetcher import get_command_api_endpoint
+            from trxo.utils.diff.data_fetcher import get_command_api_endpoint
 
             api_endpoint, _ = get_command_api_endpoint(self.command_name, self.realm)
             if not api_endpoint:

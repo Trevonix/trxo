@@ -12,7 +12,7 @@ from trxo.utils.deletion_manager import DeletionManager
 
 class SyncHandler:
     """Handles sync mode operations for import"""
-    
+
     @staticmethod
     def handle_sync_deletions(
         command_name: str,
@@ -35,7 +35,7 @@ class SyncHandler:
     ) -> Optional[Dict[str, Any]]:
         """
         Handle deletion of orphaned items in sync mode.
-        
+
         Args:
             command_name: Command name for diff analysis
             item_type: Type of items being synced
@@ -54,12 +54,12 @@ class SyncHandler:
             onprem_realm: On-prem realm
             branch: Git branch (git mode)
             force: Force deletion without confirmation
-            
+
         Returns:
             Deletion summary or None if no deletions needed
         """
         info("\n🔄 Sync mode: Checking for orphaned items to delete...")
-        
+
         # Perform diff to identify removed items
         diff_manager = DiffManager()
         diff_result = diff_manager.perform_diff(
@@ -78,24 +78,24 @@ class SyncHandler:
             branch=branch,
             generate_html=False,  # Don't generate HTML for sync operations
         )
-        
+
         if not diff_result:
             warning("Could not perform diff analysis for sync mode")
             return None
-        
+
         # Get items to delete
         deletion_manager = DeletionManager()
         items_to_delete = deletion_manager.get_items_to_delete(diff_result)
-        
+
         if not items_to_delete:
             success("✓ No orphaned items found - nothing to delete")
             return None
-        
+
         # Get user confirmation
         if not deletion_manager.confirm_deletions(items_to_delete, item_type, force):
             warning("Deletion cancelled by user")
             return None
-        
+
         # Execute deletions
         info(f"\nDeleting {len(items_to_delete)} orphaned item(s)...")
         summary = deletion_manager.execute_deletions(
@@ -104,8 +104,8 @@ class SyncHandler:
             token=token,
             base_url=base_url
         )
-        
+
         # Print summary
         deletion_manager.print_summary(summary)
-        
+
         return summary

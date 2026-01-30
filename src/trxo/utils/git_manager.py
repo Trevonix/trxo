@@ -253,7 +253,8 @@ class GitManager:
 
         Args:
             branch_name: Name of the branch to ensure
-            create_from_default: If True, create from default branch; if False, create from current branch
+            create_from_default: If True, create from default branch; if False,
+            create from current branch
         """
         repo = self._repo_cache
         if not repo:
@@ -592,7 +593,8 @@ def setup_git_for_import(
         git_manager.get_or_create_repo(repo_info)
 
         if branch:
-            # For import, we want to switch to the specified branch but not create it if it doesn't exist
+            # For import, we want to switch to the specified branch but
+            # not create it if it doesn't exist
             branches = git_manager.branch_exists(branch)
             if branches["local"] or branches["remote"]:
                 git_manager.ensure_branch(branch, create_from_default=False)
