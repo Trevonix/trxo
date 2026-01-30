@@ -186,6 +186,8 @@ class OAuthImporter(BaseImporter):
         """Import extracted script dependencies"""
         info(f"Importing {len(self._pending_scripts)} script dependencies first...")
 
+        self.script_importer.auth_mode = self.auth_mode
+
         for script in self._pending_scripts:
             script_id = script.get("_id")
             if not script_id:
