@@ -150,7 +150,7 @@ class OAuthImporter(BaseImporter):
             # Trigger hash validation
             self._validate_items(clients)
 
-            if not self.validate_import_hash(clients, force_import):
+            if not self.validate_import_hash(data, force_import):
                 from trxo.utils.console import error
 
                 error("Import validation failed: Hash mismatch with exported data")

@@ -585,6 +585,12 @@ def create_saml_import_command():
             else:
                 data = export_data
 
+            # Perform hash validation (local mode only)
+            if storage_mode == "local" and not importer.validate_import_hash(
+                export_data, force_import
+            ):
+                raise typer.Exit(1)
+
             # Perform import
             success = importer.import_saml_data(
                 data=data,
