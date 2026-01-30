@@ -266,13 +266,15 @@ def get_command_api_endpoint(
         realm: Target realm
 
     Returns:
-        Tuple of (API endpoint string, response filter function) or (None, None) if command not found
+        Tuple of (API endpoint string, response filter function) or (None, None)
+        if command not found
     """
     # Map command names to their API endpoints
     endpoint_map = {
         # Realm-specific endpoints
         "journeys": (
-            f"/am/json/realms/root/realms/{realm}/realm-config/authentication/authenticationtrees/trees?_queryFilter=true",
+            f"/am/json/realms/root/realms/{realm}"
+            "/realm-config/authentication/authenticationtrees/trees?_queryFilter=true",
             None,
         ),
         "scripts": (
@@ -289,15 +291,18 @@ def get_command_api_endpoint(
         ),
         "themes": (f"/openidm/config/ui/themerealm?_fields=realm/{realm}", None),
         "oauth": (
-            f"/am/json/realms/root/realms/{realm}/realm-config/agents/OAuth2Client?_queryFilter=true",
+            f"/am/json/realms/root/realms/{realm}"
+            "/realm-config/agents/OAuth2Client?_queryFilter=true",
             None,
         ),
         "OAuth2_Clients": (
-            f"/am/json/realms/root/realms/{realm}/realm-config/agents/OAuth2Client?_queryFilter=true",
+            f"/am/json/realms/root/realms/{realm}"
+            "/realm-config/agents/OAuth2Client?_queryFilter=true",
             None,
         ),
         "saml": (
-            f"/am/json/realms/root/realms/{realm}/realm-config/federation/entityproviders/saml2?_queryFilter=true",
+            f"/am/json/realms/root/realms/{realm}"
+            "/realm-config/federation/entityproviders/saml2?_queryFilter=true",
             None,
         ),
         "policies": (
@@ -329,7 +334,8 @@ def get_command_api_endpoint(
         "Environment_Variables": ("/environment/variables", None),
         # Agent endpoints
         "agents_gateway": (
-            f"/am/json/realms/root/realms/{realm}/realm-config/agents/IdentityGatewayAgent?_queryFilter=true",
+            f"/am/json/realms/root/realms/{realm}"
+            "/realm-config/agents/IdentityGatewayAgent?_queryFilter=true",
             None,
         ),
         "agents_java": (

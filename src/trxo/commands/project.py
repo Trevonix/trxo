@@ -20,7 +20,8 @@ def create_project(
         raise typer.Exit(1)
 
     project_config = {
-        "description": description or f"PingOne Advanced Identity Cloud project: {name}"
+        "description": description or "PingOne Advanced Identity Cloud "
+        f"project: {name}"
     }
 
     config_store.save_project(name, project_config)
@@ -32,7 +33,8 @@ def create_project(
     info("   3. Start using export/import commands")
     console.print()  # Empty line for spacing
     info(
-        "💡 Tip: You can also use argument mode by providing all credentials as arguments"
+        "💡 Tip: You can also use argument mode by providing all credentials "
+        "as arguments"
     )
 
 

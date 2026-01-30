@@ -8,7 +8,7 @@ import typer
 import json
 from typing import Optional
 from trxo.utils.config_store import ConfigStore
-from trxo.utils.console import console, success, error, warning, info
+from trxo.utils.console import success, error, warning, info
 from .settings import get_credential_value, display_config
 from .auth_handler import (
     setup_service_account_auth,
@@ -73,7 +73,8 @@ def setup(
     ):
         info(f"Found existing configuration for project '{current_project}'")
         info(
-            "You can override specific values using command-line arguments, example: --base-url https://new-url.com"
+            "You can override specific values using command-line arguments, "
+            "example: --base-url https://new-url.com"
         )
         raise typer.Exit(1)
 
@@ -177,7 +178,10 @@ def set_log_level(
     try:
         # Validate log level
         level_upper = level.upper()
-        valid_levels = [l.value for l in LogLevel]
+        valid_levels = [
+            lev.value
+            for lev in LogLevel
+        ]
 
         if level_upper not in valid_levels:
             error(f"Invalid log level '{level}'. Valid levels: {', '.join(valid_levels)}")

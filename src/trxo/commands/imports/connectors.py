@@ -99,9 +99,8 @@ class ConnectorsImporter(BaseImporter):
                     info(
                         f"Error analysis for '{item_id}': metadata_error={is_metadata_error}"
                     )
-                    info(
-                        f"Error message contains: {[p for p in metadata_error_patterns if p in error_message]}"
-                    )
+                    matches = [p for p in metadata_error_patterns if p in error_message]
+                    info("Error message contains: %s", matches)
 
                 if is_metadata_error:
                     if attempt < self.max_retries - 1:
@@ -109,16 +108,19 @@ class ConnectorsImporter(BaseImporter):
                             attempt + 1
                         ) * 8  # 5, 10, 15 seconds (increased wait time)
                         warning(
-                            f"Metadata provider not ready for '{item_id}', retrying in {wait_time}s... (attempt {attempt + 1}/{self.max_retries})"
+                            f"Metadata provider not ready for '{item_id}', retrying in {wait_time}"
+                            f"s... (attempt {attempt + 1}/{self.max_retries})"
                         )
                         time.sleep(wait_time)
                         continue
                     else:
                         error(
-                            f"Failed to upsert connector '{item_id}' after {self.max_retries} attempts: Metadata provider not available"
+                            f"Failed to upsert connector '{item_id}' after {self.max_retries} "
+                            "attempts: Metadata provider not available"
                         )
                         error(
-                            "Try running the command again after a few minutes, or increase --max-retries"
+                            "Try running the command again after a few minutes, "
+                            "or increase --max-retries"
                         )
                         return False
                 else:
@@ -238,7 +240,8 @@ class ConnectorsImporter(BaseImporter):
                     info("Processing single connector")
                 else:
                     error(
-                        "Invalid connector format. Expected object with '_id' starting with 'provisioner'"
+                        "Invalid connector format. "
+                        "Expected object with '_id' starting with 'provisioner'"
                     )
                     return
             else:
@@ -300,7 +303,8 @@ class ConnectorsImporter(BaseImporter):
                     # If connector info provider fails, warn about subsequent failures
                     if connector_id == "provisioner.openicf.connectorinfoprovider":
                         warning(
-                            "Connector info provider failed - subsequent OpenICF connectors may also fail"
+                            "Connector info provider failed - "
+                            "subsequent OpenICF connectors may also fail"
                         )
 
             info(

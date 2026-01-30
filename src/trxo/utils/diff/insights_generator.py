@@ -335,7 +335,8 @@ class InsightsGenerator:
 
             if not parts:
                 insights.append(
-                    f"• '{obj_name}' shows structural changes, but no property-level differences were identified."
+                    f"• '{obj_name}' shows structural changes, "
+                    "but no property-level differences were identified."
                 )
                 continue
 

@@ -2,7 +2,8 @@
 email templates export command.
 
 This module provides export functionality for PingOne Advanced Identity Cloud email templates.
-Filters /openidm/config?_queryFilter=true to only include items with _id starting with "emailTemplate".
+Filters /openidm/config?_queryFilter=true to only include items with _id starting with
+"emailTemplate".
 """
 
 import typer

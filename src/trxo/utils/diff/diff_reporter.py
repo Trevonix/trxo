@@ -58,7 +58,8 @@ class DiffReporter:
 
             # Display key insights if available
             if diff_result.key_insights:
-                # pass the full diff_result so we can render command-specific summaries (e.g., oauth)
+                # pass the full diff_result so we can render
+                # command-specific summaries (e.g., oauth)
                 self._display_key_insights(diff_result.key_insights, diff_result)
 
             # After the friendly summary, show full per-item table so power users can inspect
@@ -241,7 +242,10 @@ class DiffReporter:
             if cnt:
                 parts.append(f"{f} updated for {cnt}")
 
-        summary = f"""\nHere’s a quick summary of the changes detected in your OAuth client configurations.These updates may affect how applications log in, redirect users or receive user information.This import will modify {total_modified} OAuth client(s)."""
+        summary = f"""\nHere’s a quick summary of the changes detected in your OAuth client "
+        "configurations.These updates may affect how applications log in, "
+        "redirect users or receive user information."
+        "This import will modify {total_modified} OAuth client(s)."""
         if parts:
             summary += " " + ", ".join(parts) + "."
 
@@ -262,7 +266,8 @@ class DiffReporter:
             if count > 15:
                 ids_formatted += f", [dim]... and {count - 15} more[/dim]"
 
-            line = f"\n✓ [bold cyan]{field}[/bold cyan] updated for {count} client(s): {ids_formatted}"
+            line = f"\n✓ [bold cyan]{field}[/bold cyan] updated for {count} "
+            f"client(s): {ids_formatted}"
             lines.append(line)
 
         panel_text = "\n".join(lines)
@@ -444,7 +449,8 @@ class DiffReporter:
                 new_item = dc.get("new_item")
                 # Create a focused unified diff for the item if payloads are available
                 if isinstance(curr_item, dict) and isinstance(new_item, dict):
-                    # Optionally reduce payloads to changed keys only — for now use full item for context
+                    # Optionally reduce payloads to changed keys only —
+                    # for now use full item for context
                     curr_text = json.dumps(curr_item, indent=2, ensure_ascii=False)
                     new_text = json.dumps(new_item, indent=2, ensure_ascii=False)
                     item_lines = list(
@@ -492,7 +498,9 @@ class DiffReporter:
                         per_item_blocks.append(block)
                 else:
                     per_item_blocks.append(
-                        f"<div class='section'><h3>{_html.escape(item.item_name or item.item_id)}</h3><p>{_html.escape(item.summary)}</p></div>"
+                         f"<div class='section'><h3>"
+                         f"{_html.escape(item.item_name or item.item_id)}"
+                         f"</h3><p>{_html.escape(item.summary)}</p></div>"
                     )
 
             per_item_html = "\n".join(per_item_blocks)
@@ -717,12 +725,16 @@ class DiffReporter:
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🔍 Diff Report</h1>
-            <p>{diff_result.command_name.title()}{f" - Realm: {diff_result.realm}" if diff_result.realm else ""}</p>
-            <p class="timestamp">Generated: {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")}</p>
-        </div>
-        
+        '<div class="header">'
+        '<h1>🔍 Diff Report</h1>'
+        f'<p>{diff_result.command_name.title()}'
+        f'{f" - Realm: {diff_result.realm}" if diff_result.realm else ""}'
+        '</p>'
+        f'<p class="timestamp">Generated: '
+        f'{datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")}'
+        '</p>'
+    '</div>'
+
         <div class="content">
             <div class="section">
                 <h2>Summary</h2>
@@ -735,18 +747,23 @@ class DiffReporter:
 
             {per_item_html}
 
-            <div class="section">
-                <h2>Textual Diff</h2>
-                <div class="diff-legend">
-                    <div class="legend-item removed"><span class="legend-bullet">-</span>Removed</div>
-                    <div class="legend-item added"><span class="legend-bullet">+</span>Added</div>
-                    <div class="legend-item changed"><span class="legend-bullet">~</span>Changed</div>
-                </div>
-                <div class="diff-block">
-                    {side_by_side_html}
-                </div>
-            </div>
-
+           '<div class="section">'
+           '<h2>Textual Diff</h2>'
+           '<div class="diff-legend">'
+           '<div class="legend-item removed">'
+           '<span class="legend-bullet">-</span>Removed'
+           '</div>'
+           '<div class="legend-item added">'
+           '<span class="legend-bullet">+</span>Added'
+           '</div>'
+           '<div class="legend-item changed">'
+           '<span class="legend-bullet">~</span>Changed'
+           '</div>'
+           '</div>'
+           '<div class="diff-block">'
+           f'{side_by_side_html}'
+           '</div>'
+           '</div>'
             <!-- <div class="section">
                 <h2>Side-by-side JSON</h2>
                 <div class="diff-container">
@@ -939,8 +956,18 @@ class DiffReporter:
             if count > 15:
                 ids_formatted += f", ... and {count - 15} more"
 
-            line_html = f'<div class="insight-bullet"><strong style="color:#0284c7">✓ {_html.escape(field)}</strong> updated in: <span style="color:#0f766e">{_html.escape(ids_formatted)}</span></div>'
-            items_html.append(line_html)
+        line_html = (
+            '<div class="insight-bullet">'
+            '<strong style="color:#0284c7">✓ '
+            f'{_html.escape(field)}'
+            '</strong> updated in: '
+            '<span style="color:#0f766e">'
+            f'{_html.escape(ids_formatted)}'
+            '</span>'
+            '</div>'
+            )
+
+        items_html.append(line_html)
 
         insights_html = "\n".join(items_html)
         return f"""

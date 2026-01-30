@@ -9,12 +9,10 @@ import logging
 import logging.handlers
 import sys
 from typing import Optional, Dict, Any
-from pathlib import Path
 
 from .config import LogConfig, LogLevel, get_log_file_path
 from .formatters import TRxOFormatter, APICallFormatter
 from .utils import cleanup_old_logs
-from trxo.constants import LOG_APP_NAME
 
 
 # Global logger registry
@@ -26,16 +24,16 @@ _log_config: Optional[LogConfig] = None
 def setup_logging(config: Optional[LogConfig] = None, force_reconfigure: bool = False) -> None:
     """
     Set up the TRxO logging system.
-    
+
     Args:
         config: LogConfig instance, uses default if None
         force_reconfigure: Force reconfiguration even if already set up
     """
     global _logging_configured, _log_config
-    
+
     if _logging_configured and not force_reconfigure:
         return
-    
+
     if config is None:
         config = LogConfig()
 
@@ -51,17 +49,17 @@ def setup_logging(config: Optional[LogConfig] = None, force_reconfigure: bool = 
                 with open(global_settings_file, 'r', encoding='utf-8') as f:
                     settings = json.load(f)
                     user_level = settings.get("log_level")
-                    if user_level and user_level in [l.value for l in LogLevel]:
+                    if user_level and user_level in [lev.value for lev in LogLevel]:
                         config.default_level = LogLevel(user_level)
         except Exception:
             # If anything fails, just use the default config
             pass
 
     _log_config = config
-    
+
     # Get log file path
     log_file_path = get_log_file_path(config)
-    
+
     # Create root logger for TRXO
     root_logger = logging.getLogger("trxo")
     root_logger.setLevel(getattr(logging, config.default_level.value))
@@ -82,7 +80,7 @@ def setup_logging(config: Optional[LogConfig] = None, force_reconfigure: bool = 
 
     # Set suffix for rotated files (YYYY-MM-DD format)
     file_handler.suffix = "%Y-%m-%d"
-    
+
     # Create formatter
     file_formatter = TRxOFormatter(
         include_timestamps=config.include_timestamps,
@@ -92,15 +90,15 @@ def setup_logging(config: Optional[LogConfig] = None, force_reconfigure: bool = 
         sensitive_keys=config.sensitive_keys
     )
     file_handler.setFormatter(file_formatter)
-    
+
     # Add file handler to root logger
     root_logger.addHandler(file_handler)
-    
+
     # Optionally add console handler for errors/warnings
     if config.console_level != LogLevel.ERROR or config.default_level == LogLevel.DEBUG:
         console_handler = logging.StreamHandler(sys.stderr)
         console_handler.setLevel(getattr(logging, config.console_level.value))
-        
+
         console_formatter = TRxOFormatter(
             include_timestamps=False,  # Console doesn't need timestamps
             sanitize_sensitive=config.sanitize_sensitive_data,
@@ -108,11 +106,11 @@ def setup_logging(config: Optional[LogConfig] = None, force_reconfigure: bool = 
         )
         console_handler.setFormatter(console_formatter)
         root_logger.addHandler(console_handler)
-    
+
     # Set up API logger with special formatting
     api_logger = logging.getLogger("trxo.api")
     api_logger.setLevel(logging.DEBUG)  # Always capture API calls
-    
+
     # Create separate API file handler if needed
     if config.log_api_requests or config.log_api_responses:
         api_handler = logging.handlers.TimedRotatingFileHandler(
@@ -127,50 +125,51 @@ def setup_logging(config: Optional[LogConfig] = None, force_reconfigure: bool = 
 
         # Set suffix for rotated files (YYYY-MM-DD format)
         api_handler.suffix = "%Y-%m-%d"
-        
+
         api_formatter = APICallFormatter(
             sanitize_sensitive=config.sanitize_sensitive_data,
             sensitive_keys=config.sensitive_keys
         )
         api_handler.setFormatter(api_formatter)
         api_logger.addHandler(api_handler)
-    
+
     # Prevent propagation to avoid duplicate entries
     api_logger.propagate = False
-    
+
     # Clean up old logs
     try:
         cleanup_old_logs(log_file_path.parent, config.log_retention_days)
     except Exception:
         # Don't fail setup if cleanup fails
         pass
-    
+
     _logging_configured = True
-    
+
     # Log the setup completion
     setup_logger = get_logger("trxo.setup")
-    setup_logger.info(f"Logging initialized - File: {log_file_path}, Level: {config.default_level.value}")
+    setup_logger.info(f"Logging initialized - File: {log_file_path}, "
+                      f"Level: {config.default_level.value}")
 
 
 def get_logger(name: str) -> logging.Logger:
     """
     Get a logger instance for the specified name.
-    
+
     Args:
         name: Logger name (e.g., 'trxo.commands.export')
-        
+
     Returns:
         logging.Logger: Logger instance
     """
     # Ensure logging is set up
     if not _logging_configured:
         setup_logging()
-    
+
     # Return cached logger or create new one
     if name not in _loggers:
         logger = logging.getLogger(name)
         _loggers[name] = logger
-    
+
     return _loggers[name]
 
 
@@ -188,7 +187,7 @@ def log_api_call(
 ) -> None:
     """
     Log an API call with structured information.
-    
+
     Args:
         method: HTTP method
         url: Request URL
@@ -202,7 +201,7 @@ def log_api_call(
         logger_name: Logger name to use
     """
     logger = get_logger(logger_name)
-    
+
     # Create log record with extra attributes
     extra = {
         "api_method": method,
@@ -210,7 +209,7 @@ def log_api_call(
         "api_status": status_code,
         "api_duration": duration or 0,
     }
-    
+
     if request_size is not None:
         extra["api_request_size"] = request_size
     if response_size is not None:
@@ -221,7 +220,7 @@ def log_api_call(
         extra["api_response_headers"] = response_headers
     if error:
         extra["api_error"] = error
-    
+
     # Log at appropriate level based on status and content
     if error or (status_code and status_code >= 500):
         # Server errors and exceptions

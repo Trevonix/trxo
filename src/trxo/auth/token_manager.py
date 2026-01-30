@@ -55,7 +55,8 @@ class TokenManager:
                 if jwk_content:
                     self.logger.debug(f"Using JWK from keyring for project {project_name}")
                 else:
-                    self.logger.debug(f"No JWK found in keyring for project {project_name}, using file path")
+                    self.logger.debug(f"No JWK found in keyring for project {project_name}, "
+                                      "using file path")
             except Exception as e:
                 self.logger.debug(f"Keyring access failed for project {project_name}: {str(e)}")
                 jwk_content = None
@@ -82,7 +83,8 @@ class TokenManager:
             }
 
             self.config_store.save_token(project_name, token_data)
-            self.logger.info(f"Successfully refreshed token for project {project_name}, expires in {expires_in}s")
+            self.logger.info(f"Successfully refreshed token for project {project_name}, "
+                             f"expires in {expires_in}s")
 
             return token_data["access_token"]
 

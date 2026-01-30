@@ -59,7 +59,9 @@ def create_endpoints_import_command():
         cherry_pick: str = typer.Option(
             None,
             "--cherry-pick",
-            help="Cherry-pick specific endpoints by ID (Note: provide complete _id e.g., endpoint/registration) for multiple IDs, use comma-separated list e.g., id1,id2,id3",
+            help="Cherry-pick specific endpoints by ID "
+            "(Note: provide complete _id e.g., endpoint/registration) for multiple IDs,"
+            " use comma-separated list e.g., id1,id2,id3",
         ),
         force_import: bool = typer.Option(
             False, "--force-import", "-f", help="Skip hash validation and force import"

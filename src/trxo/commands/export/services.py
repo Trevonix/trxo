@@ -188,7 +188,8 @@ def create_services_export_command():
                         # Clean _rev from descendants
                         cleaned_descendants = []
                         for desc in descendants:
-                            # Create a copy to avoid modifying original if it matters, though here it's new data
+                            # Create a copy to avoid modifying original if it matters,
+                            # though here it's new data
                             clean_desc = desc.copy()
                             clean_desc.pop("_rev", None)
                             cleaned_descendants.append(clean_desc)

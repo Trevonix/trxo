@@ -29,7 +29,6 @@ def validate_authentication(auth: ServiceAccountAuth) -> bool:
 def validate_jwk_file(jwk_path: str) -> Tuple[str, Optional[str], bool]:
     """
     Validate JWK file and extract metadata.
-
     Returns:
         Tuple of (jwk_content, jwk_fingerprint, keyring_success)
     """
@@ -37,7 +36,6 @@ def validate_jwk_file(jwk_path: str) -> Tuple[str, Optional[str], bool]:
     if not os.path.exists(jwk_path_expanded):
         error(f"JWK file not found at {jwk_path_expanded}")
         raise typer.Exit(1)
-
     try:
         with open(jwk_path_expanded, "r", encoding="utf-8") as f:
             jwk_raw = f.read()
@@ -59,8 +57,6 @@ def validate_jwk_file(jwk_path: str) -> Tuple[str, Optional[str], bool]:
     # Store in keyring (best effort)
     keyring_ok = False
     try:
-        import keyring
-
         # We'll get the current project from the caller
         # For now, we'll return the keyring status and let the caller handle storage
         keyring_ok = True

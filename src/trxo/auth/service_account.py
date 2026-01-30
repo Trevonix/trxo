@@ -9,7 +9,15 @@ from trxo.logging import get_logger, setup_logging
 
 
 class ServiceAccountAuth:
-    def __init__(self, jwk_path: str, client_id: str, sa_id: str, token_url: str, *, jwk_content: str | None = None):
+    def __init__(
+              self,
+              jwk_path: str,
+              client_id: str,
+              sa_id: str,
+              token_url: str,
+              *,
+              jwk_content: str | None = None,
+    ) -> None:
         self.jwk_path = jwk_path
         self.jwk_content = jwk_content
         self.client_id = client_id
@@ -66,7 +74,8 @@ class ServiceAccountAuth:
                 response = client.post(self.token_url, headers=headers, data=data)
                 response.raise_for_status()
                 token_data = response.json()
-                self.logger.info(f"Successfully obtained access token for service account {self.sa_id}")
+                self.logger.info("Successfully obtained access token "
+                                 f"for service account {self.sa_id}")
                 return token_data
         except Exception as e:
             error_msg = f"Failed to get access token for service account {self.sa_id}: {str(e)}"
