@@ -5,25 +5,24 @@ from typing import Dict
 import jwt
 from jwcrypto import jwk
 import httpx
-from trxo.logging import get_logger, setup_logging
+from trxo.logging import get_logger
 
 
 class ServiceAccountAuth:
     def __init__(
-              self,
-              jwk_path: str,
-              client_id: str,
-              sa_id: str,
-              token_url: str,
-              *,
-              jwk_content: str | None = None,
+        self,
+        jwk_path: str,
+        client_id: str,
+        sa_id: str,
+        token_url: str,
+        *,
+        jwk_content: str | None = None,
     ) -> None:
         self.jwk_path = jwk_path
         self.jwk_content = jwk_content
         self.client_id = client_id
         self.sa_id = sa_id
         self.token_url = token_url
-        setup_logging()
         self.logger = get_logger("trxo.auth.service_account")
 
     def get_private_key(self) -> bytes:
@@ -61,11 +60,7 @@ class ServiceAccountAuth:
             "client_id": "service-account",
             "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
             "assertion": signed_jwt,
-            "scope": (
-                "fr:am:* "
-                "fr:idm:* "
-                "fr:idc:esv:* "
-            ),
+            "scope": ("fr:am:* " "fr:idm:* " "fr:idc:esv:* "),
         }
 
         self.logger.debug(f"Requesting access token from {self.token_url}")
@@ -74,10 +69,14 @@ class ServiceAccountAuth:
                 response = client.post(self.token_url, headers=headers, data=data)
                 response.raise_for_status()
                 token_data = response.json()
-                self.logger.info("Successfully obtained access token "
-                                 f"for service account {self.sa_id}")
+                self.logger.info(
+                    "Successfully obtained access token "
+                    f"for service account {self.sa_id}"
+                )
                 return token_data
         except Exception as e:
-            error_msg = f"Failed to get access token for service account {self.sa_id}: {str(e)}"
+            error_msg = (
+                f"Failed to get access token for service account {self.sa_id}: {str(e)}"
+            )
             self.logger.error(error_msg)
             raise Exception(error_msg)

@@ -11,8 +11,7 @@ import sys
 from typing import Optional, Dict, Any
 
 from .config import LogConfig, LogLevel, get_log_file_path
-from .formatters import TRxOFormatter, APICallFormatter
-from .utils import cleanup_old_logs
+from .formatters import TRxOFormatter, APICallFormatter, MultiplexFormatter
 
 
 # Global logger registry
@@ -21,7 +20,9 @@ _logging_configured = False
 _log_config: Optional[LogConfig] = None
 
 
-def setup_logging(config: Optional[LogConfig] = None, force_reconfigure: bool = False) -> None:
+def setup_logging(
+    config: Optional[LogConfig] = None, force_reconfigure: bool = False
+) -> None:
     """
     Set up the TRxO logging system.
 
@@ -33,6 +34,8 @@ def setup_logging(config: Optional[LogConfig] = None, force_reconfigure: bool = 
 
     if _logging_configured and not force_reconfigure:
         return
+
+    _logging_configured = True
 
     if config is None:
         config = LogConfig()
@@ -46,7 +49,7 @@ def setup_logging(config: Optional[LogConfig] = None, force_reconfigure: bool = 
             global_settings_file = config_store.base_dir / "settings.json"
 
             if global_settings_file.exists():
-                with open(global_settings_file, 'r', encoding='utf-8') as f:
+                with open(global_settings_file, "r", encoding="utf-8") as f:
                     settings = json.load(f)
                     user_level = settings.get("log_level")
                     if user_level and user_level in [lev.value for lev in LogLevel]:
@@ -70,26 +73,37 @@ def setup_logging(config: Optional[LogConfig] = None, force_reconfigure: bool = 
     # Create daily rotating file handler
     file_handler = logging.handlers.TimedRotatingFileHandler(
         filename=log_file_path,
-        when='midnight',
+        when="midnight",
         interval=1,
         backupCount=config.log_retention_days,
-        encoding='utf-8',
-        utc=False
+        encoding="utf-8",
+        utc=False,
     )
     file_handler.setLevel(getattr(logging, config.default_level.value))
 
     # Set suffix for rotated files (YYYY-MM-DD format)
     file_handler.suffix = "%Y-%m-%d"
 
-    # Create formatter
-    file_formatter = TRxOFormatter(
+    # Create standard formatter
+    standard_formatter = TRxOFormatter(
         include_timestamps=config.include_timestamps,
         include_thread_info=config.include_thread_info,
         include_process_info=config.include_process_info,
         sanitize_sensitive=config.sanitize_sensitive_data,
-        sensitive_keys=config.sensitive_keys
+        sensitive_keys=config.sensitive_keys,
     )
-    file_handler.setFormatter(file_formatter)
+
+    # Create API formatter
+    api_formatter = APICallFormatter(
+        sanitize_sensitive=config.sanitize_sensitive_data,
+        sensitive_keys=config.sensitive_keys,
+    )
+
+    # Use multiplex formatter to handle both types in one file
+    multiplex_formatter = MultiplexFormatter(
+        default_formatter=standard_formatter, api_formatter=api_formatter
+    )
+    file_handler.setFormatter(multiplex_formatter)
 
     # Add file handler to root logger
     root_logger.addHandler(file_handler)
@@ -102,53 +116,23 @@ def setup_logging(config: Optional[LogConfig] = None, force_reconfigure: bool = 
         console_formatter = TRxOFormatter(
             include_timestamps=False,  # Console doesn't need timestamps
             sanitize_sensitive=config.sanitize_sensitive_data,
-            sensitive_keys=config.sensitive_keys
+            sensitive_keys=config.sensitive_keys,
         )
         console_handler.setFormatter(console_formatter)
         root_logger.addHandler(console_handler)
 
-    # Set up API logger with special formatting
+    # Set up API logger
     api_logger = logging.getLogger("trxo.api")
     api_logger.setLevel(logging.DEBUG)  # Always capture API calls
-
-    # Create separate API file handler if needed
-    if config.log_api_requests or config.log_api_responses:
-        api_handler = logging.handlers.TimedRotatingFileHandler(
-            filename=log_file_path,  # Same file as requested
-            when='midnight',
-            interval=1,
-            backupCount=config.log_retention_days,
-            encoding='utf-8',
-            utc=False
-        )
-        api_handler.setLevel(logging.DEBUG)
-
-        # Set suffix for rotated files (YYYY-MM-DD format)
-        api_handler.suffix = "%Y-%m-%d"
-
-        api_formatter = APICallFormatter(
-            sanitize_sensitive=config.sanitize_sensitive_data,
-            sensitive_keys=config.sensitive_keys
-        )
-        api_handler.setFormatter(api_formatter)
-        api_logger.addHandler(api_handler)
-
-    # Prevent propagation to avoid duplicate entries
-    api_logger.propagate = False
-
-    # Clean up old logs
-    try:
-        cleanup_old_logs(log_file_path.parent, config.log_retention_days)
-    except Exception:
-        # Don't fail setup if cleanup fails
-        pass
-
-    _logging_configured = True
+    # Allow propagation to root logger where the single file handler determines formatting
+    api_logger.propagate = True
 
     # Log the setup completion
     setup_logger = get_logger("trxo.setup")
-    setup_logger.info(f"Logging initialized - File: {log_file_path}, "
-                      f"Level: {config.default_level.value}")
+    setup_logger.info(
+        f"Logging initialized - File: {log_file_path}, "
+        f"Level: {config.default_level.value}"
+    )
 
 
 def get_logger(name: str) -> logging.Logger:
@@ -183,7 +167,7 @@ def log_api_call(
     request_headers: Optional[Dict[str, str]] = None,
     response_headers: Optional[Dict[str, str]] = None,
     error: Optional[str] = None,
-    logger_name: str = "trxo.api"
+    logger_name: str = "trxo.api",
 ) -> None:
     """
     Log an API call with structured information.
@@ -236,7 +220,7 @@ def log_api_call(
 def log_transaction(
     operation: str,
     details: Optional[Dict[str, Any]] = None,
-    logger_name: str = "trxo.transaction"
+    logger_name: str = "trxo.transaction",
 ) -> None:
     """
     Log critical transaction data at DEBUG level.
@@ -253,6 +237,7 @@ def log_transaction(
         # Sanitize sensitive data in transaction details
         from .utils import sanitize_data
         from trxo.constants import SENSITIVE_KEYS
+
         sanitized_details = sanitize_data(details, SENSITIVE_KEYS)
         extra["transaction_details"] = sanitized_details
 
@@ -263,7 +248,7 @@ def log_application_event(
     event: str,
     level: str = "info",
     details: Optional[Dict[str, Any]] = None,
-    logger_name: str = "trxo.app"
+    logger_name: str = "trxo.app",
 ) -> None:
     """
     Log application-level events at appropriate levels.
@@ -288,7 +273,7 @@ def log_authentication_event(
     auth_type: str,
     success: bool,
     details: Optional[Dict[str, Any]] = None,
-    logger_name: str = "trxo.auth"
+    logger_name: str = "trxo.auth",
 ) -> None:
     """
     Log authentication events with appropriate levels.
@@ -300,15 +285,13 @@ def log_authentication_event(
         logger_name: Logger name to use
     """
     logger = get_logger(logger_name)
-    extra = {
-        "auth_type": auth_type,
-        "auth_success": success
-    }
+    extra = {"auth_type": auth_type, "auth_success": success}
 
     if details:
         # Always sanitize auth details
         from .utils import sanitize_data
         from trxo.constants import SENSITIVE_KEYS
+
         sanitized_details = sanitize_data(details, SENSITIVE_KEYS)
         extra["auth_details"] = sanitized_details
 
