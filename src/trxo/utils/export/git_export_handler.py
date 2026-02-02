@@ -36,22 +36,13 @@ class GitExportHandler:
         Returns:
             GitManager instance
         """
-<<<<<<< HEAD
-        current_project = self.config_store.get_current_project()
-        git_credentials = self.config_store.get_git_credentials(current_project)
-        if not git_credentials or not all(git_credentials.values()):
-            raise ValueError(
-                "Git credentials not found. Run 'trxo config' to set up Git integration."
-            )
-
-        username, repo_url, token = git_credentials.values()
-        return setup_git_for_export(username, token, repo_url, branch)
-=======
         try:
             current_project = self.config_store.get_current_project()
             git_credentials = self.config_store.get_git_credentials(current_project)
             if not git_credentials or not all(git_credentials.values()):
-                error("Git credentials not found. Run 'trxo config' to set up Git integration.")
+                error(
+                    "Git credentials not found. Run 'trxo config' to set up Git integration."
+                )
                 raise ValueError("Missing Git credentials")
 
             username, repo_url, token = git_credentials.values()
@@ -59,7 +50,6 @@ class GitExportHandler:
         except Exception as e:
             error(f"Failed to setup Git repository: {e}")
             raise
->>>>>>> origin/fix/linters
 
     @staticmethod
     def extract_realm_and_component(
@@ -221,10 +211,6 @@ Timestamp: {timestamp}
                         realm, component, relative_path, data
                     )
 
-<<<<<<< HEAD
-                # Branch sync validation is already done in setup_git_for_export
-=======
->>>>>>> origin/fix/linters
                 success = git_manager.commit_and_push(
                     [str(relative_path)], commit_message, smart_pull=False
                 )
