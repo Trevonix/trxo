@@ -8,7 +8,6 @@ Refactored to use focused utility modules for better maintainability.
 """
 
 from typing import Optional, Dict, Any, Callable
-from datetime import datetime, timezone
 import typer
 from trxo.utils.console import success, error, info, warning
 from trxo.utils.hash_manager import HashManager
@@ -95,7 +94,8 @@ class BaseExporter(BaseCommand):
                 onprem_password=onprem_password,
                 onprem_realm=onprem_realm,
             )
-            self.logger.debug(f"Authentication initialized for {command_name}, auth_mode: {self.auth_mode}")
+            self.logger.debug("Authentication initialized for {command_name}, "
+                              f"auth_mode: {self.auth_mode}")
 
             # Store current auth details for response filters
             self._current_token = token

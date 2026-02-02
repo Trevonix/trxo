@@ -4,6 +4,6 @@
 def set_versioning(version_name, no_version):
     pass
 
+
 def get_versioning():
     return None, False
-

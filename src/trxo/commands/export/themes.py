@@ -16,7 +16,8 @@ def create_themes_export_command():
         realm: str = typer.Option(
             None,
             "--realm",
-            help="Optional realm filter. When provided, only fetches ui/themerealm for that realm using _fields.",
+            help="Optional realm filter. When provided, "
+            "only fetches ui/themerealm for that realm using _fields.",
         ),
         view: bool = typer.Option(
             False,

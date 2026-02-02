@@ -53,7 +53,7 @@ class EsvVariablesImporter(BaseImporter):
             }
             headers = {**headers, **self.build_auth_headers(token)}
 
-            response = self.make_http_request(url, "PUT", headers, payload)
+            self.make_http_request(url, "PUT", headers, payload)
             info(f"Successfully updated Environment Variable: (ID: {item_id})")
             return True
 
@@ -99,7 +99,8 @@ class EsvSecretsImporter(BaseImporter):
                 # Create secret with first version
                 if "valueBase64" not in item_data:
                     warning(
-                        f"Secret '{item_id}' does not exist and no 'valueBase64' provided. Add it to create the secret."
+                        f"Secret '{item_id}' does not exist and no 'valueBase64' provided. "
+                        "Add it to create the secret."
                     )
                     return False
 
@@ -107,7 +108,8 @@ class EsvSecretsImporter(BaseImporter):
                 encoding = item_data.get("encoding", "generic")
                 if encoding not in self.VALID_ENCODINGS:
                     warning(
-                        f"Secret '{item_id}' has invalid or missing 'encoding'. Set one of {sorted(self.VALID_ENCODINGS)}."
+                        f"Secret '{item_id}' has invalid or missing 'encoding'. "
+                        f"Set one of {sorted(self.VALID_ENCODINGS)}."
                     )
                     return False
 
@@ -116,7 +118,8 @@ class EsvSecretsImporter(BaseImporter):
                     base64.b64decode(item_data["valueBase64"], validate=True)
                 except Exception:
                     warning(
-                        f"Secret '{item_id}' has invalid Base64. Add it with: 'valueBase64': '<your_base64_encoded_value>'"
+                        f"Secret '{item_id}' has invalid Base64. Add it with: 'valueBase64': "
+                        "'<your_base64_encoded_value>'"
                     )
                     return False
 
@@ -129,7 +132,7 @@ class EsvSecretsImporter(BaseImporter):
                     }
                 )
 
-                put_resp = self.make_http_request(
+                self.make_http_request(
                     base_endpoint, "PUT", headers, payload
                 )
                 info(f"Created secret '{item_id}' with initial version")
@@ -145,14 +148,15 @@ class EsvSecretsImporter(BaseImporter):
                         base64.b64decode(item_data["valueBase64"], validate=True)
                     except Exception:
                         warning(
-                            f"Secret '{item_id}' has invalid Base64. Add it with: 'valueBase64': '<your_base64_encoded_value>'"
+                            f"Secret '{item_id}' has invalid Base64. Add it with: 'valueBase64': "
+                            "'<your_base64_encoded_value>'"
                         )
                         return False
 
                     versions_endpoint = f"{base_endpoint}/versions?_action=create"
                     payload = json.dumps({"valueBase64": item_data["valueBase64"]})
 
-                    post_resp = self.make_http_request(
+                    self.make_http_request(
                         versions_endpoint, "POST", headers, payload
                     )
                     info(f"Created new version for secret '{item_id}'")
@@ -163,7 +167,7 @@ class EsvSecretsImporter(BaseImporter):
                 # If description provided, update it
                 if "description" in item_data:
                     desc_payload = json.dumps({"description": item_data["description"]})
-                    desc_resp = self.make_http_request(
+                    self.make_http_request(
                         f"{base_endpoint}?_action=setDescription",
                         "POST",
                         headers,
@@ -176,7 +180,8 @@ class EsvSecretsImporter(BaseImporter):
                     return True
                 else:
                     warning(
-                        "No actionable fields provided. Provide 'valueBase64' to create a new version or 'description' to update description."
+                        "No actionable fields provided. Provide 'valueBase64' to "
+                        "create a new version or 'description' to update description."
                     )
                     return False
 

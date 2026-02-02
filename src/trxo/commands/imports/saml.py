@@ -271,9 +271,7 @@ class SamlImporter(BaseImporter):
         headers = {**headers, **self.build_auth_headers(token)}
 
         try:
-            response = self.make_http_request(
-                url, "PUT", headers, json.dumps(payload_data)
-            )
+            self.make_http_request(url, "PUT", headers, json.dumps(payload_data))
             info(f"✓ Imported script: {script_name}")
             return True
         except Exception as e:
@@ -565,7 +563,8 @@ def create_saml_import_command():
 
                 if not file_path.exists():
                     error(f"SAML data not found at {file_path}")
-                    # Try discovery if specific file missing? For now hard fail as per SAML structure assumption
+                    # Try discovery if specific file missing?
+                    # For now hard fail as per SAML structure assumption
                     raise typer.Exit(1)
 
                 with open(file_path, "r") as f:
@@ -584,6 +583,12 @@ def create_saml_import_command():
                 data = export_data["data"]
             else:
                 data = export_data
+
+            # Perform hash validation (local mode only)
+            if storage_mode == "local" and not importer.validate_import_hash(
+                export_data, force_import
+            ):
+                raise typer.Exit(1)
 
             # Perform import
             success = importer.import_saml_data(

@@ -7,7 +7,8 @@ from trxo.commands import logs
 from trxo.logging import setup_logging, get_logger
 
 app = typer.Typer(
-    help="[bold blue]TRXO[/bold blue] - PingOne Advanced Identity Cloud Configuration Management Tool",
+    help="[bold blue]TRXO[/bold blue] - PingOne Advanced Identity Cloud "
+    "Configuration Management Tool",
     rich_markup_mode="rich",
 )
 
@@ -26,13 +27,15 @@ app.command("projects")(project.list_projects)
 @app.callback(invoke_without_command=True)
 def callback(ctx: typer.Context):
     """
-    [bold blue]TRXO[/bold blue] - PingOne Advanced Identity Cloud Configuration Management Tool
+    [bold blue]TRXO[/bold blue] - PingOne Advanced Identity Cloud "\
+        "Configuration Management Tool
 
     A CLI tool for managing PingOne configurations across environments.
     """
     if not ctx.invoked_subcommand:
         print(
-            "Welcome to the TRXO CLI! Manage your configurations effortlessly. To proceed type trxo --help"
+            "Welcome to the TRXO CLI! Manage your configurations effortlessly."
+            "To proceed type trxo --help"
         )
 
 

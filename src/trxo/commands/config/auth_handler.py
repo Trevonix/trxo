@@ -11,11 +11,11 @@ from typing import Dict, Optional
 from urllib.parse import urlparse
 import typer
 from trxo.auth.service_account import ServiceAccountAuth
-from trxo.utils.console import console, error, success
+from trxo.utils.console import error, success
 from .settings import get_credential_value, process_regions_value
 from .validation import (
-    validate_jwk_file, 
-    store_jwk_in_keyring, 
+    validate_jwk_file,
+    store_jwk_in_keyring,
     validate_authentication,
     validate_git_setup,
     validate_onprem_authentication
@@ -29,11 +29,10 @@ def normalize_base_url(base_url: str, auth_mode: str) -> str:
     """Normalize base URL based on authentication mode"""
     if not base_url:
         return base_url
-        
     base_url = base_url.rstrip("/")
-    
     if auth_mode == "service-account":
-        # If user enters https://host/am, strip /am to keep base (SA usually expects root base + /am endpoint)
+        # If user enters https://host/am, strip /am to keep base
+        # (SA usually expects root base + /am endpoint)
         if base_url.endswith("/am"):
             base_url = base_url[:-3]
     elif auth_mode == "onprem":
@@ -42,14 +41,13 @@ def normalize_base_url(base_url: str, auth_mode: str) -> str:
         parsed = urlparse(base_url)
         if not parsed.path or parsed.path == "/":
             base_url = f"{base_url}/am"
-    
     return base_url
 
 
 def setup_service_account_auth(
     existing_config: Dict,
     jwk_path: Optional[str],
-    client_id: Optional[str], 
+    client_id: Optional[str],
     sa_id: Optional[str],
     base_url: str,
     regions: Optional[str],
@@ -60,7 +58,6 @@ def setup_service_account_auth(
     current_project: str
 ) -> Dict:
     """Setup service account authentication configuration"""
-    
     # Collect SA-only inputs
     jwk_path_value = get_credential_value(
         jwk_path, "jwk_path", existing_config, "\nJWK private key file path"
@@ -68,8 +65,11 @@ def setup_service_account_auth(
 
     # Validate JWK and get content
     jwk_raw, jwk_fingerprint, keyring_available = validate_jwk_file(jwk_path_value)
-    jwk_path_expanded = jwk_path_value if jwk_path_value.startswith('/') else os.path.expanduser(jwk_path_value)
-    
+    jwk_path_expanded = (
+        jwk_path_value
+        if jwk_path_value.startswith("/")
+        else os.path.expanduser(jwk_path_value)
+    )
     # Store JWK in keyring if available
     keyring_ok = False
     if keyring_available:
@@ -92,12 +92,12 @@ def setup_service_account_auth(
             git_username, "git_username", existing_config, "\nGit username"
         )
         git_repo_value = get_credential_value(
-            git_repo, "git_repo", existing_config, "\nGit Repository URL (https://github.com/owner/repo.git)"
+            git_repo, "git_repo", existing_config, "\nGit Repository URL "
+            "(https://github.com/owner/repo.git)"
         )
         git_token_value = get_credential_value(
             git_token, "git_token", existing_config, "\nPersonal access token"
         )
-        
         validate_git_setup(git_username_value, git_repo_value, git_token_value, current_project)
 
     # Test SA authentication
@@ -127,13 +127,11 @@ def setup_service_account_auth(
         "regions": process_regions_value(regions),
         "storage_mode": storage_mode,
     }
-    
     if storage_mode == "git":
         config.update({
             "git_username": git_username_value,
             "git_repo": git_repo_value,
         })
-    
     return config
 
 
@@ -166,7 +164,8 @@ def setup_onprem_auth(
             git_username, "git_username", existing_config, "\nGit username"
         )
         git_repo_value = get_credential_value(
-            git_repo, "git_repo", existing_config, "\nGit Repository URL (https://github.com/owner/repo.git)"
+            git_repo, "git_repo", existing_config, "\nGit Repository URL "
+            "(https://github.com/owner/repo.git)"
         )
         git_token_value = get_credential_value(
             git_token, "git_token", existing_config, "\nPersonal access token"

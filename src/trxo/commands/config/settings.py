@@ -61,8 +61,6 @@ def process_regions_value(regions_value: Optional[str]) -> list:
     """Process regions value into a list format"""
     if not regions_value:
         return []
-    
     if isinstance(regions_value, list):
         return regions_value
-    
     return [r.strip() for r in regions_value.split(",") if r.strip()]

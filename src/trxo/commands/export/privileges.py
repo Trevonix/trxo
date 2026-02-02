@@ -17,7 +17,9 @@ def create_privileges_export_command():
         realm: str = typer.Option(
             None,
             "--realm",
-            help="Optional realm name (e.g., alpha, bravo). When provided, filters results to {realm}OrgPrivileges and privilegeAssignments only.",
+            help=("Optional realm name (e.g., alpha, bravo). "
+                  "When provided, filters results to "
+                  "{realm}OrgPrivileges and privilegeAssignments only."),
         ),
         view: bool = typer.Option(
             False,

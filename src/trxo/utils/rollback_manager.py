@@ -11,8 +11,8 @@ from typing import Dict, Any, List, Optional
 import json
 from datetime import datetime
 from trxo.utils.console import info, error, warning
-from trxo.utils.data_fetcher import DataFetcher, get_command_api_endpoint
-from trxo.utils.git_manager import GitManager
+from trxo.utils.git import GitManager
+from trxo.utils.diff.data_fetcher import DataFetcher, get_command_api_endpoint
 from trxo.constants import DEFAULT_REALM
 
 
@@ -44,7 +44,7 @@ class RollbackManager:
             )
 
             # Get API endpoint for this command
-            from trxo.utils.data_fetcher import get_command_api_endpoint
+            from trxo.utils.diff.data_fetcher import get_command_api_endpoint
 
             api_endpoint, _ = get_command_api_endpoint(self.command_name, self.realm)
             if not api_endpoint:
@@ -121,7 +121,10 @@ class RollbackManager:
                         f"Baseline snapshot for {self.command_name} "
                         f"({self.realm}) at {timestamp}"
                     )
-                    git_manager.commit_and_push([str(rel)], commit_msg)
+                    # Branch sync validation is done in setup_git_for_import
+                    git_manager.commit_and_push(
+                        [str(rel)], commit_msg, smart_pull=False
+                    )
                     self.git_branch = branch_name
                 except Exception as e:
                     warning(f"Failed to persist baseline snapshot to Git: {e}")

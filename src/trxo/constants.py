@@ -41,7 +41,25 @@ LOG_LINES_TO_SHOW = 20
 
 # Sensitive data keys for sanitization
 SENSITIVE_KEYS = (
-    "password", "token", "access_token", "refresh_token", "jwk", "key", "secret",
-    "client_secret", "private_key", "authorization", "x-api-key", "api_key",
-    "bearer", "oauth", "session", "cookie", "csrf", "xsrf"
+    "password",
+    "token",
+    "access_token",
+    "refresh_token",
+    "jwk",
+    "key",
+    "secret",
+    "client_secret",
+    "private_key",
+    "authorization",
+    "x-api-key",
+    "api_key",
+    "bearer",
+    "oauth",
+    "session",
+    "cookie",
+    "csrf",
+    "xsrf",
 )
+
+# Git constants
+DEFAULT_EXPORT_BRANCH = "feature/export---"

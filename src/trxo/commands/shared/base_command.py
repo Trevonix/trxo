@@ -66,9 +66,7 @@ class BaseCommand(ABC):
             onprem_password=onprem_password,
             onprem_realm=onprem_realm,
         )
-
-
-        # If not in argument mode, update config if arguments provided
+    # If not in argument mode, update config if arguments provided
         argument_mode = all([jwk_path, client_id, sa_id, base_url])
         if not argument_mode:
             self.auth_manager.update_config_if_needed(jwk_path, client_id, sa_id, base_url)
@@ -242,7 +240,8 @@ class BaseCommand(ABC):
 
             error(f"HTTP error: {clean_error}")
 
-            # Raise generic exception with clean message to avoid verbose string representation in callers
+            # Raise generic exception with clean message
+            # to avoid verbose string representation in callers
             raise Exception(clean_error) from e
         except Exception as e:
             duration = time.time() - start_time

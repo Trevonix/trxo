@@ -135,7 +135,8 @@ class MappingsImporter(BaseImporter):
             try:
                 self.make_http_request(url, "PATCH", headers, payload)
                 info(
-                    f"Updated existing sync mapping: {mapping_name} ({len(patch_operations)} changes)"
+                    f"Updated existing sync mapping: {mapping_name} "
+                    f"({len(patch_operations)} changes)"
                 )
                 return True
             except Exception as e:
@@ -264,7 +265,8 @@ class MappingsImporter(BaseImporter):
                     info("Processing single sync mapping")
                 else:
                     error(
-                        "Invalid sync mappings format. Expected object with 'name' or 'mappings' array"
+                        "Invalid sync mappings format. Expected object with "
+                        "'name' or 'mappings' array"
                     )
                     return
             elif isinstance(data, list):

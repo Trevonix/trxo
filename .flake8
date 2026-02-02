@@ -1,0 +1,5 @@
+[flake8]
+max-line-length = 100
+per-file-ignores =
+    src/trxo/commands/imports/saml.py:F821
+    src/trxo/utils/diff/diff_reporter.py:F841
