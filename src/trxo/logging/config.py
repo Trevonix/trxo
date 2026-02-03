@@ -11,15 +11,12 @@ from pathlib import Path
 from enum import Enum
 from typing import Optional
 from dataclasses import dataclass
-from trxo.constants import (
-    LOG_FILE_NAME,
-    LOG_RETENTION_DAYS,
-    SENSITIVE_KEYS
-)
+from trxo.constants import LOG_FILE_NAME, LOG_RETENTION_DAYS, SENSITIVE_KEYS
 
 
 class LogLevel(Enum):
     """Log levels for TRXO logging"""
+
     DEBUG = "DEBUG"
     INFO = "INFO"
     WARNING = "WARNING"
@@ -34,7 +31,7 @@ class LogConfig:
     log_filename: str = f"{LOG_FILE_NAME}.log"
     log_retention_days: int = LOG_RETENTION_DAYS
     # Log levels
-    default_level: LogLevel = LogLevel.INFO
+    default_level: LogLevel = LogLevel.DEBUG
     console_level: LogLevel = LogLevel.WARNING
     # Log format settings
     include_timestamps: bool = True

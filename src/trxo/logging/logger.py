@@ -11,17 +11,19 @@ import sys
 from typing import Optional, Dict, Any
 
 from .config import LogConfig, LogLevel, get_log_file_path
-from .formatters import TRxOFormatter, APICallFormatter
-from .utils import cleanup_old_logs
+from .formatters import TRxOFormatter, APICallFormatter, MultiplexFormatter
 
 
 # Global logger registry
 _loggers: Dict[str, logging.Logger] = {}
 _logging_configured = False
+_is_configuring = False
 _log_config: Optional[LogConfig] = None
 
 
-def setup_logging(config: Optional[LogConfig] = None, force_reconfigure: bool = False) -> None:
+def setup_logging(
+    config: Optional[LogConfig] = None, force_reconfigure: bool = False
+) -> None:
     """
     Set up the TRxO logging system.
 
@@ -29,143 +31,126 @@ def setup_logging(config: Optional[LogConfig] = None, force_reconfigure: bool = 
         config: LogConfig instance, uses default if None
         force_reconfigure: Force reconfiguration even if already set up
     """
-    global _logging_configured, _log_config
+    global _logging_configured, _is_configuring, _log_config
 
     if _logging_configured and not force_reconfigure:
         return
 
-    if config is None:
-        config = LogConfig()
+    if _is_configuring:
+        return
 
-        # Try to read log level from user config
-        try:
-            from trxo.utils.config_store import ConfigStore
-            import json
+    _is_configuring = True
+    try:
+        if config is None:
+            config = LogConfig()
 
-            config_store = ConfigStore()
-            global_settings_file = config_store.base_dir / "settings.json"
+            # Default to DEBUG for all logs to ensure we capture everything
+            config.default_level = LogLevel.DEBUG
 
-            if global_settings_file.exists():
-                with open(global_settings_file, 'r', encoding='utf-8') as f:
-                    settings = json.load(f)
-                    user_level = settings.get("log_level")
-                    if user_level and user_level in [lev.value for lev in LogLevel]:
-                        config.default_level = LogLevel(user_level)
-        except Exception:
-            # If anything fails, just use the default config
-            pass
+            # Try to read log level from user config as an override
+            try:
+                from trxo.utils.config_store import ConfigStore
+                import json
 
-    _log_config = config
+                config_store = ConfigStore()
+                global_settings_file = config_store.base_dir / "settings.json"
 
-    # Get log file path
-    log_file_path = get_log_file_path(config)
+                if global_settings_file.exists():
+                    with open(global_settings_file, "r", encoding="utf-8") as f:
+                        settings = json.load(f)
+                        user_level = settings.get("log_level")
+                        if user_level and user_level in [lev.value for lev in LogLevel]:
+                            config.default_level = LogLevel(user_level)
+            except Exception:
+                pass
 
-    # Create root logger for TRXO
-    root_logger = logging.getLogger("trxo")
-    root_logger.setLevel(getattr(logging, config.default_level.value))
+        _log_config = config
 
-    # Clear existing handlers
-    root_logger.handlers.clear()
+        # Get log file path
+        log_file_path = get_log_file_path(config)
 
-    # Create daily rotating file handler
-    file_handler = logging.handlers.TimedRotatingFileHandler(
-        filename=log_file_path,
-        when='midnight',
-        interval=1,
-        backupCount=config.log_retention_days,
-        encoding='utf-8',
-        utc=False
-    )
-    file_handler.setLevel(getattr(logging, config.default_level.value))
+        # Create root logger for TRXO
+        root_logger = logging.getLogger("trxo")
+        # Ensure root logger level is at least as low as the lowest target
+        root_logger.setLevel(logging.DEBUG)
 
-    # Set suffix for rotated files (YYYY-MM-DD format)
-    file_handler.suffix = "%Y-%m-%d"
+        # Clear existing handlers
+        root_logger.handlers.clear()
 
-    # Create formatter
-    file_formatter = TRxOFormatter(
-        include_timestamps=config.include_timestamps,
-        include_thread_info=config.include_thread_info,
-        include_process_info=config.include_process_info,
-        sanitize_sensitive=config.sanitize_sensitive_data,
-        sensitive_keys=config.sensitive_keys
-    )
-    file_handler.setFormatter(file_formatter)
+        # Create daily rotating file handler
+        file_handler = logging.handlers.TimedRotatingFileHandler(
+            filename=log_file_path,
+            when="midnight",
+            interval=1,
+            backupCount=config.log_retention_days,
+            encoding="utf-8",
+            utc=False,
+        )
+        # Always allow DEBUG at the file handler level
+        file_handler.setLevel(logging.DEBUG)
 
-    # Add file handler to root logger
-    root_logger.addHandler(file_handler)
+        # Set suffix for rotated files (YYYY-MM-DD format)
+        file_handler.suffix = "%Y-%m-%d"
 
-    # Optionally add console handler for errors/warnings
-    if config.console_level != LogLevel.ERROR or config.default_level == LogLevel.DEBUG:
+        # Create formatters
+        standard_formatter = TRxOFormatter(
+            include_timestamps=config.include_timestamps,
+            include_thread_info=config.include_thread_info,
+            include_process_info=config.include_process_info,
+            sanitize_sensitive=config.sanitize_sensitive_data,
+            sensitive_keys=config.sensitive_keys,
+        )
+
+        api_formatter = APICallFormatter(
+            sanitize_sensitive=config.sanitize_sensitive_data,
+            sensitive_keys=config.sensitive_keys,
+        )
+
+        # Use multiplex formatter to handle both types in one file
+        multiplex_formatter = MultiplexFormatter(
+            default_formatter=standard_formatter, api_formatter=api_formatter
+        )
+        file_handler.setFormatter(multiplex_formatter)
+
+        # Add file handler to root logger
+        root_logger.addHandler(file_handler)
+
+        # Setup console handler
         console_handler = logging.StreamHandler(sys.stderr)
+        # Console uses its own level from config (defaults to WARNING)
         console_handler.setLevel(getattr(logging, config.console_level.value))
 
         console_formatter = TRxOFormatter(
-            include_timestamps=False,  # Console doesn't need timestamps
+            include_timestamps=False,
             sanitize_sensitive=config.sanitize_sensitive_data,
-            sensitive_keys=config.sensitive_keys
+            sensitive_keys=config.sensitive_keys,
         )
         console_handler.setFormatter(console_formatter)
         root_logger.addHandler(console_handler)
 
-    # Set up API logger with special formatting
-    api_logger = logging.getLogger("trxo.api")
-    api_logger.setLevel(logging.DEBUG)  # Always capture API calls
+        # Explicitly set API logger to DEBUG
+        api_logger = logging.getLogger("trxo.api")
+        api_logger.setLevel(logging.DEBUG)
+        api_logger.propagate = True
 
-    # Create separate API file handler if needed
-    if config.log_api_requests or config.log_api_responses:
-        api_handler = logging.handlers.TimedRotatingFileHandler(
-            filename=log_file_path,  # Same file as requested
-            when='midnight',
-            interval=1,
-            backupCount=config.log_retention_days,
-            encoding='utf-8',
-            utc=False
-        )
-        api_handler.setLevel(logging.DEBUG)
+        _logging_configured = True
+        _is_configuring = False
 
-        # Set suffix for rotated files (YYYY-MM-DD format)
-        api_handler.suffix = "%Y-%m-%d"
+        # Log completion
+        setup_logger = get_logger("trxo.setup")
+        setup_logger.debug(f"Logging initialized - File: {log_file_path}")
+        setup_logger.debug(f"Default Level: {config.default_level.value}")
 
-        api_formatter = APICallFormatter(
-            sanitize_sensitive=config.sanitize_sensitive_data,
-            sensitive_keys=config.sensitive_keys
-        )
-        api_handler.setFormatter(api_formatter)
-        api_logger.addHandler(api_handler)
-
-    # Prevent propagation to avoid duplicate entries
-    api_logger.propagate = False
-
-    # Clean up old logs
-    try:
-        cleanup_old_logs(log_file_path.parent, config.log_retention_days)
     except Exception:
-        # Don't fail setup if cleanup fails
-        pass
-
-    _logging_configured = True
-
-    # Log the setup completion
-    setup_logger = get_logger("trxo.setup")
-    setup_logger.info(f"Logging initialized - File: {log_file_path}, "
-                      f"Level: {config.default_level.value}")
+        _is_configuring = False
+        raise
 
 
 def get_logger(name: str) -> logging.Logger:
-    """
-    Get a logger instance for the specified name.
-
-    Args:
-        name: Logger name (e.g., 'trxo.commands.export')
-
-    Returns:
-        logging.Logger: Logger instance
-    """
-    # Ensure logging is set up
+    """Get a logger instance for the specified name."""
     if not _logging_configured:
         setup_logging()
 
-    # Return cached logger or create new one
     if name not in _loggers:
         logger = logging.getLogger(name)
         _loggers[name] = logger
@@ -183,26 +168,11 @@ def log_api_call(
     request_headers: Optional[Dict[str, str]] = None,
     response_headers: Optional[Dict[str, str]] = None,
     error: Optional[str] = None,
-    logger_name: str = "trxo.api"
+    logger_name: str = "trxo.api",
 ) -> None:
-    """
-    Log an API call with structured information.
-
-    Args:
-        method: HTTP method
-        url: Request URL
-        status_code: Response status code
-        duration: Request duration in seconds
-        request_size: Request payload size in bytes
-        response_size: Response payload size in bytes
-        request_headers: Request headers
-        response_headers: Response headers
-        error: Error message if request failed
-        logger_name: Logger name to use
-    """
+    """Log an API call with structured information."""
     logger = get_logger(logger_name)
 
-    # Create log record with extra attributes
     extra = {
         "api_method": method,
         "api_url": url,
@@ -221,38 +191,28 @@ def log_api_call(
     if error:
         extra["api_error"] = error
 
-    # Log at appropriate level based on status and content
+    # Log at appropriate level
     if error or (status_code and status_code >= 500):
-        # Server errors and exceptions
         logger.error("API call failed", extra=extra)
     elif status_code and 400 <= status_code < 500:
-        # Client errors (4xx)
         logger.warning("API call client error", extra=extra)
     else:
-        # Successful API calls go to DEBUG level (detailed transaction data)
         logger.debug("API call completed", extra=extra)
 
 
 def log_transaction(
     operation: str,
     details: Optional[Dict[str, Any]] = None,
-    logger_name: str = "trxo.transaction"
+    logger_name: str = "trxo.transaction",
 ) -> None:
-    """
-    Log critical transaction data at DEBUG level.
-
-    Args:
-        operation: Description of the operation
-        details: Additional transaction details
-        logger_name: Logger name to use
-    """
+    """Log critical transaction data at DEBUG level."""
     logger = get_logger(logger_name)
     extra = {"transaction_operation": operation}
 
     if details:
-        # Sanitize sensitive data in transaction details
         from .utils import sanitize_data
         from trxo.constants import SENSITIVE_KEYS
+
         sanitized_details = sanitize_data(details, SENSITIVE_KEYS)
         extra["transaction_details"] = sanitized_details
 
@@ -263,17 +223,9 @@ def log_application_event(
     event: str,
     level: str = "info",
     details: Optional[Dict[str, Any]] = None,
-    logger_name: str = "trxo.app"
+    logger_name: str = "trxo.app",
 ) -> None:
-    """
-    Log application-level events at appropriate levels.
-
-    Args:
-        event: Description of the event
-        level: Log level (debug, info, warning, error)
-        details: Additional event details
-        logger_name: Logger name to use
-    """
+    """Log application-level events at appropriate levels."""
     logger = get_logger(logger_name)
     extra = {"app_event": event}
 
@@ -288,27 +240,16 @@ def log_authentication_event(
     auth_type: str,
     success: bool,
     details: Optional[Dict[str, Any]] = None,
-    logger_name: str = "trxo.auth"
+    logger_name: str = "trxo.auth",
 ) -> None:
-    """
-    Log authentication events with appropriate levels.
-
-    Args:
-        auth_type: Type of authentication (service-account, on-premise)
-        success: Whether authentication was successful
-        details: Additional auth details (will be sanitized)
-        logger_name: Logger name to use
-    """
+    """Log authentication events with appropriate levels."""
     logger = get_logger(logger_name)
-    extra = {
-        "auth_type": auth_type,
-        "auth_success": success
-    }
+    extra = {"auth_type": auth_type, "auth_success": success}
 
     if details:
-        # Always sanitize auth details
         from .utils import sanitize_data
         from trxo.constants import SENSITIVE_KEYS
+
         sanitized_details = sanitize_data(details, SENSITIVE_KEYS)
         extra["auth_details"] = sanitized_details
 

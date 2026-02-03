@@ -17,7 +17,7 @@ from trxo.auth.token_manager import TokenManager
 from trxo.utils.console import success, error, warning
 from .auth_manager import AuthManager
 from trxo.utils.url import construct_api_url
-from trxo.logging import get_logger, log_api_call, setup_logging
+from trxo.logging import get_logger, log_api_call
 
 
 class BaseCommand(ABC):
@@ -32,8 +32,9 @@ class BaseCommand(ABC):
         self.auth_mode: str = "service-account"
 
         # Initialize logging
-        setup_logging()
-        self.logger = get_logger(f"trxo.{self.__class__.__module__}.{self.__class__.__name__}")
+        self.logger = get_logger(
+            f"trxo.{self.__class__.__module__}.{self.__class__.__name__}"
+        )
 
     def _construct_api_url(self, base_url: str, endpoint: str) -> str:
         """Construct API URL using shared utility"""
@@ -66,13 +67,17 @@ class BaseCommand(ABC):
             onprem_password=onprem_password,
             onprem_realm=onprem_realm,
         )
-    # If not in argument mode, update config if arguments provided
+        # If not in argument mode, update config if arguments provided
         argument_mode = all([jwk_path, client_id, sa_id, base_url])
         if not argument_mode:
-            self.auth_manager.update_config_if_needed(jwk_path, client_id, sa_id, base_url)
+            self.auth_manager.update_config_if_needed(
+                jwk_path, client_id, sa_id, base_url
+            )
 
         # Determine mode and get token/session
-        self.auth_mode = self.auth_manager.get_auth_mode(current_project, override=auth_mode)
+        self.auth_mode = self.auth_manager.get_auth_mode(
+            current_project, override=auth_mode
+        )
         api_base_url = self.auth_manager.get_base_url(current_project, base_url)
 
         if self.auth_mode == "onprem":
@@ -162,12 +167,12 @@ class BaseCommand(ABC):
         method: str = "GET",
         headers: Optional[Dict[str, str]] = None,
         data: Optional[str] = None,
-        timeout: float = 30.0
+        timeout: float = 30.0,
     ) -> httpx.Response:
         """Make HTTP request with common error handling and comprehensive logging"""
         start_time = time.time()
         method_upper = method.upper()
-        request_size = len(data.encode('utf-8')) if data else 0
+        request_size = len(data.encode("utf-8")) if data else 0
 
         # Log request start
         self.logger.debug(f"Starting {method_upper} request to {url}")
@@ -200,7 +205,9 @@ class BaseCommand(ABC):
                     request_size=request_size if request_size > 0 else None,
                     response_size=response_size if response_size > 0 else None,
                     request_headers=headers,
-                    response_headers=dict(response.headers) if response.headers else None
+                    response_headers=(
+                        dict(response.headers) if response.headers else None
+                    ),
                 )
 
                 response.raise_for_status()
@@ -234,8 +241,10 @@ class BaseCommand(ABC):
                 request_size=request_size if request_size > 0 else None,
                 response_size=len(e.response.content) if e.response.content else None,
                 request_headers=headers,
-                response_headers=dict(e.response.headers) if e.response.headers else None,
-                error=clean_error
+                response_headers=(
+                    dict(e.response.headers) if e.response.headers else None
+                ),
+                error=clean_error,
             )
 
             error(f"HTTP error: {clean_error}")
@@ -254,7 +263,7 @@ class BaseCommand(ABC):
                 duration=duration,
                 request_size=request_size if request_size > 0 else None,
                 request_headers=headers,
-                error=error_msg
+                error=error_msg,
             )
 
             error(f"Request error: {error_msg}")

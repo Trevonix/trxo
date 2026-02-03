@@ -2,14 +2,13 @@ import time
 from trxo.auth.service_account import ServiceAccountAuth
 from trxo.utils.config_store import ConfigStore
 from trxo.utils.console import error
-from trxo.logging import get_logger, setup_logging
+from trxo.logging import get_logger
 from trxo.constants import TOKEN_EXPIRY_BUFFER, DEFAULT_TOKEN_EXPIRES_IN
 
 
 class TokenManager:
     def __init__(self, config_store: ConfigStore):
         self.config_store = config_store
-        setup_logging()
         self.logger = get_logger("trxo.auth.token_manager")
 
     def get_token(self, project_name: str) -> str:
@@ -25,7 +24,9 @@ class TokenManager:
             and current_time < token_data.get("expires_at", 0) - TOKEN_EXPIRY_BUFFER
         ):  # Buffer time
             expires_in = token_data.get("expires_at", 0) - current_time
-            self.logger.debug(f"Using cached token for {project_name}, expires in {expires_in}s")
+            self.logger.debug(
+                f"Using cached token for {project_name}, expires in {expires_in}s"
+            )
             return token_data["access_token"]
 
         # Need to get a new token
@@ -39,7 +40,9 @@ class TokenManager:
         has_core = all(key in config for key in ["client_id", "sa_id", "token_url"])
         has_jwk = ("jwk" in config) or ("jwk_path" in config)
         if not (has_core and has_jwk):
-            self.logger.error(f"Missing authentication configuration for project {project_name}")
+            self.logger.error(
+                f"Missing authentication configuration for project {project_name}"
+            )
             error(
                 "Missing authentication configuration. "
                 "Run 'trxo config setup' first."
@@ -51,14 +54,21 @@ class TokenManager:
             jwk_content = None
             try:
                 import keyring
+
                 jwk_content = keyring.get_password(f"trxo:{project_name}:jwk", "jwk")
                 if jwk_content:
-                    self.logger.debug(f"Using JWK from keyring for project {project_name}")
+                    self.logger.debug(
+                        f"Using JWK from keyring for project {project_name}"
+                    )
                 else:
-                    self.logger.debug(f"No JWK found in keyring for project {project_name}, "
-                                      "using file path")
+                    self.logger.debug(
+                        f"No JWK found in keyring for project {project_name}, "
+                        "using file path"
+                    )
             except Exception as e:
-                self.logger.debug(f"Keyring access failed for project {project_name}: {str(e)}")
+                self.logger.debug(
+                    f"Keyring access failed for project {project_name}: {str(e)}"
+                )
                 jwk_content = None
 
             auth = ServiceAccountAuth(
@@ -83,12 +93,16 @@ class TokenManager:
             }
 
             self.config_store.save_token(project_name, token_data)
-            self.logger.info(f"Successfully refreshed token for project {project_name}, "
-                             f"expires in {expires_in}s")
+            self.logger.info(
+                f"Successfully refreshed token for project {project_name}, "
+                f"expires in {expires_in}s"
+            )
 
             return token_data["access_token"]
 
         except Exception as e:
-            self.logger.error(f"Failed to get access token for project {project_name}: {str(e)}")
+            self.logger.error(
+                f"Failed to get access token for project {project_name}: {str(e)}"
+            )
             error(f"Failed to get access token: {str(e)}")
             raise
