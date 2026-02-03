@@ -159,7 +159,9 @@ class OAuthImporter(BaseImporter):
                 from trxo.utils.console import error
 
                 error("Import validation failed: Hash mismatch with exported data")
-                raise typer.Exit(1)
+                import sys
+
+                sys.exit(1)
 
             return clients
 
