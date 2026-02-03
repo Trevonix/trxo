@@ -2,7 +2,6 @@
 
 **Manage, compare, and deploy Ping configurations—safely and consistently.**
 
----
 
 ### Why TRXO?
 
@@ -13,8 +12,6 @@
 *   **Built for safe automation** — Git-backed storage, batch operations, and rollback reduce errors and deployment anxiety.
 *   **Save time, prevent outages** — Fewer manual steps, faster changes, safer releases.
 
----
-
 ### Features
 
 *   **Hybrid Migration**: Seamlessly move configurations between PingOne Advanced Identity Cloud, PingAM, and PingIDM.
@@ -24,8 +21,6 @@
 *   **Selective Deployment**: Use **Cherry-Pick** to deploy specific items or **Sync Mode** to mirror source to target.
 *   **Dependency Awareness**: Automatically identifies and exports dependent items.
 *   **Comprehensive Logging**: Integrated logging with daily rotation and sensitive data masking. Use `trxo logs show` to monitor detailed workflows and API calls.
-
----
 
 ### Key Capabilities
 
@@ -54,9 +49,7 @@ Detailed tracking of every operation with privacy-focused data sanitization.
 *   **Real-time Logs**: Monitor internal transitions and API calls as they happen.
 *   **Log Management**: Easily view and filter logs using the `trxo logs` command group.
 
----
-
-### 🚀 Installation
+### Installation
 
 Quick start:
 
@@ -68,13 +61,11 @@ pip install -e .
 
 For detailed requirements and development setup, see [Installation Guide](docs/installation.md).
 
-### 📖 Usage
+### Usage
 
 For command references, examples, and detailed workflows, refer to the [Usage Guide](docs/usage.md).
 
----
-
-### 🛡️ Community & Legal
+### Community & Legal
 
 *   [**Code of Conduct**](CODE_OF_CONDUCT.md): Our standards for a welcoming community.
 *   [**Contributing**](CONTRIBUTING.md): Guidelines for submitting improvements and bug fixes.
