@@ -4,14 +4,15 @@
 
 > Manage, compare, and deploy Ping configurations safely and consistently.
 
+---
+
 ## Why TRXO?
 - Reduce risk from manual console changes
 - Clear diffs & previews before import
 - Git-backed storage, audit trails, and rollback
 - Designed for CI/CD and enterprise workflows
 
-<!-- Quick links -->
-- [Installation](installation.md) · [Usage](usage.md) · [Setup & Authentication](setup_and_auth.md)
+---
 
 ## Key features
 - Hybrid migration across Ping platforms
@@ -19,4 +20,17 @@
 - Git-backed storage & selective deployment
 - Dependency-aware exports and safe rollbacks
 
-_Read the full product & admin doc →_ (link relevant guides or keep a short "Read the docs" block)
+---
+
+## Get started
+
+Choose how you’d like to begin:
+
+- **[Installation](installation.md)**  
+  Set up TRXO locally and install dependencies
+
+- **[Usage](usage.md)**  
+  Learn core commands and common workflows
+
+- **[Setup & Authentication](setup_and_auth.md)**  
+  Configure Ping environments and service accounts
