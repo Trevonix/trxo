@@ -11,7 +11,7 @@
 - Designed for CI/CD and enterprise workflows
 
 <!-- Quick links -->
-- [Installation](installation.md) · [Usage](usage.md) · [Guides](guides/auth-setup.md)
+- [Installation](installation.md) · [Usage](usage.md) · [Setup & Authentication](setup_and_auth.md)
 
 ## Key features
 - Hybrid migration across Ping platforms

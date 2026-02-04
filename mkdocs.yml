@@ -12,15 +12,14 @@ theme:
 nav:
   - Home: index.md
   - Getting Started:
-      - Overview: getting-started.md
       - Installation: installation.md
-  - Usage: usage.md
-  - Guides:
-      - Project Setup & Auth: guides/auth-setup.md
-      - Storage Setup: guides/storage-setup.md
-  - API: api.md
-  - Contributing: contributing.md
-  - Changelog: changelog.md
+      - Usage: usage.md
+      - Setup & Authentication: setup_and_auth.md
+      - Storage Setup: storage_setup.md
+  - Features:
+      - Advanced Features: advanced_features.md
+      - Batch Operations: batch_operations.md
+      - Service Account Tokens: service-account-token-lifetime-and-scopes.md
 plugins:
   - search
 markdown_extensions:
