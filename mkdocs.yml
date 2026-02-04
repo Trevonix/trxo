@@ -1,14 +1,19 @@
-site_name: TRXO — Ping Identity Configuration Management
+site_name: TRXO - Ping Identity Configuration Management Tool by Trevonix
 site_description: Manage, compare, and deploy Ping configurations safely and consistently.
 site_url: https://trevonix.github.io/trxo   # update if you use custom domain
 repo_url: https://github.com/Trevonix/trxo
 theme:
   name: material
+  logo: assets/logo/trevonix-logo.png
+  favicon: assets/logo/trevonix-logo.png
   features:
     - navigation.instant
     - navigation.tabs
     - search.highlight
     - search.suggest
+    - navigation.footer
+  footer:
+    copyright: © Trevonix · TRXO — Ping Identity Configuration Management
 nav:
   - Home: index.md
   - Getting Started:
@@ -26,3 +31,9 @@ markdown_extensions:
   - admonition
   - toc:
       permalink: true
+extra_css:
+  - stylesheets/extra.css
+extra:
+  generator: false
+
+
