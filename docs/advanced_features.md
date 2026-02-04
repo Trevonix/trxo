@@ -51,4 +51,4 @@ trxo import scripts --branch release --rollback
 **"Bulk migration."**
 Perform export or import operations for multiple configuration types (Scripts, Journeys, Services, etc.) in a single command.
 
-See [Batch Operations Guide](BATCH_OPERATIONS.md) for details.
+See [Batch Operations Guide](batch_operations.md) for details.
