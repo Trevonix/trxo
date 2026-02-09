@@ -8,8 +8,14 @@ The diff feature compares the configuration in your source (File/Git) against th
 
 **Usage:**
 ```bash
-trxo import managed --file objects.json --diff
+trxo import scripts --file alpha_scripts.json --diff
 ```
+
+![TRXO Scripts Diff](assets/screenshots/trxo-scripts-diff.png){: .screenshot}
+*Comparing local script files with server configuration*
+
+
+
 **Output:**
 - Displays a summary of differences between server configuration and import file, including total items and counts of added, modified, and removed entries.
 - Presents a tabular view of detailed changes, listing each item’s ID, name, change type (Added / Modified / Removed), and a short summary.
@@ -27,6 +33,12 @@ trxo import journeys --file alpha_journeys.json --cherry-pick LoginTree
 # Import multiple items (comma-separated)
 trxo import scripts --file alpha_scripts.json --cherry-pick script-id-1,script-id-2
 ```
+
+![TRXO Scripts Cherry-Pick](assets/screenshots/trxo-scripts-cherry-pick.png){: .screenshot}
+*Selecting specific scripts for import using cherry-pick*
+
+
+
 
 ## 🔄 Sync Mode (`--sync`)
 **"Mirror source to target."**

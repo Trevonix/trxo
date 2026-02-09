@@ -61,6 +61,9 @@ markdown_extensions:
   - pymdownx.snippets
   - toc:
       permalink: true
+  - attr_list
+  - md_in_html
+
 
 nav:
   - Home: index.md

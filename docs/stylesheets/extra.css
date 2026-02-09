@@ -54,3 +54,33 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #303f9f;
 }
+
+/* Image styling */
+.screenshot {
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  margin-top: 20px;
+  margin-bottom: 5px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease;
+}
+
+.screenshot:hover {
+  transform: scale(1.01);
+}
+
+figure {
+  margin: 1.5em 0;
+  text-align: center;
+}
+
+figcaption {
+  font-size: 0.85rem;
+  font-style: italic;
+  color: #666;
+  margin-top: 8px;
+}
+
+[data-md-color-scheme="slate"] figcaption {
+  color: #aaa;
+}
