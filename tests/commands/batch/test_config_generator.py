@@ -1,7 +1,6 @@
 import json
 import pytest
 import typer
-from pathlib import Path
 
 
 from trxo.commands.batch.config_generator import create_config_generator_command

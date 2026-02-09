@@ -1,14 +1,12 @@
 import json
 import pytest
 from types import SimpleNamespace
-from pathlib import Path
 import typer
 
 from trxo.commands.batch.batch_import import (
     create_batch_import_command,
     _get_storage_mode,
     _load_config_file_imports,
-    _build_command_imports,
     _find_file_for_command,
     _get_search_patterns,
     _extract_version_number,
@@ -36,9 +34,7 @@ def mock_console(monkeypatch):
 
 
 @pytest.fixture
-def mock_config_store(monkeypatch):
-    """Mock ConfigStore for testing."""
-
+def mock_config_store_local(monkeypatch):
     class MockConfigStore:
         def get_current_project(self):
             return "proj"
@@ -52,159 +48,176 @@ def mock_config_store(monkeypatch):
     )
 
 
-def test_get_storage_mode_local():
-    """Test that storage mode defaults to 'local'."""
-
+@pytest.fixture
+def mock_config_store_git(monkeypatch):
     class MockConfigStore:
         def get_current_project(self):
-            return None
+            return "proj"
 
-    assert _get_storage_mode(MockConfigStore()) == "local"
+        def get_project_config(self, name):
+            return {"storage_mode": "git"}
 
-
-def test_load_config_file_imports_success(tmp_path):
-    """Test loading valid import configuration."""
-    cfg = tmp_path / "cfg.json"
-    cfg.write_text(json.dumps({"imports": [{"command": "realms", "file": "a.json"}]}))
-
-    imports = _load_config_file_imports(str(cfg))
-    assert imports[0]["command"] == "realms"
+    monkeypatch.setattr(
+        "trxo.commands.batch.batch_import.ConfigStore",
+        lambda: MockConfigStore(),
+    )
 
 
-def test_load_config_file_imports_missing_key(tmp_path):
-    """Test error when configuration file is invalid."""
-    cfg = tmp_path / "cfg.json"
-    cfg.write_text(json.dumps({}))
-
-    with pytest.raises(typer.Exit):
-        _load_config_file_imports(str(cfg))
-
-
-def test_build_command_imports_local_autodiscover(tmp_path):
-    """Test auto-discovery of local import files."""
-    f = tmp_path / "realms_export.json"
-    f.write_text("{}")
-
-    imports = _build_command_imports(["realms"], tmp_path, {"realms"}, "local")
-
-    assert imports[0]["command"] == "realms"
-    assert "realms_export.json" in imports[0]["file"]
-
-
-def test_build_command_imports_git_mode():
-    """Test that git mode does not require local files."""
-    imports = _build_command_imports(["realms"], None, {"realms"}, "git")
-    assert imports[0]["file"] is None
-
-
-def test_find_file_for_command(tmp_path):
-    """Test finding a file matching a command pattern."""
-    f = tmp_path / "agents_gateway_export.json"
-    f.write_text("{}")
-
-    result = _find_file_for_command("agent.gateway", tmp_path)
-    assert result.name == f.name
-
-
-def test_get_search_patterns():
-    """Test generation of file search patterns."""
-    patterns = _get_search_patterns("agent.gateway")
-    assert any("agent_gateway" in p for p in patterns)
-
-
-def test_extract_version_number():
-    """Test version number extraction from filenames."""
-    assert _extract_version_number("realms_v12_export.json") == 12
-    assert _extract_version_number("realms_export.json") == 0
-
-
-def _mock_import_app(monkeypatch, fail=False):
+@pytest.fixture
+def mock_import_app(monkeypatch):
     class MockCommand:
-        def __init__(self, name, should_fail=False):
-            self.name = name
+        def __init__(self, should_fail=False):
             self.should_fail = should_fail
+            self.calls = []
 
         def callback(self, **kwargs):
+            self.calls.append(kwargs)
             if self.should_fail:
                 raise RuntimeError("boom")
 
     class MockGroup:
-        def __init__(self):
+        def __init__(self, fail=False):
             self.commands = {
-                "secrets": MockCommand("secrets"),
-                "java": MockCommand("java"),
+                "gateway": MockCommand(fail),
+                "secrets": MockCommand(fail),
             }
 
-    mock_app = SimpleNamespace(
+    app = SimpleNamespace(
         commands={
-            "realms": MockCommand("realms", should_fail=fail),
-            "services": MockCommand("services"),
-            "esv": MockGroup(),
+            "realms": MockCommand(),
+            "services": MockCommand(),
             "agent": MockGroup(),
+            "esv": MockGroup(),
         }
     )
 
     monkeypatch.setattr(
         "trxo.commands.batch.batch_import.typer.main.get_command",
-        lambda _: mock_app,
+        lambda _: app,
     )
 
-    return mock_app
+    return app
 
 
-def test_batch_import_success_local(
-    tmp_path, mock_console, mock_config_store, monkeypatch
+def test_get_storage_mode_fallback():
+    class BadStore:
+        def get_current_project(self):
+            raise RuntimeError("boom")
+
+    assert _get_storage_mode(BadStore()) == "local"
+
+
+def test_load_config_file_imports_invalid_json(tmp_path):
+    f = tmp_path / "bad.json"
+    f.write_text("{bad")
+
+    with pytest.raises(typer.Exit):
+        _load_config_file_imports(str(f))
+
+
+def test_load_config_file_imports_missing_imports(tmp_path):
+    f = tmp_path / "cfg.json"
+    f.write_text(json.dumps({}))
+
+    with pytest.raises(typer.Exit):
+        _load_config_file_imports(str(f))
+
+
+def test_extract_version_number_edge_cases():
+    assert _extract_version_number("file_v001_export.json") == 1
+    assert _extract_version_number("file_export.json") == 0
+    assert _extract_version_number("file_v99_.json") == 99
+
+
+def test_get_search_patterns_variants():
+    p = _get_search_patterns("agent.gateway")
+    assert "agent_gateway" in p
+    assert "agents_gateway" in p
+    assert "gateway_agent" in p
+
+
+def test_find_file_for_command_multiple(monkeypatch, tmp_path):
+    f1 = tmp_path / "realms_v1_export.json"
+    f2 = tmp_path / "realms_v2_export.json"
+    f1.write_text("{}")
+    f2.write_text("{}")
+
+    monkeypatch.setattr(
+        "trxo.commands.batch.batch_import._prompt_user_file_choice",
+        lambda c, f: f2,
+    )
+
+    result = _find_file_for_command("realms", tmp_path)
+    assert result == f2
+
+
+def test_batch_import_local_success(
+    tmp_path, mock_console, mock_config_store_local, mock_import_app
 ):
-    """Test successful batch import in local mode."""
     f = tmp_path / "realms_export.json"
     f.write_text("{}")
 
-    cfg = tmp_path / "batch_cfg.json"
-    cfg.write_text(json.dumps({"imports": [{"command": "realms", "file": str(f)}]}))
-
-    _mock_import_app(monkeypatch, fail=False)
-
     batch_import = create_batch_import_command()
-    batch_import(config_file=str(cfg), dir=str(tmp_path))
+    batch_import(commands=["realms"], dir=str(tmp_path), config_file=None)
 
-    # We assert on user-visible behavior, not internal callback wiring
     assert any(
-        "imported successfully" in m.lower() for m in mock_console["success"]
-    ) or any("batch import summary" in m.lower() for m in mock_console["info"])
+        "all imports completed successfully" in m.lower()
+        for m in mock_console["success"]
+    )
 
 
-def test_batch_import_continue_on_error(
-    tmp_path, mock_console, mock_config_store, monkeypatch
+def test_batch_import_dry_run(
+    tmp_path, mock_console, mock_config_store_local, mock_import_app
 ):
-    """Test that import continues on error when requested."""
     f = tmp_path / "realms_export.json"
     f.write_text("{}")
-
-    cfg = tmp_path / "batch_cfg.json"
-    cfg.write_text(json.dumps({"imports": [{"command": "realms", "file": str(f)}]}))
-
-    _mock_import_app(monkeypatch, fail=True)
 
     batch_import = create_batch_import_command()
-    batch_import(config_file=str(cfg), dir=str(tmp_path), continue_on_error=True)
+    batch_import(commands=["realms"], dir=str(tmp_path), dry_run=True, config_file=None)
 
-    # It should complete and print summary (no crash)
-    assert any("batch import summary" in m.lower() for m in mock_console["info"])
+    assert any("dry run" in m.lower() for m in mock_console["info"])
 
 
-def test_batch_import_stop_on_error(
-    tmp_path, mock_console, mock_config_store, monkeypatch
+def test_batch_import_missing_dir(
+    mock_console, mock_config_store_local, mock_import_app
 ):
-    """Test that import stops on error by default."""
-    f = tmp_path / "realms_export.json"
-    f.write_text("{}")
-
-    _mock_import_app(monkeypatch, fail=True)
-
     batch_import = create_batch_import_command()
 
     with pytest.raises(typer.Exit):
-        batch_import(commands=["realms"], dir=str(tmp_path), continue_on_error=False)
+        batch_import(commands=["realms"], dir="no_such_dir", config_file=None)
 
-    # At least one error should be logged before exit
-    assert len(mock_console["error"]) > 0
+    assert mock_console["error"]
+
+
+def test_batch_import_git_mode(mock_console, mock_config_store_git, mock_import_app):
+    batch_import = create_batch_import_command()
+    batch_import(commands=["realms"], dir=None, config_file=None)
+
+    assert any("git storage mode" in m.lower() for m in mock_console["info"])
+
+
+def test_batch_import_continue_on_error(
+    tmp_path, mock_console, mock_config_store_local, monkeypatch
+):
+    f = tmp_path / "realms_export.json"
+    f.write_text("{}")
+
+    class FailingCmd:
+        def callback(self, **kwargs):
+            raise RuntimeError("boom")
+
+    app = SimpleNamespace(commands={"realms": FailingCmd()})
+    monkeypatch.setattr(
+        "trxo.commands.batch.batch_import.typer.main.get_command",
+        lambda _: app,
+    )
+
+    batch_import = create_batch_import_command()
+    batch_import(
+        commands=["realms"],
+        dir=str(tmp_path),
+        continue_on_error=True,
+        config_file=None,
+    )
+
+    assert any("successful:" in m.lower() for m in mock_console["info"])

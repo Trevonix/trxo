@@ -172,3 +172,7 @@ cython_debug/
 __pycache__
 .safety-project.ini
 .agent/
+
+# Pytest Coverage reports
+.coverage
+.coverage.*

@@ -1,6 +1,5 @@
 import pytest
 from types import SimpleNamespace
-from pathlib import Path
 import typer
 
 
