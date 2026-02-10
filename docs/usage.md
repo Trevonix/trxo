@@ -48,6 +48,12 @@ Export configurations from your source environment.
 trxo export scripts
 ```
 
+![TRXO Export Scripts](assets/screenshots/trxo-export-scripts.png){: .screenshot}
+*Exporting AM scripts to local storage*
+
+
+
+
 ### General Options
 
 **Specific Realm:**
@@ -59,13 +65,19 @@ trxo export scripts --realm bravo
 **View Data (Dry Run):**
 Preview data in the terminal without saving to file.
 ```bash
-trxo export oauth --view
+trxo export realms --view
 ```
+
+![TRXO Export Realms View](assets/screenshots/trxo-export-realms-view.png){: .screenshot}
+*Previewing realm configuration in the terminal*
+
+
+
 
 **View Specific Columns:**
 Restrict the view output to specific fields (e.g., just IDs and Names).
 ```bash
-trxo export oauth --view --view-columns _id,name
+trxo export realms --view --view-columns _id,name
 ```
 
 ### Local Storage Options (Filesystem Only)
@@ -140,13 +152,19 @@ Import configuration files from your local directory.
 **Standard Import:**
 Imports from local file to default realm (alpha).
 ```bash
-trxo import scripts --file <file-name>
+trxo import authn --file <file-name>
 ```
+
+![TRXO Import Authentication](assets/screenshots/trxo-import-authn.png){: .screenshot}
+*Importing authentication configuration from a file*
+
+
+
 
 **Specific Realm:**
 Import file content to a specific target realm.
 ```bash
-trxo import scripts --file <file-name> --realm <realm-name>
+trxo import authn --file <file-name> --realm <realm-name>
 ```
 
 **Cherry-Pick:**
@@ -238,8 +256,14 @@ trxo batch export --all
 **Selected Commands:**
 Export specific configuration types in one shot.
 ```bash
-trxo batch export authn services managed
+trxo batch export authn services
 ```
+
+![TRXO Batch Export](assets/screenshots/trxo-batch-export.png){: .screenshot}
+*Executing multiple export commands in batch mode*
+
+
+
 
 **Error Handling:**
 Pause execution immediately if any command fails (default is `continue-on-error`).

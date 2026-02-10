@@ -1,14 +1,70 @@
-site_name: TRXO — Ping Identity Configuration Management
-site_description: Manage, compare, and deploy Ping configurations safely and consistently.
-site_url: https://trevonix.github.io/trxo   # update if you use custom domain
+site_name: TRXO - Ping Identity configuration management tool
+site_description: Manage, compare, and deploy Ping configurations safely and consistently with TRXO.
+site_url: https://trevonix.github.io/trxo
 repo_url: https://github.com/Trevonix/trxo
+edit_uri: edit/main/docs/
+
 theme:
   name: material
+  logo: assets/logo/trevonix-logo.png
+  favicon: assets/logo/trevonix-logo.png
   features:
     - navigation.instant
     - navigation.tabs
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.top
+    - navigation.footer
     - search.highlight
     - search.suggest
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+copyright: |
+  Copyright &copy; <a href="https://trevonix.com" target="_blank" rel="noopener">Trevonix</a> · TRXO — Ping Identity configuration management tool
+  <br>
+  Developed by <b>Trevonix</b>
+
+extra_css:
+  - stylesheets/extra.css
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - toc:
+      permalink: true
+  - attr_list
+  - md_in_html
+
+
 nav:
   - Home: index.md
   - Getting Started:
@@ -20,9 +76,11 @@ nav:
       - Advanced Features: advanced_features.md
       - Batch Operations: batch_operations.md
       - Service Account Tokens: service-account-token-lifetime-and-scopes.md
-plugins:
-  - search
-markdown_extensions:
-  - admonition
-  - toc:
-      permalink: true
+
+extra:
+  generator: false
+
+
+ 
+
+
