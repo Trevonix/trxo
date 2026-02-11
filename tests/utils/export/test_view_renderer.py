@@ -1,5 +1,5 @@
-import pytest
 from trxo.utils.export.view_renderer import ViewRenderer
+from rich.table import Table
 
 
 def test_is_single_config_object_with_id_and_rev():
@@ -33,10 +33,16 @@ def test_create_table_invalid_items(mocker):
 
 
 def test_create_table_valid(mocker):
-    mocker.patch("trxo.utils.export.view_renderer.console.print")
+    mock_print = mocker.patch("trxo.utils.export.view_renderer.console.print")
     mocker.patch("trxo.utils.export.view_renderer.info")
     items = [{"a": 1, "b": "x"}]
     ViewRenderer.create_table(items, "Title", None)
+
+    assert mock_print.called
+    table = mock_print.call_args[0][0]
+    assert isinstance(table, Table)
+    assert table.title == "Title"
+    assert len(table.rows) == 1
 
 
 def test_create_table_with_selected_columns(mocker):

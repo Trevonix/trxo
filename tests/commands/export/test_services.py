@@ -3,12 +3,14 @@ import pytest
 from trxo.commands.export.services import create_services_export_command
 
 
-class DummyResponse:
-    def __init__(self, json_data=None):
-        self._json = json_data
+from unittest.mock import Mock
 
-    def json(self):
-        return self._json
+
+def create_mock_response(json_data=None):
+    resp = Mock()
+    resp.json.return_value = json_data
+    resp.raise_for_status.return_value = None
+    return resp
 
 
 @pytest.fixture
@@ -17,7 +19,9 @@ def mock_exporter(mocker):
     exporter.build_auth_headers.return_value = {"Authorization": "Bearer token"}
     exporter._construct_api_url.side_effect = lambda base, ep: f"{base}{ep}"
     exporter.get_current_auth.return_value = ("token", "https://api.example.com")
-    mocker.patch("trxo.commands.export.services.ServicesExporter", return_value=exporter)
+    mocker.patch(
+        "trxo.commands.export.services.ServicesExporter", return_value=exporter
+    )
     return exporter
 
 
@@ -45,7 +49,9 @@ def test_export_services_scope_realm(mock_exporter):
 
 def test_export_services_invalid_scope(mocker):
     exporter = mocker.Mock()
-    mocker.patch("trxo.commands.export.services.ServicesExporter", return_value=exporter)
+    mocker.patch(
+        "trxo.commands.export.services.ServicesExporter", return_value=exporter
+    )
     error_spy = mocker.patch("trxo.utils.console.error")
 
     export_services = create_services_export_command()
@@ -54,7 +60,6 @@ def test_export_services_invalid_scope(mocker):
         export_services(scope="bad")
 
     error_spy.assert_called_once()
-
 
 
 def test_services_response_filter_non_dict(mock_exporter):
@@ -107,8 +112,8 @@ def test_services_response_filter_skips_datastore_service(mock_exporter):
 
 def test_services_response_filter_success_with_descendants(mock_exporter):
     mock_exporter.make_http_request.side_effect = [
-        DummyResponse({"_id": "ServiceA"}),
-        DummyResponse({"result": [{"_rev": "1", "x": 1}]}),
+        create_mock_response({"_id": "ServiceA"}),
+        create_mock_response({"result": [{"_rev": "1", "x": 1}]}),
     ]
 
     export_services = create_services_export_command()
@@ -125,7 +130,7 @@ def test_services_response_filter_success_with_descendants(mock_exporter):
 
 def test_services_response_filter_nextdescendents_failure(mock_exporter):
     mock_exporter.make_http_request.side_effect = [
-        DummyResponse({"_id": "ServiceA"}),
+        create_mock_response({"_id": "ServiceA"}),
         Exception("boom"),
     ]
 
