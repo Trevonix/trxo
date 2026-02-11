@@ -498,9 +498,9 @@ class DiffReporter:
                         per_item_blocks.append(block)
                 else:
                     per_item_blocks.append(
-                         f"<div class='section'><h3>"
-                         f"{_html.escape(item.item_name or item.item_id)}"
-                         f"</h3><p>{_html.escape(item.summary)}</p></div>"
+                        f"<div class='section'><h3>"
+                        f"{_html.escape(item.item_name or item.item_id)}"
+                        f"</h3><p>{_html.escape(item.summary)}</p></div>"
                     )
 
             per_item_html = "\n".join(per_item_blocks)
@@ -515,6 +515,10 @@ class DiffReporter:
         insights_html = self._generate_insights_html(
             diff_result.key_insights, diff_result
         )
+
+        title = (diff_result.command_name or "Unknown").title()
+        realm_suffix = f" - Realm: {diff_result.realm}" if diff_result.realm else ""
+        generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
         # Create HTML template
         html_template = f"""
@@ -630,7 +634,14 @@ class DiffReporter:
         .unified-diff .file-header {{ display: block; color: #333; font-weight: 700; }}
         .unified-diff .context {{ display: block; color: #444; }}
         /* HtmlDiff (side-by-side) styling */
-        .side-by-side-diff {{ overflow: auto; max-height: 700px; border: 1px solid #dfe6ef; border-radius: 6px; padding: 8px; background: #ffffff; }}
+        .side-by-side-diff {{
+            overflow: auto;
+            max-height: 700px;
+            border: 1px solid #dfe6ef;
+            border-radius: 6px;
+            padding: 8px;
+            background: #ffffff;
+        }}
         table.diff {{
             width: 100%;
             border-collapse: collapse;
@@ -665,12 +676,33 @@ class DiffReporter:
         td.diff_header {{ background: #f0f6ff; font-weight: 700; color: #06222a; }}
 
         /* Legend */
-        .diff-legend {{ display: flex; gap: 12px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }}
-        .legend-item {{ display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; font-weight: 700; font-size: 0.95em; }}
+       .diff-legend {{
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }}
+        .legend-item {{
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.95em;
+        }}
+
         .legend-item.added {{ background: #ecfff1; color: #0b5d2e; border: 1px solid #d6f6df; }}
         .legend-item.removed {{ background: #ffecec; color: #6a1b1b; border: 1px solid #ffd6d6; }}
         .legend-item.changed {{ background: #fff8e6; color: #6b4b00; border: 1px solid #ffefc6; }}
-        .legend-bullet {{ font-weight: 900; padding: 2px 6px; border-radius: 4px; background: rgba(0,0,0,0.04); }}
+        .legend-bullet {{
+            font-weight: 900;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.04);
+        }}
+
         .changes-table th,
         .changes-table td {{
             padding: 12px;
@@ -725,16 +757,11 @@ class DiffReporter:
 </head>
 <body>
     <div class="container">
-        '<div class="header">'
-        '<h1>🔍 Diff Report</h1>'
-        f'<p>{diff_result.command_name.title()}'
-        f'{f" - Realm: {diff_result.realm}" if diff_result.realm else ""}'
-        '</p>'
-        f'<p class="timestamp">Generated: '
-        f'{datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")}'
-        '</p>'
-    '</div>'
-
+        <div class="header">
+            <h1>🔍 Diff Report</h1>
+            <p>{title}{realm_suffix}</p>
+            <p class="timestamp">Generated: {generated_at}</p>
+        </div>
         <div class="content">
             <div class="section">
                 <h2>Summary</h2>
@@ -747,23 +774,23 @@ class DiffReporter:
 
             {per_item_html}
 
-           '<div class="section">'
-           '<h2>Textual Diff</h2>'
-           '<div class="diff-legend">'
-           '<div class="legend-item removed">'
-           '<span class="legend-bullet">-</span>Removed'
-           '</div>'
-           '<div class="legend-item added">'
-           '<span class="legend-bullet">+</span>Added'
-           '</div>'
-           '<div class="legend-item changed">'
-           '<span class="legend-bullet">~</span>Changed'
-           '</div>'
-           '</div>'
-           '<div class="diff-block">'
-           f'{side_by_side_html}'
-           '</div>'
-           '</div>'
+            <div class="section">
+                <h2>Textual Diff</h2>
+                <div class="diff-legend">
+                    <div class="legend-item removed">
+                        <span class="legend-bullet">-</span>Removed
+                    </div>
+                    <div class="legend-item added">
+                        <span class="legend-bullet">+</span>Added
+                    </div>
+                    <div class="legend-item changed">
+                        <span class="legend-bullet">~</span>Changed
+                    </div>
+                </div>
+                <div class="diff-block">
+                    {side_by_side_html}
+                </div>
+            </div>
             <!-- <div class="section">
                 <h2>Side-by-side JSON</h2>
                 <div class="diff-container">
