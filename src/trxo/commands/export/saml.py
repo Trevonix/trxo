@@ -89,8 +89,10 @@ def process_saml_response(exporter_instance: BaseExporter, realm: str):
                     # info(f"Fetching {location} provider: {entity_id or provider_id}")
 
                     # Get complete provider data
-                    provider_endpoint = f"/am/json/realms/root/realms/{realm}"
-                    f"/realm-config/saml2/{location}/{provider_id}"
+                    provider_endpoint = (
+                        f"/am/json/realms/root/realms/{realm}"
+                        f"/realm-config/saml2/{location}/{provider_id}"
+                    )
                     provider_url = exporter_instance._construct_api_url(
                         api_base_url, provider_endpoint
                     )
@@ -142,8 +144,10 @@ def process_saml_response(exporter_instance: BaseExporter, realm: str):
             for entity_id in entity_ids_list:
                 try:
                     # Use the JSP endpoint to export metadata for each entity
-                    metadata_endpoint = f"/am/saml2/jsp/exportmetadata.jsp?entityid={entity_id}&"
-                    f"realm={realm}"
+                    metadata_endpoint = (
+                        f"/am/saml2/jsp/exportmetadata.jsp?entityid={entity_id}&"
+                        f"realm={realm}"
+                    )
                     metadata_url = exporter_instance._construct_api_url(
                         api_base_url, metadata_endpoint
                     )
