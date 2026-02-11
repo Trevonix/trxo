@@ -191,6 +191,14 @@ def create_batch_import_command():
                 failed_commands.append(f"import-{i}")
                 continue
 
+            if command not in available_list:
+                error(
+                    f"Import {i}: Invalid command '{command}'. "
+                    f"Available: {', '.join(sorted(available_list))}"
+                )
+                failed_commands.append(command)
+                continue
+
             # Validate file_path (only required for local mode)
             if storage_mode == "local" and not file_path:
                 error(f"Import {i}: Missing 'file' in config for local mode")
