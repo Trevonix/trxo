@@ -172,3 +172,11 @@ cython_debug/
 __pycache__
 .safety-project.ini
 .agent/
+
+# Coverage reports
+.coverage
+.coverage.*
+#Diff reports
+.diff_report
+htmlcov/    
+
