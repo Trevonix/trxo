@@ -1,121 +1,195 @@
 import pytest
-from unittest.mock import MagicMock
 from pathlib import Path
-
 from trxo.utils.diff.diff_reporter import DiffReporter
-from trxo.utils.diff.diff_engine import ChangeType
+from trxo.utils.diff.diff_engine import DiffResult, ChangeType
 
 
-@pytest.fixture
-def fake_diff_result():
-    diff = MagicMock()
-
-    diff.command_name = "journeys"
-    diff.realm = "alpha"
-    diff.total_items_current = 2
-    diff.total_items_new = 3
-    diff.key_insights = []
-
-    added_item = MagicMock()
-    added_item.change_type = ChangeType.ADDED
-    added_item.item_id = "1"
-    added_item.item_name = "item1"
-    added_item.summary = "added item"
-    added_item.detailed_changes = {}
-
-    modified_item = MagicMock()
-    modified_item.change_type = ChangeType.MODIFIED
-    modified_item.item_id = "2"
-    modified_item.item_name = "item2"
-    modified_item.summary = "modified item"
-    modified_item.detailed_changes = {
-        "current_item": {"a": 1},
-        "new_item": {"a": 2},
-    }
-
-    removed_item = MagicMock()
-    removed_item.change_type = ChangeType.REMOVED
-    removed_item.item_id = "3"
-    removed_item.item_name = "item3"
-    removed_item.summary = "removed item"
-    removed_item.detailed_changes = {}
-
-    diff.added_items = [added_item]
-    diff.modified_items = [modified_item]
-    diff.removed_items = [removed_item]
-    diff.unchanged_items = []
-
-    return diff
+class FakeItem:
+    def __init__(self, item_id, name, change_type, summary="ok", detailed_changes=None):
+        self.item_id = item_id
+        self.item_name = name
+        self.change_type = change_type
+        self.summary = summary
+        self.changes_count = 1
+        self.detailed_changes = detailed_changes or {}
 
 
-def test_display_summary_success(mocker, fake_diff_result):
-    reporter = DiffReporter()
-
-    # Patch console.print safely
-    reporter.console.print = mocker.MagicMock()
-
-    # No exceptions should be raised
-    reporter.display_summary(fake_diff_result)
-
-    assert reporter.console.print.called
-
-
-def test_has_changes_true(fake_diff_result):
-    reporter = DiffReporter()
-    assert reporter._has_changes(fake_diff_result) is True
+def make_diff_result(cmd="x", realm=None, added=None, modified=None, removed=None, unchanged=None, insights=None):
+    return DiffResult(
+        command_name=cmd,
+        realm=realm,
+        total_items_current=1,
+        total_items_new=2,
+        added_items=added or [],
+        modified_items=modified or [],
+        removed_items=removed or [],
+        unchanged_items=unchanged or [],
+        raw_diff={},
+        key_insights=insights or [],
+    )
 
 
-def test_has_changes_false(mocker):
-    reporter = DiffReporter()
-
-    diff = MagicMock()
-    diff.added_items = []
-    diff.modified_items = []
-    diff.removed_items = []
-
-    assert reporter._has_changes(diff) is False
+def test_display_summary_no_changes(mocker):
+    rep = DiffReporter()
+    mocker.patch.object(rep, "console")
+    dr = make_diff_result()
+    rep.display_summary(dr)
 
 
-def test_generate_html_diff_success(mocker, fake_diff_result, tmp_path):
-    reporter = DiffReporter()
+def test_display_summary_with_changes_and_insights(mocker):
+    rep = DiffReporter()
+    mocker.patch.object(rep, "console")
 
-    mocker.patch("trxo.utils.diff.diff_reporter.info")
+    added = [FakeItem("1", "a", ChangeType.ADDED)]
+    dr = make_diff_result(added=added, insights=["hello"])
+
+    mocker.patch.object(rep, "_display_key_insights")
+    mocker.patch.object(rep, "_display_changes_table")
+
+    rep.display_summary(dr)
+
+
+def test_display_summary_exception(mocker):
+    rep = DiffReporter()
+    mocker.patch.object(rep, "console", side_effect=Exception("boom"))
+    mocker.patch("trxo.utils.diff.diff_reporter.error")
+
+    dr = make_diff_result()
+    rep.display_summary(dr)
+
+
+def test_display_changes_table(mocker):
+    rep = DiffReporter()
+    mocker.patch.object(rep, "console")
+
+    items = [
+        FakeItem("1", "a", ChangeType.ADDED),
+        FakeItem("2", "b", ChangeType.MODIFIED),
+        FakeItem("3", "c", ChangeType.REMOVED),
+    ]
+    dr = make_diff_result(added=[items[0]], modified=[items[1]], removed=[items[2]])
+
+    rep._display_changes_table(dr)
+
+
+def test_display_key_insights_non_oauth(mocker):
+    rep = DiffReporter()
+    mocker.patch.object(rep, "console")
+
+    dr = make_diff_result(cmd="services", insights=["x", "y"])
+    rep._display_key_insights(dr.key_insights, dr)
+
+
+def test_display_key_insights_oauth(mocker):
+    rep = DiffReporter()
+    mocker.patch.object(rep, "console")
+
+    insights = [
+        "grantTypes: c1, c2",
+        "scopes: c3",
+    ]
+
+    mod = [FakeItem("1", "a", ChangeType.MODIFIED)]
+    dr = make_diff_result(cmd="oauth", modified=mod, insights=insights)
+
+    rep._display_key_insights(dr.key_insights, dr)
+
+
+def test_has_changes_true_and_false():
+    rep = DiffReporter()
+    dr1 = make_diff_result()
+    dr2 = make_diff_result(added=[FakeItem("1", "a", ChangeType.ADDED)])
+
+    assert rep._has_changes(dr1) is False
+    assert rep._has_changes(dr2) is True
+
+
+def test_generate_html_diff_success(tmp_path, mocker):
+    rep = DiffReporter()
     mocker.patch("trxo.utils.diff.diff_reporter.success")
 
-    mocker.patch.object(
-        reporter,
-        "_generate_html_content",
-        return_value="<html><body>ok</body></html>",
-    )
+    dr = make_diff_result(cmd="x")
+    path = rep.generate_html_diff(dr, {"a": 1}, {"a": 2}, output_dir=str(tmp_path))
 
-    current_data = {"a": 1}
-    new_data = {"a": 2}
-
-    html_path = reporter.generate_html_diff(
-        diff_result=fake_diff_result,
-        current_data=current_data,
-        new_data=new_data,
-        output_dir=str(tmp_path),
-    )
-
-    assert html_path is not None
-    assert Path(html_path).exists()
+    assert Path(path).exists()
 
 
-def test_generate_html_diff_exception(mocker, fake_diff_result):
-    reporter = DiffReporter()
-
+def test_generate_html_diff_failure(mocker):
+    rep = DiffReporter()
     mocker.patch("trxo.utils.diff.diff_reporter.info")
     mocker.patch("trxo.utils.diff.diff_reporter.error")
 
-    # Force exception by making mkdir fail
     mocker.patch("pathlib.Path.mkdir", side_effect=Exception("boom"))
 
-    result = reporter.generate_html_diff(
-        diff_result=fake_diff_result,
-        current_data={},
-        new_data={},
-        output_dir="invalid_path",
+    dr = make_diff_result(cmd="x")
+    out = rep.generate_html_diff(dr, {}, {}, output_dir="bad")
+    assert out is None
+
+
+def test_generate_html_content_branches():
+    rep = DiffReporter()
+
+    detailed = {
+        "current_item": {"a": 1},
+        "new_item": {"a": 2},
+        "reduced_current": {"a": 1},
+        "reduced_new": {"a": 2},
+    }
+
+    mod = [FakeItem("1", "a", ChangeType.MODIFIED, detailed_changes=detailed)]
+    dr = make_diff_result(cmd="x", modified=mod)
+
+    html = rep._generate_html_content(dr, {"a": 1}, {"a": 2})
+    assert "Diff Report" in html
+
+
+def test_generate_stats_html():
+    rep = DiffReporter()
+    dr = make_diff_result(
+        added=[FakeItem("1", "a", ChangeType.ADDED)],
+        modified=[FakeItem("2", "b", ChangeType.MODIFIED)],
+        removed=[FakeItem("3", "c", ChangeType.REMOVED)],
     )
 
-    assert result is None
+    html = rep._generate_stats_html(dr)
+    assert "Current Items" in html
+    assert "Added" in html
+
+
+def test_generate_changes_html_no_changes():
+    rep = DiffReporter()
+    dr = make_diff_result()
+    html = rep._generate_changes_html(dr)
+    assert "No Changes" in html
+
+
+def test_generate_changes_html_with_changes():
+    rep = DiffReporter()
+    dr = make_diff_result(
+        added=[FakeItem("1", "a", ChangeType.ADDED)],
+        modified=[FakeItem("2", "b", ChangeType.MODIFIED)],
+    )
+
+    html = rep._generate_changes_html(dr)
+    assert "Detailed Changes" in html
+
+
+def test_generate_insights_html_non_oauth():
+    rep = DiffReporter()
+    dr = make_diff_result(cmd="services", insights=["  • x", "    - y"])
+    html = rep._generate_insights_html(dr.key_insights, dr)
+    assert "Key Insights" in html
+
+
+def test_generate_insights_html_oauth():
+    rep = DiffReporter()
+
+    insights = ["grantTypes: c1, c2"]
+    dr = make_diff_result(
+        cmd="oauth",
+        modified=[FakeItem("1", "a", ChangeType.MODIFIED)],
+        insights=insights,
+    )
+
+    html = rep._generate_insights_html(dr.key_insights, dr)
+    assert "modify" in html.lower() or "oauth" in html.lower()

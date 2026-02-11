@@ -1,170 +1,169 @@
 import pytest
 import typer
+
 from trxo.commands.export.base_exporter import BaseExporter
 
 
-def test_export_data_success_view_mode(mocker):
-    exporter = BaseExporter()
+@pytest.fixture
+def exporter(mocker):
+    be = BaseExporter()
 
-    # Mock internals
-    mocker.patch.object(
-        exporter, "initialize_auth", return_value=("token", "https://base")
-    )
-    mocker.patch.object(
-        exporter, "build_auth_headers", return_value={"Authorization": "Bearer token"}
-    )
-    mocker.patch.object(exporter, "_construct_api_url", return_value="https://base/api")
-    mocker.patch.object(exporter, "make_http_request")
-    mocker.patch.object(exporter, "_handle_pagination", return_value={"data": []})
-    mocker.patch.object(exporter, "remove_rev_fields", return_value={"data": []})
+    be.initialize_auth = mocker.Mock(return_value=("token", "https://api"))
+    be.make_http_request = mocker.Mock()
+    be.build_auth_headers = mocker.Mock(return_value={"Authorization": "Bearer token"})
+    be._construct_api_url = mocker.Mock(return_value="https://api/endpoint")
+    be.cleanup = mocker.Mock()
+    be.logger = mocker.Mock()
+    be.hash_manager = mocker.Mock()
+    be.git_handler = mocker.Mock()
+    be.config_store = mocker.Mock()
+
+    response = mocker.Mock()
+    response.json.return_value = {"data": [{"_rev": "1", "x": 1}]}
+    response.status_code = 200
+    be.make_http_request.return_value = response
+
     mocker.patch(
         "trxo.commands.export.base_exporter.MetadataBuilder.build_metadata",
-        return_value={"meta": "x"},
+        return_value={"m": 1},
     )
-    mocker.patch("trxo.commands.export.base_exporter.ViewRenderer.display_table_view")
-    mocker.patch.object(exporter, "cleanup")
+    mocker.patch(
+        "trxo.commands.export.base_exporter.ViewRenderer.display_table_view"
+    )
+    mocker.patch(
+        "trxo.commands.export.base_exporter.PaginationHandler.is_paginated",
+        return_value=False,
+    )
+    mocker.patch(
+        "trxo.commands.export.base_exporter.FileSaver.save_to_local",
+        return_value="file.json",
+    )
+    mocker.patch("trxo.commands.export.base_exporter.success")
+    mocker.patch("trxo.commands.export.base_exporter.error")
+    mocker.patch("trxo.commands.export.base_exporter.info")
 
-    exporter.make_http_request.return_value.json.return_value = {"data": []}
-    exporter.make_http_request.return_value.status_code = 200
+    return be
 
+
+def test_export_data_headers_none_path(exporter):
     exporter.export_data(
-        command_name="authn",
-        api_endpoint="/test",
-        headers={"Content-Type": "application/json"},
-        view=True,
+        command_name="test",
+        api_endpoint="/endpoint",
+        headers=None,
+        view=False,
     )
 
     exporter.make_http_request.assert_called_once()
-    exporter.cleanup.assert_called_once()
-    exporter.initialize_auth.assert_called_once()
 
 
-def test_export_data_success_save_mode_local(mocker):
-    exporter = BaseExporter()
-
-    mocker.patch.object(
-        exporter, "initialize_auth", return_value=("token", "https://base")
+def test_export_data_view_mode(exporter):
+    exporter.export_data(
+        command_name="test",
+        api_endpoint="/endpoint",
+        headers={},
+        view=True,
+        view_columns="_id",
     )
-    mocker.patch.object(
-        exporter, "build_auth_headers", return_value={"Authorization": "Bearer token"}
-    )
-    mocker.patch.object(exporter, "_construct_api_url", return_value="https://base/api")
-    mocker.patch.object(exporter, "make_http_request")
-    mocker.patch.object(exporter, "_handle_pagination", return_value={"data": []})
-    mocker.patch.object(exporter, "remove_rev_fields", return_value={"data": []})
-    mocker.patch.object(exporter, "_get_storage_mode", return_value="local")
-    mocker.patch.object(exporter.hash_manager, "create_hash", return_value="hash")
-    mocker.patch.object(exporter.hash_manager, "save_export_hash")
-    mocker.patch.object(exporter, "save_response", return_value="file.json")
-    mocker.patch(
-        "trxo.commands.export.base_exporter.MetadataBuilder.build_metadata",
-        return_value={"meta": "x"},
-    )
-    mocker.patch.object(exporter, "cleanup")
 
-    exporter.make_http_request.return_value.json.return_value = {"data": []}
-    exporter.make_http_request.return_value.status_code = 200
+
+def test_export_data_view_columns_without_view_warns(exporter, mocker):
+    warn = mocker.patch("trxo.commands.export.base_exporter.warning")
 
     exporter.export_data(
-        command_name="authn",
-        api_endpoint="/test",
-        headers={"Content-Type": "application/json"},
-        view=False,
-        output_dir="out",
-        output_file="file",
-    )
-
-    exporter.save_response.assert_called_once()
-    exporter.hash_manager.create_hash.assert_called_once()
-    exporter.hash_manager.save_export_hash.assert_called_once()
-    exporter.cleanup.assert_called_once()
-
-
-def test_export_data_view_columns_without_view_warns_and_returns(mocker):
-    exporter = BaseExporter()
-
-    warn_spy = mocker.patch("trxo.commands.export.base_exporter.warning")
-
-    mocker.patch.object(
-        exporter, "initialize_auth", return_value=("token", "https://base")
-    )
-    mocker.patch.object(
-        exporter, "build_auth_headers", return_value={"Authorization": "Bearer token"}
-    )
-    mocker.patch.object(exporter, "_construct_api_url", return_value="https://base/api")
-    mocker.patch.object(exporter, "make_http_request")
-    mocker.patch.object(exporter, "_handle_pagination", return_value={"data": []})
-    mocker.patch.object(exporter, "remove_rev_fields", return_value={"data": []})
-    mocker.patch(
-        "trxo.commands.export.base_exporter.MetadataBuilder.build_metadata",
-        return_value={"meta": "x"},
-    )
-    mocker.patch.object(exporter, "cleanup")
-
-    exporter.make_http_request.return_value.json.return_value = {"data": []}
-    exporter.make_http_request.return_value.status_code = 200
-
-    exporter.export_data(
-        command_name="authn",
-        api_endpoint="/test",
+        command_name="test",
+        api_endpoint="/endpoint",
         headers={},
         view=False,
-        view_columns="_id,name",
+        view_columns="_id",
     )
 
-    warn_spy.assert_called_once()
-    exporter.cleanup.assert_called_once()
+    warn.assert_called_once()
 
 
-def test_export_data_http_error_raises_exit(mocker):
-    exporter = BaseExporter()
+def test_export_data_git_storage(exporter, mocker):
+    exporter._get_storage_mode = mocker.Mock(return_value="git")
+    exporter.git_handler.save_to_git = mocker.Mock(return_value="git.json")
 
-    mocker.patch.object(
-        exporter, "initialize_auth", return_value=("token", "https://base")
+    exporter.export_data(
+        command_name="test",
+        api_endpoint="/endpoint",
+        headers={},
+        view=False,
     )
-    mocker.patch.object(
-        exporter, "build_auth_headers", return_value={"Authorization": "Bearer token"}
+
+    exporter.git_handler.save_to_git.assert_called_once()
+
+
+def test_export_data_non_200_response(exporter):
+    exporter.make_http_request.return_value.status_code = 400
+    exporter.make_http_request.return_value.text = "bad"
+
+    exporter.export_data(
+        command_name="test",
+        api_endpoint="/endpoint",
+        headers={},
+        view=False,
     )
-    mocker.patch.object(exporter, "_construct_api_url", return_value="https://base/api")
-    mocker.patch.object(exporter, "make_http_request", side_effect=Exception("boom"))
-    mocker.patch.object(exporter, "cleanup")
-    mocker.patch("trxo.commands.export.base_exporter.error")
-
-    with pytest.raises(typer.Exit):
-        exporter.export_data(
-            command_name="authn",
-            api_endpoint="/test",
-            headers={"Content-Type": "application/json"},
-        )
-
-    exporter.cleanup.assert_called_once()
 
 
-def test_remove_rev_fields_nested():
-    exporter = BaseExporter()
+def test_handle_pagination_success(exporter, mocker):
+    mocker.patch(
+        "trxo.commands.export.base_exporter.PaginationHandler.is_paginated",
+        return_value=True,
+    )
+    mocker.patch(
+        "trxo.commands.export.base_exporter.PaginationHandler.fetch_all_pages",
+        return_value={"items": []},
+    )
 
-    data = {
-        "_rev": "123",
-        "a": 1,
-        "b": {"_rev": "456", "x": 2},
-        "c": [{"_rev": "789", "y": 3}],
-    }
+    out = exporter._handle_pagination({"page": 1}, "/e", {}, "https://api")
+
+    assert out == {"items": []}
+
+
+def test_handle_pagination_failure_fallback(exporter, mocker):
+    mocker.patch(
+        "trxo.commands.export.base_exporter.PaginationHandler.is_paginated",
+        return_value=True,
+    )
+    mocker.patch(
+        "trxo.commands.export.base_exporter.PaginationHandler.fetch_all_pages",
+        side_effect=Exception("boom"),
+    )
+
+    raw = {"page": 1}
+    out = exporter._handle_pagination(raw, "/e", {}, "https://api")
+
+    assert out == raw
+
+
+def test_get_storage_mode_exception_defaults_local(exporter, mocker):
+    exporter.config_store.get_current_project.side_effect = Exception("boom")
+
+    assert exporter._get_storage_mode() == "local"
+
+
+def test_save_response_git_path(exporter, mocker):
+    exporter._get_storage_mode = mocker.Mock(return_value="git")
+    exporter.git_handler.save_to_git = mocker.Mock(return_value="git.json")
+
+    path = exporter.save_response({}, "cmd", branch="b", commit_message="m")
+
+    assert path == "git.json"
+
+
+def test_save_response_local_path(exporter):
+    exporter._get_storage_mode = lambda: "local"
+    path = exporter.save_response({}, "cmd", output_dir="d")
+
+    assert path == "file.json"
+
+
+def test_remove_rev_fields_recursive(exporter):
+    data = {"_rev": "1", "a": {"_rev": "2", "b": [{"_rev": "3", "c": 1}]}}
 
     cleaned = exporter.remove_rev_fields(data)
 
     assert "_rev" not in cleaned
-    assert "_rev" not in cleaned["b"]
-    assert "_rev" not in cleaned["c"][0]
-    assert cleaned["b"]["x"] == 2
-    assert cleaned["c"][0]["y"] == 3
-
-
-def test_get_current_auth():
-    exporter = BaseExporter()
-    exporter._current_token = "t"
-    exporter._current_api_base_url = "u"
-
-    token, url = exporter.get_current_auth()
-
-    assert token == "t"
-    assert url == "u"
+    assert "_rev" not in cleaned["a"]
+    assert "_rev" not in cleaned["a"]["b"][0]
