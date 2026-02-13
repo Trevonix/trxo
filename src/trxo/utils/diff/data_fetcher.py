@@ -170,7 +170,12 @@ class DataFetcher:
 
             with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                info(f"📁 Loaded data from {file_path}")
+                if isinstance(data, dict) and isinstance(data.get("data"), dict):
+                    clients = data["data"].get("clients")
+                    if isinstance(clients, list):
+                        data = {
+                            "result": clients
+                        }
                 return data
 
         except Exception as e:

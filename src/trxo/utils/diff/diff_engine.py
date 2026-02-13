@@ -186,39 +186,30 @@ class DiffEngine:
         if not data:
             return []
 
-        # Step 1: handle wrapping key `data`
-        if "data" in data:
+    # Unwrap top-level "data"
+        if isinstance(data, dict) and "data" in data:
             data = data["data"]
 
-        # Priority 1: If nested inside realm → extract the list
-        if isinstance(data, dict) and "realm" in data:
-            realm_data = data["realm"]
+    #  Handle result wrapper
+        if isinstance(data, dict) and isinstance(data.get("result"), list):
+            return data["result"]
 
-            # realm_data = {"fido": [...items...] }
-            if isinstance(realm_data, dict):
-                for key, value in realm_data.items():
-                    if isinstance(value, list):
-                        return value
+    #  OAuth: data.clients
+        if isinstance(data, dict) and isinstance(data.get("clients"), list):
+            return data["clients"]
 
-        # Priority 1b: If nested inside objects/mappings → extract
+    # objects / mappings
         if isinstance(data, dict) and any(k in data for k in ("objects", "mappings")):
             objects_data = data.get("objects") or data.get("mappings")
-
             if isinstance(objects_data, list):
                 return objects_data
 
-        # Priority 2: If direct single object contains _id → return it
+    # Single object
         if isinstance(data, dict) and "_id" in data:
             return [data]
 
-        # Existing logic (fallback)
-        if isinstance(data, dict):
-            if "result" in data and isinstance(data["result"], list):
-                return data["result"]
-            else:
-                return [data]
-
-        elif isinstance(data, list):
+    # Already a list
+        if isinstance(data, list):
             return data
 
         return []
