@@ -104,7 +104,7 @@ figcaption {
   border: 1px solid rgba(0, 0, 0, 0.1);
   padding: 2rem;
   max-width: 600px;
-  margin: 2rem auto;
+  margin: -1rem auto;
   /* Center horizontally */
 }
 
@@ -149,15 +149,6 @@ figcaption {
   font-family: inherit !important;
   /* Use site font */
   transition: all 0.2s ease;
-}
-
-/* Dark mode inputs */
-[data-md-color-scheme="slate"] #sib-container input[type="text"],
-[data-md-color-scheme="slate"] #sib-container input[type="email"],
-[data-md-color-scheme="slate"] #sib-container textarea {
-  background-color: rgba(255, 255, 255, 0.05) !important;
-  border-color: rgba(255, 255, 255, 0.15) !important;
-  color: var(--md-typeset-color) !important;
 }
 
 /* Input Focus */
