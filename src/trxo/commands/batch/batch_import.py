@@ -205,13 +205,6 @@ def create_batch_import_command():
                 failed_commands.append(f"import-{i}")
                 continue
 
-                error(
-                    f"Import {i}: Invalid command '{command}'. "
-                    f"Available: {', '.join(sorted(available_list))}"
-                )
-                failed_commands.append(command)
-                continue
-
             # For Git mode, file_path will be None
             if storage_mode == "local":
                 file_path = Path(file_path)

@@ -176,3 +176,6 @@ __pycache__
 # Pytest Coverage reports
 .coverage
 .coverage.*
+
+# SonarQube
+sonar-project.properties
