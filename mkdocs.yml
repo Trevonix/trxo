@@ -66,7 +66,7 @@ markdown_extensions:
 
 
 nav:
-  - Home: index.md
+  - Home: home.md
   - Getting Started:
       - Installation: installation.md
       - Usage: usage.md
@@ -76,7 +76,6 @@ nav:
       - Advanced Features: advanced_features.md
       - Batch Operations: batch_operations.md
       - Service Account Tokens: service-account-token-lifetime-and-scopes.md
-  - Contact: contact.md
 
 extra:
   generator: false
