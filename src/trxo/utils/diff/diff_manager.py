@@ -64,7 +64,7 @@ class DiffManager:
             DiffResult or None if failed
         """
         try:
-            print(f"Performing diff analysis for {command_name}...")
+            info(f"Performing diff analysis for {command_name}...")
 
             # Step 1: Fetch current server data
             current_data = self._fetch_current_data(

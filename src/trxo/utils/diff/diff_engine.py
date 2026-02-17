@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from enum import Enum
 from deepdiff import DeepDiff
 from trxo.utils.console import error
+from trxo.utils.console import info
+from trxo.commands.export.services import ServicesExporter
 
 
 class ChangeType(Enum):
@@ -67,6 +69,14 @@ class DiffEngine:
             "modifiedDate",
         ]
 
+    def _fetch_current_services(self, realm: Optional[str]):
+        info("Fetching current services via ServicesExporter for diff")
+        exporter = ServicesExporter()
+        return exporter.export_as_dict(
+            scope="realm",
+            realm=realm,
+        )
+
     def compare_data(
         self,
         current_data: Dict[str, Any],
@@ -87,7 +97,17 @@ class DiffEngine:
             DiffResult containing detailed comparison
         """
         try:
-            print(f"\nComparing {command_name} data...")
+            info(f"\nComparing {command_name} data...")
+
+            # Auto-fetch current data if not provided
+            # Always fetch current data from server for services
+            if command_name == "services":
+                current_data = self._fetch_current_services(realm)
+
+            if command_name == "authn":
+                info("Notice: For authn command, diff is performed on individual config sections"
+                     " rather than entire file to provide more actionable insights.")
+            # Auto-fetch current data if not provided
 
             # Extract data arrays from the response structure
             current_items = self._extract_items(current_data)
@@ -146,10 +166,9 @@ class DiffEngine:
 
             # Create overall diff using deepdiff
             raw_diff = DeepDiff(
-                current_data,
-                new_data,
+                current_items,
+                new_items,
                 ignore_order=True,
-                exclude_paths=self.ignore_fields,
                 verbose_level=2,
             )
 
@@ -198,6 +217,21 @@ class DiffEngine:
         if isinstance(data, dict) and isinstance(data.get("clients"), list):
             return data["clients"]
 
+        # authn: split composite config into item-wise sections
+        if isinstance(data, dict) and "postauthprocess" in data:
+            items = []
+            for section_key, section_value in data.items():
+                # Skip metadata-like fields
+                if section_key in ("_id", "_type"):
+                    continue
+
+        # Each section becomes its own diff item
+                items.append({
+                    "_id": section_key,
+                    "value": section_value,
+                })
+            return items
+
     # objects / mappings
         if isinstance(data, dict) and any(k in data for k in ("objects", "mappings")):
             objects_data = data.get("objects") or data.get("mappings")
@@ -228,6 +262,12 @@ class DiffEngine:
         for field in self.id_fields:
             if field in item and item[field]:
                 return str(item[field])
+
+        type_info = item.get("_type")
+        if isinstance(type_info, dict):
+            service_id = type_info.get("_id")
+            if service_id:
+                return str(service_id)
         return None
 
     def _get_item_name(self, item: Dict[str, Any]) -> Optional[str]:

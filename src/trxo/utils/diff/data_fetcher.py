@@ -97,7 +97,9 @@ class DataFetcher:
                     response_filter=response_filter,
                     branch=branch,
                 )
-
+            
+                if isinstance(captured_data, dict) and "data" in captured_data:
+                    return captured_data["data"]
                 return captured_data
 
             finally:
