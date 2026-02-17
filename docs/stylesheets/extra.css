@@ -90,9 +90,9 @@ figcaption {
 /* Embedded Brevo Form Styling */
 
 /* Hide redundant logo inside form */
-.sib-image-form-block {
+/* .sib-image-form-block {
   display: none !important;
-}
+} */
 
 /* Main wrapper card */
 .sib-form-container {

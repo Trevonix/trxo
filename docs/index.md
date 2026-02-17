@@ -43,6 +43,14 @@ hide:
     box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
     border: 1px solid rgba(0,0,0,0.05) !important;
   }
+  
+  /* HIDE HEADER AND TABS ON GATEWAY PAGE ONLY */
+  .md-header, .md-tabs, .md-footer, .md-sidebar {
+    display: none !important;
+  }
+  .md-main__inner {
+    margin-top: 0 !important;
+  }
 </style>
 
 <div class="gateway-container">
@@ -226,53 +234,3 @@ hide:
 
 </div>
 
-<script>
-  // Gateway Logic
-  (function() {
-    const ACCESS_KEY = 'trxo_access_granted';
-    const REDIRECT_TARGET = 'home/'; // Assumes default MkDocs directory structure
-
-    // 1. Check if already granted
-    if (localStorage.getItem(ACCESS_KEY) === 'true') {
-      // Redirect immediately
-      window.location.replace(REDIRECT_TARGET);
-      return;
-    }
-
-    // 2. Monitor for form success
-    // The Brevo form shows #success-message when done.
-    const observer = new MutationObserver(function(mutations) {
-      const successMsg = document.getElementById('success-message');
-      
-      // Check if success message is visible
-      if (successMsg && successMsg.style.display !== 'none' && successMsg.offsetParent !== null) {
-        // Grand access
-        localStorage.setItem(ACCESS_KEY, 'true');
-        
-        // Optional: Show a "Redirecting..." message or animation
-        const container = document.querySelector('.gateway-container');
-        if (container) {
-             container.innerHTML = '<h2>Success! Redirecting to documentation...</h2>';
-        }
-
-        // Redirect after a short delay
-        setTimeout(function() {
-          window.location.replace(REDIRECT_TARGET);
-        }, 1500);
-      }
-    });
-
-    // Start observing when DOM is ready
-    document.addEventListener('DOMContentLoaded', function() {
-      const formContainer = document.getElementById('sib-form-container');
-      if (formContainer) {
-        observer.observe(formContainer, { 
-          attributes: true, 
-          childList: true, 
-          subtree: true, 
-          attributeFilter: ['style', 'class'] 
-        });
-      }
-    });
-  })();
-</script>
