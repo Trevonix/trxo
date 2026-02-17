@@ -89,11 +89,6 @@ figcaption {
 /* Contact Form Iframe Styling */
 /* Embedded Brevo Form Styling */
 
-/* Hide redundant logo inside form */
-/* .sib-image-form-block {
-  display: none !important;
-} */
-
 /* Main wrapper card */
 .sib-form-container {
   background-color: var(--md-default-bg-color);
@@ -103,8 +98,10 @@ figcaption {
   /* Native-like shadow */
   border: 1px solid rgba(0, 0, 0, 0.1);
   padding: 2rem;
-  max-width: 600px;
-  margin: -1rem auto;
+  max-width: 640px;
+  /* Increased for better desktop experience */
+  width: 540px;
+  margin: -2rem auto;
   /* Center horizontally */
 }
 
@@ -116,7 +113,7 @@ figcaption {
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
 
-/* Reset Brevo container */
+/* Reset Brevo container - Force wider on desktop */
 #sib-container {
   background-color: transparent !important;
   border: none !important;
@@ -124,13 +121,17 @@ figcaption {
   padding: 0 !important;
   margin: 0 !important;
   text-align: left !important;
+  max-width: 100% !important;
+  /* Override inline style */
+  width: 100% !important;
 }
+
 
 /* Labels */
 #sib-container .entry__label {
   color: var(--md-typeset-color) !important;
   font-weight: 600 !important;
-  font-size: 0.9rem !important;
+  font-size: 0.8rem !important;
   margin-bottom: 0.4rem;
   display: block;
 }
@@ -208,13 +209,24 @@ figcaption {
 /* Mobile adjustments */
 @media screen and (max-width: 600px) {
   .sib-form-container {
+    padding: 1.5rem 1rem;
+    margin: 0 1rem;
+    max-width: 100%;
+  }
+
+  .gateway-container {
     padding: 1rem;
-    box-shadow: none;
-    border: none;
-    background: transparent;
   }
 
   [data-md-color-scheme="slate"] .sib-form-container {
-    background: transparent;
+    background-color: var(--md-code-bg-color);
+  }
+}
+
+/* Tablet adjustments */
+@media screen and (min-width: 601px) and (max-width: 768px) {
+  .sib-form-container {
+    max-width: 90%;
+    padding: 1.75rem;
   }
 }

@@ -39,7 +39,7 @@ hide:
   
   /* Form wrapper overrides */
   .sib-form-container {
-    max-width: 500px !important;
+    max-width: 640px !important;
     box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
     border: 1px solid rgba(0,0,0,0.05) !important;
   }
@@ -105,7 +105,7 @@ hide:
 <!-- START - We recommend to place the below code where you want the form in your website html  -->
 <div class="sib-form" style="text-align: center; background-color: transparent;"> <!-- Modified to transparent for seamless integration -->
   <div id="sib-form-container" class="sib-form-container">
-    <div id="error-message" class="sib-form-message-panel" style="font-size:16px; text-align:left; font-family:Helvetica, sans-serif; color:#661d1d; background-color:#ffeded; border-radius:3px; border-color:#ff4949;max-width:540px;">
+    <div id="error-message" class="sib-form-message-panel" style="font-size:16px; text-align:left; font-family:Helvetica, sans-serif; color:#661d1d; background-color:#ffeded; border-radius:3px; border-color:#ff4949;max-width:800px;">
       <div class="sib-form-message-panel__text sib-form-message-panel__text--center">
         <svg viewBox="0 0 512 512" class="sib-icon sib-notification__icon">
           <path d="M256 40c118.621 0 216 96.075 216 216 0 119.291-96.61 216-216 216-119.244 0-216-96.562-216-216 0-119.203 96.602-216 216-216m0-32C119.043 8 8 119.083 8 256c0 136.997 111.043 248 248 248s248-111.003 248-248C504 119.083 392.957 8 256 8zm-11.49 120h22.979c6.823 0 12.274 5.682 11.99 12.5l-7 168c-.268 6.428-5.556 11.5-11.99 11.5h-8.979c-6.433 0-11.722-5.073-11.99-11.5l-7-168c-.283-6.818 5.167-12.5 11.99-12.5zM256 340c-15.464 0-28 12.536-28 28s12.536 28 28 28 28-12.536 28-28-12.536-28-28-28z" />
@@ -127,7 +127,7 @@ hide:
       </div>
     </div>
     <div></div>
-    <div id="sib-container" class="sib-container--large sib-container--vertical" style="text-align:center; background-color:rgba(255,255,255,1); max-width:540px; border-radius:3px; border-width:1px; border-color:#C0CCD9; border-style:solid; direction:ltr">
+    <div id="sib-container" class="sib-container--large sib-container--vertical" style="text-align:center; background-color:rgba(255,255,255,1); border-radius:3px; max-width:540px; border-width:1px; border-color:#C0CCD9; border-style:solid; direction:ltr">
       <form id="sib-form" method="POST" action="https://6b7d1b32.sibforms.com/serve/MUIFAFnRC7l7XpcQIBQnbTRk-NSah9E6sCzfb8RajaMryc84bSAOBluVVWQMuQyQtLHqiR_DfkQSsei4-Kc94CVQcYRawfxH7k0TtKc4nDZ8iGszvmxRgahWMKuq2fDkwsLu1XS0bhZIT_Ce9nAVbD8AlOvI4WQGTUEaX6Opo8fJKiY92Y-RtEyJOu3lLhM1dwsG7WJgoqExjNRG" data-type="subscription">
         <div style="padding: 8px 0;">
           <div class="sib-form-block sib-image-form-block" style="text-align: center">
