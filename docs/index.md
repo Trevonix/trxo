@@ -181,15 +181,31 @@ hide:
           <div class="sib-input sib-form-block">
             <div class="form__entry entry_block">
               <div class="form__label-row ">
-                <label class="entry__label" style="font-weight: 700; text-align:left; font-size:16px; text-align:left; font-weight:700; font-family:Helvetica, sans-serif; color:#3c4858;" for="EMAIL" data-required="*">Enter your Email Address</label>
+                <label class="entry__label" 
+                  style="font-weight:700; font-size:16px; font-family:Helvetica, sans-serif; color:#3c4858;" 
+                  for="EMAIL" data-required="*">
+                  Enter your EMAIL
+                </label>
+         
                 <div class="entry__field">
-                  <input class="input " type="text" id="EMAIL" name="EMAIL" autocomplete="off" placeholder="EMAIL" data-required="true" required />
+                  <input class="input"
+                    type="email"
+                    id="EMAIL"
+                    name="EMAIL"
+                    autocomplete="off"
+                    placeholder="name@company.com"
+                    required />
                 </div>
               </div>
-              <label class="entry__error entry__error--primary" style="font-size:16px; text-align:left; font-family:Helvetica, sans-serif; color:#661d1d; background-color:#ffeded; border-radius:3px; border-color:#ff4949;">
+         
+              <label class="entry__error entry__error--primary" id="email-error"
+                style="display:none; font-size:14px; text-align:left; font-family:Helvetica, sans-serif; color:#661d1d; background-color:#ffeded; border-radius:3px; border:1px solid #ff4949; padding:6px;">
+                Please use your business email address. Gmail, Yahoo and Hotmail are not allowed.
               </label>
-              <label class="entry__specification" style="font-size:12px; text-align:left; font-family:Helvetica, sans-serif; color:#8390A4; text-align:left">
-                Provide your email address . For e.g abc@xyz.com
+         
+              <label class="entry__specification"
+                style="font-size:12px; font-family:Helvetica, sans-serif; color:#8390A4;">
+                Use your work/business email address (personal email domains are blocked)
               </label>
             </div>
           </div>
@@ -230,6 +246,8 @@ hide:
   var AUTOHIDE = Boolean(1);
 </script>
 <script defer src="https://sibforms.com/forms/end-form/build/main.js"></script>
+
+
 <!-- END - We recommend to place the above code in footer or bottom of your website html  -->
 
 </div>
