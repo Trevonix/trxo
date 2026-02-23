@@ -100,7 +100,6 @@ figcaption {
   padding: 2rem;
   max-width: 640px;
   /* Increased for better desktop experience */
-  /* width: 540px; */
   margin: -2rem auto;
   /* Center horizontally */
 }
@@ -210,7 +209,6 @@ figcaption {
 @media screen and (max-width: 600px) {
   .sib-form-container {
     padding: 1.5rem 1rem;
-    /* margin: 0 1rem; */
     max-width: 100%;
   }
 
