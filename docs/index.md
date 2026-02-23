@@ -12,7 +12,7 @@ hide:
     justify-content: center;
     align-items: center;
     min-height: 80vh;
-    padding: 2rem;
+    padding: 2rem 0;
     text-align: center;
   }
 
