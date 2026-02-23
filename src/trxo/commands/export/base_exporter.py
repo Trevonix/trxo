@@ -105,7 +105,7 @@ class BaseExporter(BaseCommand):
             if headers is None:
                 headers = {
                     "Content-Type": "application/json",
-                    "Accept-API-Version": "resource=1.0",
+                    "Accept-API-Version": "protocol=2.1,resource=1.0",
                 }
             headers = {**headers, **self.build_auth_headers(token)}
 

@@ -12,6 +12,7 @@ from deepdiff import DeepDiff
 from trxo.utils.console import error
 from trxo.utils.console import info
 from trxo.commands.export.services import ServicesExporter
+from trxo.commands.export.saml import SamlExporter
 
 
 class ChangeType(Enum):
@@ -64,9 +65,12 @@ class DiffEngine:
         self.id_fields = ["_id", "id", "name"]
         self.ignore_fields = [
             "_rev",
+            "_type",
             "lastModified",
             "createdDate",
             "modifiedDate",
+            "userpassword",
+            "secretLabelIdentifier",
         ]
 
     def _fetch_current_services(self, realm: Optional[str]):
@@ -76,6 +80,11 @@ class DiffEngine:
             scope="realm",
             realm=realm,
         )
+
+    def _fetch_current_saml(self, realm: Optional[str]):
+        info("Fetching current saml via SamlExporter for diff")
+        exporter = SamlExporter()
+        return exporter.export_as_dict(realm=realm)
 
     def compare_data(
         self,
@@ -103,6 +112,9 @@ class DiffEngine:
             # Always fetch current data from server for services
             if command_name == "services":
                 current_data = self._fetch_current_services(realm)
+
+            if command_name == "saml":
+                current_data = self._fetch_current_saml(realm)
 
             if command_name == "authn":
                 info("Notice: For authn command, diff is performed on individual config sections"
@@ -209,6 +221,14 @@ class DiffEngine:
         if isinstance(data, dict) and "data" in data:
             data = data["data"]
 
+            # SAML: only diff hosted + remote (ignore metadata, scripts)
+            if (
+                isinstance(data, dict)
+                and isinstance(data.get("hosted"), list)
+                and isinstance(data.get("remote"), list)
+            ):
+                return data.get("hosted", []) + data.get("remote", [])
+
     #  Handle result wrapper
         if isinstance(data, dict) and isinstance(data.get("result"), list):
             return data["result"]
@@ -278,16 +298,61 @@ class DiffEngine:
                 return str(item[field])
         return None
 
+    def _normalize_inherited_fields(self, obj):
+        """
+        Normalize AM inherited/value wrapper objects into flat values
+        so DeepDiff does not report fake changes.
+        """
+        if isinstance(obj, dict):
+
+            # Full wrapper → unwrap value
+            if "inherited" in obj and "value" in obj and len(obj) <= 2:
+                return self._normalize_inherited_fields(obj["value"])
+
+            # Half wrapper (no value) → treat as None
+            if "inherited" in obj and "value" not in obj and len(obj) == 1:
+                return None
+
+            normalized = {}
+            for k, v in obj.items():
+                if k in self.ignore_fields:
+                    continue
+                if k == "script":
+                    normalized[k] = v
+                else:
+                    normalized[k] = self._normalize_inherited_fields(v)
+            return normalized
+
+        if isinstance(obj, list):
+            return [self._normalize_inherited_fields(i) for i in obj]
+
+        if obj == "null":
+            return None
+
+        return obj
+
+    def _strip_ignored_fields(self, obj):
+        if isinstance(obj, dict):
+            return {
+                k: self._strip_ignored_fields(v)
+                for k, v in obj.items()
+                if k not in self.ignore_fields
+            }
+        if isinstance(obj, list):
+            return [self._strip_ignored_fields(i) for i in obj]
+        return obj
+
     def _compare_items(
         self, current_item: Dict[str, Any], new_item: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Compare two items and return detailed differences"""
-        clean_current = {
-            k: v for k, v in current_item.items() if k not in self.ignore_fields
-        }
-        clean_new = {k: v for k, v in new_item.items() if k not in self.ignore_fields}
+        clean_current = self._strip_ignored_fields(current_item)
+        clean_new = self._strip_ignored_fields(new_item)
 
-        diff = DeepDiff(clean_current, clean_new, ignore_order=True, verbose_level=2)
+        clean_current = self._normalize_inherited_fields(clean_current)
+        clean_new = self._normalize_inherited_fields(clean_new)
+
+        diff = DeepDiff(clean_current, clean_new, ignore_order=False, verbose_level=2)
 
         has_changes = bool(diff)
         changes_count = 0

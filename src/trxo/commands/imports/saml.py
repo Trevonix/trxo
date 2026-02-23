@@ -25,7 +25,7 @@ class SamlImporter(BaseImporter):
         self.imported_scripts = set()  # Track imported scripts
 
     def get_required_fields(self) -> List[str]:
-        return ["_id"]
+        return []
 
     def get_item_type(self) -> str:
         return "saml"
@@ -36,6 +36,85 @@ class SamlImporter(BaseImporter):
             base_url,
             f"/am/json/realms/root/realms/{self.realm}/" "realm-config/saml2",
         )
+
+    def import_from_file(
+        self,
+        file_path=None,
+        realm=None,
+        jwk_path=None,
+        client_id=None,
+        sa_id=None,
+        base_url=None,
+        project_name=None,
+        auth_mode=None,
+        onprem_username=None,
+        onprem_password=None,
+        onprem_realm=None,
+        force_import=False,
+        branch=None,
+        diff=False,
+        cherry_pick=None,
+    ):
+        """
+        Override import flow for SAML only.
+        Keeps BaseImporter behavior unchanged.
+        """
+
+        # ✅ Let BaseImporter handle diff mode
+        if diff:
+            return super().import_from_file(
+                file_path=file_path,
+                realm=realm,
+                jwk_path=jwk_path,
+                client_id=client_id,
+                sa_id=sa_id,
+                base_url=base_url,
+                project_name=project_name,
+                auth_mode=auth_mode,
+                onprem_username=onprem_username,
+                onprem_password=onprem_password,
+                onprem_realm=onprem_realm,
+                force_import=force_import,
+                branch=branch,
+                diff=diff,
+                cherry_pick=cherry_pick,
+            )
+
+        info(f"Loading saml from local file: {file_path}")
+
+        # Load JSON
+        raw = self.file_loader.load_from_local_file(file_path)
+
+        # Initialize auth (same as BaseImporter)
+        token, api_base_url = self.initialize_auth(
+            jwk_path=jwk_path,
+            client_id=client_id,
+            sa_id=sa_id,
+            base_url=base_url,
+            project_name=project_name,
+            auth_mode=auth_mode,
+            onprem_username=onprem_username,
+            onprem_password=onprem_password,
+            onprem_realm=onprem_realm,
+        )
+
+        # Unwrap export format
+        if isinstance(raw, list):
+            saml_data = raw[0] if raw else {}
+        elif isinstance(raw, dict):
+            saml_data = raw.get("data", raw)
+        else:
+            saml_data = raw
+
+        ok = self.import_saml_data(
+            data=saml_data,
+            token=token,
+            base_url=api_base_url,
+            cherry_pick_ids=cherry_pick,
+        )
+
+        if not ok:
+            raise typer.Exit(1)
 
     def import_saml_data(
         self,
@@ -465,40 +544,9 @@ def create_saml_import_command():
 
     def import_saml(
         file: str = typer.Option(
-            None, "--file", help="Path to JSON file containing SAML data"
-        ),
-        realm: str = typer.Option(
-            DEFAULT_REALM,
-            "--realm",
-            help=f"Target realm name (default: {DEFAULT_REALM})",
-        ),
-        cherry_pick: str = typer.Option(
             None,
-            "--cherry-pick",
-            help=(
-                "Import only specific entities by entityId "
-                "(comma-separated, e.g., entity1,entity2)"
-            ),
-        ),
-        force_import: bool = typer.Option(
-            False,
-            "--force-import",
-            "-f",
-            help="Skip hash validation and force import",
-        ),
-        diff: bool = typer.Option(
-            False, "--diff", help="Show differences before import"
-        ),
-        rollback: bool = typer.Option(
-            False,
-            "--rollback",
-            help=(
-                "Automatically rollback imported items on first failure "
-                "(requires git storage)"
-            ),
-        ),
-        branch: str = typer.Option(
-            None, "--branch", help="Git branch to import from (Git mode only)"
+            "--file",
+            help="Path to JSON file containing SAML data (local mode only)",
         ),
         jwk_path: str = typer.Option(
             None, "--jwk-path", help="Path to JWK private key file"
@@ -511,9 +559,7 @@ def create_saml_import_command():
             help="Base URL for PingOne Advanced Identity Cloud instance",
         ),
         project_name: str = typer.Option(
-            None,
-            "--project-name",
-            help="Project name for argument mode (optional)",
+            None, "--project-name", help="Project name for argument mode (optional)"
         ),
         auth_mode: str = typer.Option(
             None, "--auth-mode", help="Auth mode override: service-account|onprem"
@@ -527,89 +573,48 @@ def create_saml_import_command():
         onprem_realm: str = typer.Option(
             "root", "--onprem-realm", help="On-Prem realm"
         ),
+        force_import: bool = typer.Option(
+            False, "--force-import", "-f", help="Skip hash validation and force import"
+        ),
+        diff: bool = typer.Option(
+            False, "--diff", help="Show differences before import"
+        ),
+        branch: str = typer.Option(
+            None, "--branch", help="Git branch to import from (Git mode only)"
+        ),
+        cherry_pick: str = typer.Option(
+            None,
+            "--cherry-pick",
+            help="Import only specific entities by entityId (comma-separated)",
+        ),
+        realm: str = typer.Option(
+            DEFAULT_REALM,
+            "--realm",
+            help=f"Target realm name (default: {DEFAULT_REALM})",
+        ),
     ):
         """Import SAML configurations."""
+
+        info(f"Realm scope ({realm}): Will create or update SAML entities (upsert)")
+
         importer = SamlImporter(realm=realm)
 
-        try:
-            # Initialize authentication
-            token, api_base_url = importer.initialize_auth(
-                jwk_path=jwk_path,
-                client_id=client_id,
-                sa_id=sa_id,
-                base_url=base_url,
-                project_name=project_name,
-                auth_mode=auth_mode,
-                onprem_username=onprem_username,
-                onprem_password=onprem_password,
-                onprem_realm=onprem_realm,
-            )
-
-            # Handle diff mode
-            if diff:
-                info("Diff mode is not yet implemented for SAML")
-                return
-
-            # Load data from file (local or git)
-            storage_mode = importer._get_storage_mode()
-
-            if storage_mode == "git":
-                git_manager = importer._setup_git_manager(branch)
-                # Load from git (construct path manually as get_file_path doesn't exist)
-                from pathlib import Path
-
-                git_base = Path(git_manager.local_path)
-                file_path = git_base / realm / "saml" / f"{realm}_saml.json"
-
-                if not file_path.exists():
-                    error(f"SAML data not found at {file_path}")
-                    # Try discovery if specific file missing?
-                    # For now hard fail as per SAML structure assumption
-                    raise typer.Exit(1)
-
-                with open(file_path, "r") as f:
-                    export_data = json.load(f)
-            else:
-                # Load from local file
-                if not file:
-                    error("--file parameter is required in local storage mode")
-                    raise typer.Exit(1)
-
-                with open(file, "r") as f:
-                    export_data = json.load(f)
-
-            # Extract data section
-            if "data" in export_data:
-                data = export_data["data"]
-            else:
-                data = export_data
-
-            # Perform hash validation (local mode only)
-            if storage_mode == "local" and not importer.validate_import_hash(
-                export_data, force_import
-            ):
-                raise typer.Exit(1)
-
-            # Perform import
-            success = importer.import_saml_data(
-                data=data,
-                token=token,
-                base_url=api_base_url,
-                cherry_pick_ids=cherry_pick,
-            )
-
-            if success:
-                from trxo.utils.console import success as console_success
-
-                console_success("SAML import completed successfully!")
-            else:
-                error("SAML import completed with errors")
-                raise typer.Exit(1)
-
-        except Exception as e:
-            error(f"SAML import failed: {str(e)}")
-            raise typer.Exit(1)
-        finally:
-            importer.cleanup()
+        importer.import_from_file(
+            file_path=file,
+            realm=realm,
+            jwk_path=jwk_path,
+            client_id=client_id,
+            sa_id=sa_id,
+            base_url=base_url,
+            project_name=project_name,
+            auth_mode=auth_mode,
+            onprem_username=onprem_username,
+            onprem_password=onprem_password,
+            onprem_realm=onprem_realm,
+            force_import=force_import,
+            branch=branch,
+            diff=diff,
+            cherry_pick=cherry_pick,
+        )
 
     return import_saml

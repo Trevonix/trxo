@@ -12,10 +12,9 @@ from typing import Dict, Any, List, Optional
 from pathlib import Path
 from datetime import datetime, timezone
 import difflib
-from rich.table import Table
 from rich.panel import Panel
 from trxo.utils.console import console, success, info, error
-from trxo.utils.diff.diff_engine import DiffResult, ChangeType
+from trxo.utils.diff.diff_engine import DiffResult
 
 
 class DiffReporter:

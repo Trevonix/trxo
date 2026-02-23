@@ -287,7 +287,7 @@ class BaseCommand(ABC):
     @abstractmethod
     def get_required_fields(self) -> List[str]:
         """Return list of required fields for validation"""
-        pass
+        return []
 
     @abstractmethod
     def get_item_type(self) -> str:
