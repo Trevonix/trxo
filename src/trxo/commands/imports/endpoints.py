@@ -17,6 +17,10 @@ from .base_importer import BaseImporter
 class EndpointsImporter(BaseImporter):
     """Importer for PingIDM custom endpoints"""
 
+    def __init__(self):
+        super().__init__()
+        self.product = "idm"
+
     def get_required_fields(self) -> List[str]:
         return ["_id"]
 

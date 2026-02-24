@@ -30,6 +30,7 @@ class BaseCommand(ABC):
         self.successful_updates = 0
         self.failed_updates = 0
         self.auth_mode: str = "service-account"
+        self.product: str = "am"  # Default product (overridden by subclasses)
 
         # IDM credentials (populated during initialize_auth for on-prem IDM)
         self._idm_username: Optional[str] = None
@@ -91,6 +92,10 @@ class BaseCommand(ABC):
             # Determine which products are configured
             products = self.auth_manager.get_onprem_products(current_project)
 
+            # Ensure the current command's product is included in gathering credentials
+            if self.product not in products:
+                products.append(self.product)
+
             token_or_session = None
             if "am" in products:
                 # Get AM session token
@@ -119,17 +124,23 @@ class BaseCommand(ABC):
         else:
             token_or_session = self.auth_manager.get_token(current_project)
 
+        if self.auth_mode == "onprem" and self.product == "idm":
+            api_base_url = self._idm_base_url
+
         return token_or_session, api_base_url
 
     def build_auth_headers(
-        self, token_or_session: str, product: str = "am"
+        self, token_or_session: str, product: Optional[str] = None
     ) -> Dict[str, str]:
         """Return auth headers based on current mode and target product.
 
         Args:
             token_or_session: Bearer token or AM session token.
-            product: Target product - 'am' or 'idm'.
+            product: Target product - 'am' or 'idm'. Defaults to self.product.
         """
+        if not product:
+            product = self.product
+
         if self.auth_mode == "onprem":
             if product == "idm":
                 if not self._idm_username or not self._idm_password:

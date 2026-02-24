@@ -31,11 +31,12 @@ def construct_api_url(base_url: str, endpoint: str) -> str:
     # Logic for /am endpoints
     if endpoint.startswith("/am/"):
         parsed = urlparse(base_url)
-        # Check if there is a path component (e.g. /custom or /am)
-        # We check parsed.path.strip("/") to ignore root path "/"
         if parsed.path and parsed.path.strip("/"):
-            # Strip default context (/am) from endpoint
-            # endpoint is /am/something...
             endpoint = endpoint[3:]  # Remove /am
+
+    # Logic for IDM endpoints: if base_url ends with /am, strip it
+    elif endpoint.startswith("/openidm/") or endpoint.startswith("/environment/"):
+        if base_url.endswith("/am"):
+            base_url = base_url[:-3]
 
     return f"{base_url}{endpoint}"

@@ -426,7 +426,12 @@ class BaseImporter(BaseCommand):
                 git_mgr = self._setup_git_manager(branch)
 
             created = rollback_manager.create_baseline_snapshot(
-                token, api_base_url, git_mgr
+                token,
+                api_base_url,
+                git_manager=git_mgr,
+                auth_mode=self.auth_mode,
+                idm_username=self._idm_username,
+                idm_password=self._idm_password,
             )
 
             if not created:

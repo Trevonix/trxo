@@ -15,6 +15,10 @@ from trxo.constants import DEFAULT_REALM
 class ThemesImporter(BaseImporter):
     """Safe PATCH importer for Ping AIC ui/themerealm"""
 
+    def __init__(self):
+        super().__init__()
+        self.product = "idm"
+
     def get_required_fields(self) -> List[str]:
         # No strict requirements - supports partial realm updates
         return []

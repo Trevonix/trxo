@@ -86,6 +86,10 @@ class BaseExporter(BaseCommand):
         """
         self.logger.info(f"Starting export operation: {command_name}")
         try:
+            # Determine product type from endpoint for auth context and headers
+            product = "idm" if "/openidm/" in api_endpoint else "am"
+            self.product = product
+
             # Initialize authentication
             token, api_base_url = self.initialize_auth(
                 jwk_path=jwk_path,
@@ -101,16 +105,16 @@ class BaseExporter(BaseCommand):
                 idm_password=idm_password,
             )
             self.logger.debug(
-                "Authentication initialized for {command_name}, "
-                f"auth_mode: {self.auth_mode}"
+                f"Authentication initialized for {command_name}, "
+                f"auth_mode: {self.auth_mode}, product: {product}"
             )
 
             # Store current auth details for response filters
             self._current_token = token
             self._current_api_base_url = api_base_url
 
-            # Determine product type from endpoint for auth headers
-            product = "idm" if "/openidm/" in api_endpoint else "am"
+            # Determine product type from endpoint for auth headers (already set above)
+            product = self.product
 
             # For IDM endpoints in on-prem mode, use IDM base URL if available
             if product == "idm" and self.auth_mode == "onprem" and self._idm_base_url:

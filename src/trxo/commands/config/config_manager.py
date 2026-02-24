@@ -13,7 +13,6 @@ from .settings import get_credential_value, display_config
 from .auth_handler import (
     setup_service_account_auth,
     setup_onprem_auth,
-    normalize_base_url,
 )
 from trxo.logging import LogLevel, setup_logging, get_logger
 
@@ -90,23 +89,7 @@ def setup(
         warning("No saved configuration found or arguments provided.")
         info("Please enter your PingOne Advanced Identity Cloud credentials.")
 
-    # Get base URL first (common for both modes)
-    base_url_value = get_credential_value(
-        base_url,
-        "base_url",
-        existing_config,
-        "\nBase URL for PingOne Advanced Identity Cloud instance",
-    )
-
-    # Optional fields
-    regions_value = get_credential_value(
-        regions,
-        "regions",
-        existing_config,
-        "\nRegions (comma-separated)",
-        required=False,
-    )
-
+    # Optional fields (Storage mode can be prompted early)
     storage_mode_value = get_credential_value(
         storage_mode,
         "storage_mode",
@@ -115,18 +98,23 @@ def setup(
         required=False,
     )
 
+    regions_value = get_credential_value(
+        regions,
+        "regions",
+        existing_config,
+        "\nRegions (comma-separated)",
+        required=False,
+    )
+
     # Save auth mode
     auth_mode_value = (auth_mode or "service-account").lower().strip()
-
-    # Normalize base_url based on auth_mode
-    base_url_value = normalize_base_url(base_url_value, auth_mode_value)
 
     if auth_mode_value == "service-account":
         config = setup_service_account_auth(
             existing_config=existing_config,
             jwk_path=jwk_path,
             sa_id=sa_id,
-            base_url=base_url_value,
+            base_url=base_url,
             regions=regions_value,
             storage_mode=storage_mode_value,
             git_username=git_username,
@@ -140,7 +128,7 @@ def setup(
             existing_config=existing_config,
             onprem_username=onprem_username,
             onprem_realm=onprem_realm,
-            base_url=base_url_value,
+            base_url=base_url,
             storage_mode=storage_mode_value,
             git_username=git_username,
             git_repo=git_repo,

@@ -20,6 +20,7 @@ class ConnectorsImporter(BaseImporter):
 
     def __init__(self):
         super().__init__()
+        self.product = "idm"
         self.max_retries = 3
         self.skip_delays = False
         self.wait_time = 5

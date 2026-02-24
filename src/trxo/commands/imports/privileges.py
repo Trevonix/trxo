@@ -17,6 +17,10 @@ from .base_importer import BaseImporter
 class PrivilegesImporter(BaseImporter):
     """Importer for PingIDM Privileges"""
 
+    def __init__(self):
+        super().__init__()
+        self.product = "idm"
+
     def get_required_fields(self) -> List[str]:
         return ["_id"]
 

@@ -49,7 +49,7 @@ def setup_service_account_auth(
     existing_config: Dict,
     jwk_path: Optional[str],
     sa_id: Optional[str],
-    base_url: str,
+    base_url: Optional[str],
     regions: Optional[str],
     storage_mode: str,
     git_username: Optional[str],
@@ -58,6 +58,16 @@ def setup_service_account_auth(
     current_project: str,
 ) -> Dict:
     """Setup service account authentication configuration"""
+    # Collect Base URL
+    base_url_value = get_credential_value(
+        base_url,
+        "base_url",
+        existing_config,
+        "\nBase URL for PingOne Advanced Identity Cloud instance",
+    )
+    base_url_value = normalize_base_url(base_url_value, "service-account")
+
+    # Collect SA-only inputs
     # Collect SA-only inputs
     jwk_path_value = get_credential_value(
         jwk_path, "jwk_path", existing_config, "\nJWK private key file path"
@@ -80,7 +90,7 @@ def setup_service_account_auth(
     )
 
     # Construct token URL from base URL
-    token_url = base_url.rstrip("/") + TOKEN_ENDPOINT
+    token_url = base_url_value.rstrip("/") + TOKEN_ENDPOINT
 
     # Handle git setup if needed
     if storage_mode == "git":
@@ -117,7 +127,7 @@ def setup_service_account_auth(
     # Build configuration
     config = {
         "auth_mode": "service-account",
-        "base_url": base_url,
+        "base_url": base_url_value,
         "sa_id": sa_id_value,
         "jwk_path": jwk_path_expanded,
         "jwk_keyring": keyring_ok,
@@ -140,7 +150,7 @@ def setup_onprem_auth(
     existing_config: Dict,
     onprem_username: Optional[str],
     onprem_realm: Optional[str],
-    base_url: str,
+    base_url: Optional[str],
     storage_mode: str,
     git_username: Optional[str],
     git_repo: Optional[str],
@@ -151,12 +161,14 @@ def setup_onprem_auth(
 ) -> Dict:
     """Setup on-premises authentication configuration.
 
-    Collects AM and/or IDM credentials. At least one must be provided.
+    Collects AM and/or IDM credentials independently.
     """
 
     products = []
     am_configured = False
     idm_configured = False
+    am_base_url_value = None
+    effective_idm_url = None
 
     # ── AM Credentials (optional) ──
     info("\n── AM Configuration ──")
@@ -169,6 +181,15 @@ def setup_onprem_auth(
     )
 
     if username_value:
+        am_base_url_value = get_credential_value(
+            base_url,
+            "am_base_url",
+            existing_config,
+            "\nBase AM URL (example: http://localhost:8080/am)",
+            required=True,
+        )
+        am_base_url_value = normalize_base_url(am_base_url_value, "onprem")
+
         realm_value = (
             get_credential_value(
                 onprem_realm,
@@ -185,7 +206,7 @@ def setup_onprem_auth(
 
         # Test AM authentication
         if validate_onprem_authentication(
-            base_url, realm_value, username_value, password_value
+            am_base_url_value, realm_value, username_value, password_value
         ):
             am_configured = True
             products.append("am")
@@ -207,22 +228,19 @@ def setup_onprem_auth(
 
     idm_base_url_value = None
     if idm_username_value:
-        idm_base_url_value = (
-            get_credential_value(
-                idm_base_url,
-                "idm_base_url",
-                existing_config,
-                "\nIDM Base URL (leave empty if same as AM base URL)",
-                required=False,
-            )
-            or None
+        idm_base_url_value = get_credential_value(
+            idm_base_url,
+            "idm_base_url",
+            existing_config,
+            "\nIDM Base URL (example: http://localhost:8080/)",
+            required=True,
         )
+        effective_idm_url = idm_base_url_value
 
         # Prompt for IDM password (not stored)
         idm_password_value = getpass.getpass("\nOn-Prem IDM password: ")
 
         # Test IDM authentication
-        effective_idm_url = idm_base_url_value or base_url
         if validate_idm_authentication(
             effective_idm_url, idm_username_value, idm_password_value
         ):
@@ -263,7 +281,10 @@ def setup_onprem_auth(
     # Build configuration
     config = {
         "auth_mode": "onprem",
-        "base_url": base_url,
+        "am_base_url": am_base_url_value if am_configured else None,
+        "idm_base_url": effective_idm_url if idm_configured else None,
+        # Keep base_url as primary for the project (prefer AM, fallback to IDM)
+        "base_url": am_base_url_value or effective_idm_url,
         "onprem_products": products,
         "storage_mode": storage_mode,
     }
@@ -274,8 +295,6 @@ def setup_onprem_auth(
 
     if idm_configured:
         config["idm_username"] = idm_username_value
-        if idm_base_url_value:
-            config["idm_base_url"] = idm_base_url_value
 
     if storage_mode == "git":
         config.update(

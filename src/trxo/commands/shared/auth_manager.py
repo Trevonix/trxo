@@ -263,12 +263,7 @@ class AuthManager:
     ) -> str:
         """Obtain on-prem AM session token (SSO token). Not persisted."""
         config = self.config_store.get_project_config(project_name) or {}
-        base_url = config.get("base_url")
-        if not base_url:
-            error(
-                "Base URL not configured. Run 'trxo config setup' first or provide --base-url"
-            )
-            raise typer.Exit(1)
+        base_url = self.get_base_url(project_name)
 
         # Defaults from config
         username = username or config.get("onprem_username")
@@ -318,7 +313,7 @@ class AuthManager:
     def get_idm_base_url(
         self, project_name: str, idm_base_url_override: Optional[str] = None
     ) -> str:
-        """Get IDM base URL. Falls back to AM base_url if idm_base_url not set."""
+        """Get IDM base URL based on override or configuration."""
         if idm_base_url_override:
             return idm_base_url_override
 
@@ -327,18 +322,22 @@ class AuthManager:
         if idm_url:
             return idm_url
 
-        # Fallback to base_url (same host)
-        return config.get("base_url", "")
+        error(
+            "IDM Base URL not configured. Run 'trxo config setup' first or provide --idm-base-url"
+        )
+        raise typer.Exit(1)
 
     def get_base_url(
         self, project_name: str, base_url_override: Optional[str] = None
     ) -> str:
-        """Get base URL from config or override"""
+        """Get AM/Primary base URL.
+        Priority: Override > config['am_base_url'] > config['base_url'].
+        """
         if base_url_override:
             return base_url_override
 
-        config = self.config_store.get_project_config(project_name)
-        api_base_url = config.get("base_url") if config else None
+        config = self.config_store.get_project_config(project_name) or {}
+        api_base_url = config.get("am_base_url") or config.get("base_url")
 
         if not api_base_url:
             error(

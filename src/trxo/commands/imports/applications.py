@@ -18,6 +18,7 @@ class ApplicationsImporter(BaseImporter):
     def __init__(self, realm: str = DEFAULT_REALM):
         super().__init__()
         self.realm = realm
+        self.product = "idm"
 
     def get_required_fields(self) -> List[str]:
         return ["_id"]
