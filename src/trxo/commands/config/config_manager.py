@@ -22,19 +22,19 @@ config_store = ConfigStore()
 
 @app.command()
 def setup(
-    jwk_path: Optional[str] = typer.Option(
-        None, "--jwk-path", help="Path to JWK private key file"
-    ),
-    sa_id: Optional[str] = typer.Option(None, "--sa-id", help="Service Account ID"),
-    base_url: Optional[str] = typer.Option(
-        None, "--base-url", help="Base URL for PingOne Advanced Identity Cloud instance"
-    ),
     auth_mode: Optional[str] = typer.Option(
         "service-account",
         "--auth-mode",
         help="Authentication mode: service-account (default) or onprem",
         case_sensitive=False,
     ),
+    base_url: Optional[str] = typer.Option(
+        None, "--base-url", help="Base URL for PingOne Advanced Identity Cloud instance"
+    ),
+    jwk_path: Optional[str] = typer.Option(
+        None, "--jwk-path", help="Path to JWK private key file"
+    ),
+    sa_id: Optional[str] = typer.Option(None, "--sa-id", help="Service Account ID"),
     onprem_username: Optional[str] = typer.Option(
         None, "--onprem-username", help="On-Prem AM username"
     ),

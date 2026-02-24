@@ -22,7 +22,7 @@ class ManagedObjectsImporter(BaseImporter):
         self.product = "idm"
 
     def get_required_fields(self) -> List[str]:
-        return ["name"]
+        return []
 
     def get_item_type(self) -> str:
         return "managed_objects"

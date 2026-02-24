@@ -68,7 +68,6 @@ def setup_service_account_auth(
     base_url_value = normalize_base_url(base_url_value, "service-account")
 
     # Collect SA-only inputs
-    # Collect SA-only inputs
     jwk_path_value = get_credential_value(
         jwk_path, "jwk_path", existing_config, "\nJWK private key file path"
     )
