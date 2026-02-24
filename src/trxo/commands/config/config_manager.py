@@ -26,7 +26,6 @@ def setup(
     jwk_path: Optional[str] = typer.Option(
         None, "--jwk-path", help="Path to JWK private key file"
     ),
-    client_id: Optional[str] = typer.Option(None, "--client-id", help="Client ID"),
     sa_id: Optional[str] = typer.Option(None, "--sa-id", help="Service Account ID"),
     base_url: Optional[str] = typer.Option(
         None, "--base-url", help="Base URL for PingOne Advanced Identity Cloud instance"
@@ -38,10 +37,16 @@ def setup(
         case_sensitive=False,
     ),
     onprem_username: Optional[str] = typer.Option(
-        None, "--onprem-username", help="On-Prem (AM) username"
+        None, "--onprem-username", help="On-Prem AM username"
     ),
     onprem_realm: Optional[str] = typer.Option(
-        "root", "--onprem-realm", help="On-Prem realm (default: root)"
+        "root", "--onprem-realm", help="On-Prem AM realm (default: root)"
+    ),
+    idm_base_url: Optional[str] = typer.Option(
+        None, "--idm-base-url", help="On-Prem IDM base URL (if different from AM)"
+    ),
+    idm_username: Optional[str] = typer.Option(
+        None, "--idm-username", help="On-Prem IDM username"
     ),
     regions: Optional[str] = typer.Option(None, "--regions", help="Regions"),
     storage_mode: Optional[str] = typer.Option(
@@ -69,7 +74,7 @@ def setup(
 
     # Check if configuration already exists
     if has_existing_config and not any(
-        [jwk_path, client_id, sa_id, base_url, onprem_username]
+        [jwk_path, sa_id, base_url, onprem_username, idm_username]
     ):
         info(f"Found existing configuration for project '{current_project}'")
         info(
@@ -80,7 +85,7 @@ def setup(
 
     info(f"Configuring project: [bold]{current_project}[/bold]\n")
 
-    if not any([jwk_path, client_id, sa_id, base_url, onprem_username]):
+    if not any([jwk_path, sa_id, base_url, onprem_username, idm_username]):
         # Explain what we're doing
         warning("No saved configuration found or arguments provided.")
         info("Please enter your PingOne Advanced Identity Cloud credentials.")
@@ -120,7 +125,6 @@ def setup(
         config = setup_service_account_auth(
             existing_config=existing_config,
             jwk_path=jwk_path,
-            client_id=client_id,
             sa_id=sa_id,
             base_url=base_url_value,
             regions=regions_value,
@@ -142,6 +146,8 @@ def setup(
             git_repo=git_repo,
             git_token=git_token,
             current_project=current_project,
+            idm_base_url=idm_base_url,
+            idm_username=idm_username,
         )
     else:
         error("Invalid --auth-mode. Use 'service-account' or 'onprem'")
@@ -178,13 +184,12 @@ def set_log_level(
     try:
         # Validate log level
         level_upper = level.upper()
-        valid_levels = [
-            lev.value
-            for lev in LogLevel
-        ]
+        valid_levels = [lev.value for lev in LogLevel]
 
         if level_upper not in valid_levels:
-            error(f"Invalid log level '{level}'. Valid levels: {', '.join(valid_levels)}")
+            error(
+                f"Invalid log level '{level}'. Valid levels: {', '.join(valid_levels)}"
+            )
             raise typer.Exit(1)
 
         # Store log level in global settings file
@@ -192,14 +197,14 @@ def set_log_level(
         settings = {}
         if global_settings_file.exists():
             try:
-                with open(global_settings_file, 'r', encoding='utf-8') as f:
+                with open(global_settings_file, "r", encoding="utf-8") as f:
                     settings = json.load(f)
             except (json.JSONDecodeError, IOError):
                 settings = {}
 
         settings["log_level"] = level_upper
 
-        with open(global_settings_file, 'w', encoding='utf-8') as f:
+        with open(global_settings_file, "w", encoding="utf-8") as f:
             json.dump(settings, f, indent=2)
 
         success(f"Log level set to {level_upper}")
@@ -225,7 +230,7 @@ def get_log_level() -> None:
 
         if global_settings_file.exists():
             try:
-                with open(global_settings_file, 'r', encoding='utf-8') as f:
+                with open(global_settings_file, "r", encoding="utf-8") as f:
                     settings = json.load(f)
                     current_level = settings.get("log_level", "INFO")
             except (json.JSONDecodeError, IOError):

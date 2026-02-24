@@ -27,11 +27,17 @@ class RollbackManager:
         self.git_branch: Optional[str] = None
         self.git_manager: Optional[GitManager] = None
 
+        # Auth context for rollback
+        self.auth_mode: str = "service-account"
+        self._idm_username: Optional[str] = None
+        self._idm_password: Optional[str] = None
+
     def create_baseline_snapshot(
         self,
         token: str,
         base_url: str,
         git_manager: Optional[GitManager] = None,
+        **auth_params,
     ) -> bool:
         """Fetch current server state and keep it in-memory.
 
@@ -43,25 +49,25 @@ class RollbackManager:
                 f"(realm={self.realm})..."
             )
 
-            # Get API endpoint for this command
-            from trxo.utils.diff.data_fetcher import get_command_api_endpoint
+            # Store auth context for later rollback execution
+            self.auth_mode = auth_params.get("auth_mode", "service-account")
+            self._idm_username = auth_params.get("idm_username")
+            self._idm_password = auth_params.get("idm_password")
 
+            # Get API endpoint for this command
             api_endpoint, _ = get_command_api_endpoint(self.command_name, self.realm)
             if not api_endpoint:
                 error(f"Unknown command for baseline snapshot: {self.command_name}")
                 return False
 
             fetcher = DataFetcher()
+            # Pass all auth params to fetcher
             data = fetcher.fetch_data(
                 command_name=self.command_name,
                 api_endpoint=api_endpoint,
                 realm=self.realm,
-                jwk_path=None,
-                client_id=None,
-                sa_id=None,
-                base_url=None,
-                project_name=None,
-                auth_mode=None,
+                base_url=base_url,
+                **auth_params,
             )
 
             if not data:
@@ -173,7 +179,7 @@ class RollbackManager:
                     "Content-Type": "application/json",
                     "Accept-API-Version": "protocol=2.1,resource=1.0",
                 }
-                headers = {**headers, **self._build_auth_headers(token)}
+                headers = {**headers, **self._build_auth_headers(token, api_endpoint)}
                 import httpx
 
                 with httpx.Client() as client:
@@ -210,7 +216,8 @@ class RollbackManager:
                         "Content-Type": "application/json",
                         "Accept-API-Version": "resource=1.0",
                     }
-                    headers = {**headers, **(self._build_auth_headers(token))}
+                    # detect product for headers
+                    headers = {**headers, **(self._build_auth_headers(token, url))}
                     # Perform delete using httpx directly
                     import httpx
 
@@ -240,7 +247,7 @@ class RollbackManager:
                         "Content-Type": "application/json",
                         "Accept-API-Version": "resource=1.0",
                     }
-                    headers = {**headers, **(self._build_auth_headers(token))}
+                    headers = {**headers, **(self._build_auth_headers(token, url))}
                     import httpx
 
                     with httpx.Client() as client:
@@ -292,7 +299,19 @@ class RollbackManager:
 
             return construct_api_url(base_url, f"/{item_id}")
 
-    def _build_auth_headers(self, token: str) -> Dict[str, str]:
-        """Return headers for given token (simple helper)."""
+    def _build_auth_headers(self, token: str, url: str) -> Dict[str, str]:
+        """Return headers for given token, aware of product and auth mode."""
+        if self.auth_mode == "onprem":
+            if "/openidm/" in url:
+                if self._idm_username and self._idm_password:
+                    return {
+                        "X-OpenIDM-Username": self._idm_username,
+                        "X-OpenIDM-Password": self._idm_password,
+                    }
+                else:
+                    return {}  # Fallback
+            else:
+                return {"Cookie": f"iPlanetDirectoryPro={token}"}
+
         # Best-effort: prefer Bearer token
         return {"Authorization": f"Bearer {token}"}

@@ -26,7 +26,6 @@ class DataFetcher:
         api_endpoint: str,
         realm: Optional[str] = None,
         jwk_path: Optional[str] = None,
-        client_id: Optional[str] = None,
         sa_id: Optional[str] = None,
         base_url: Optional[str] = None,
         project_name: Optional[str] = None,
@@ -34,6 +33,9 @@ class DataFetcher:
         onprem_username: Optional[str] = None,
         onprem_password: Optional[str] = None,
         onprem_realm: Optional[str] = None,
+        idm_base_url: Optional[str] = None,
+        idm_username: Optional[str] = None,
+        idm_password: Optional[str] = None,
         response_filter: Optional[callable] = None,
         branch: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
@@ -45,14 +47,16 @@ class DataFetcher:
             api_endpoint: API endpoint to fetch from
             realm: Target realm
             jwk_path: Path to JWK file
-            client_id: Client ID
             sa_id: Service account ID
             base_url: Base URL
             project_name: Project name
             auth_mode: Authentication mode
-            onprem_username: On-premise username
-            onprem_password: On-premise password
-            onprem_realm: On-premise realm
+            onprem_username: On-premise AM username
+            onprem_password: On-premise AM password
+            onprem_realm: On-premise AM realm
+            idm_base_url: On-premise IDM base URL
+            idm_username: On-premise IDM username
+            idm_password: On-premise IDM password
             response_filter: Response filter function
             branch: Git branch (for Git mode)
 
@@ -86,7 +90,6 @@ class DataFetcher:
                     },
                     view=False,  # Don't display
                     jwk_path=jwk_path,
-                    client_id=client_id,
                     sa_id=sa_id,
                     base_url=base_url,
                     project_name=project_name,
@@ -94,6 +97,9 @@ class DataFetcher:
                     onprem_username=onprem_username,
                     onprem_password=onprem_password,
                     onprem_realm=onprem_realm,
+                    idm_base_url=idm_base_url,
+                    idm_username=idm_username,
+                    idm_password=idm_password,
                     response_filter=response_filter,
                     branch=branch,
                 )
@@ -124,6 +130,7 @@ class DataFetcher:
             file_path: Path to local file (local mode)
             branch: Git branch (Git mode)
             project_name: Project name
+            realm: Target realm
 
         Returns:
             Dict containing the data or None if failed
@@ -192,7 +199,7 @@ class DataFetcher:
             config_store = ConfigStore()
 
             # Get Git credentials to find repo name
-            git_credentials = config_store.get_git_credentials()
+            git_credentials = config_store.get_git_credentials(project_name)
             if not git_credentials or not all(git_credentials.values()):
                 error(
                     "Git credentials not found. Please run 'trxo config' "

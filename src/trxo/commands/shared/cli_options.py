@@ -18,7 +18,6 @@ class CommonOptions:
             "jwk_path": typer.Option(
                 None, "--jwk-path", help="Path to JWK private key file"
             ),
-            "client_id": typer.Option(None, "--client-id", help="Client ID"),
             "sa_id": typer.Option(None, "--sa-id", help="Service Account ID"),
             "base_url": typer.Option(
                 None,
@@ -70,7 +69,6 @@ def create_auth_params():
     """Create authentication parameter definitions for typer commands"""
     return [
         typer.Option(None, "--jwk-path", help="Path to JWK private key file"),
-        typer.Option(None, "--client-id", help="Client ID"),
         typer.Option(None, "--sa-id", help="Service Account ID"),
         typer.Option(
             None,

@@ -28,7 +28,6 @@ class DiffManager:
         file_path: Optional[str] = None,
         realm: Optional[str] = None,
         jwk_path: Optional[str] = None,
-        client_id: Optional[str] = None,
         sa_id: Optional[str] = None,
         base_url: Optional[str] = None,
         project_name: Optional[str] = None,
@@ -36,6 +35,9 @@ class DiffManager:
         onprem_username: Optional[str] = None,
         onprem_password: Optional[str] = None,
         onprem_realm: Optional[str] = None,
+        idm_base_url: Optional[str] = None,
+        idm_username: Optional[str] = None,
+        idm_password: Optional[str] = None,
         branch: Optional[str] = None,
         generate_html: bool = True,
         html_output_dir: Optional[str] = None,
@@ -48,14 +50,16 @@ class DiffManager:
             file_path: Path to import file (local mode)
             realm: Target realm
             jwk_path: Path to JWK file
-            client_id: Client ID
             sa_id: Service account ID
             base_url: Base URL
             project_name: Project name
             auth_mode: Authentication mode
-            onprem_username: On-premise username
-            onprem_password: On-premise password
-            onprem_realm: On-premise realm
+            onprem_username: On-premise AM username
+            onprem_password: On-premise AM password
+            onprem_realm: On-premise AM realm
+            idm_base_url: On-premise IDM base URL
+            idm_username: On-premise IDM username
+            idm_password: On-premise IDM password
             branch: Git branch
             generate_html: Whether to generate HTML report
             html_output_dir: Output directory for HTML report
@@ -71,7 +75,6 @@ class DiffManager:
                 command_name=command_name,
                 realm=realm,
                 jwk_path=jwk_path,
-                client_id=client_id,
                 sa_id=sa_id,
                 base_url=base_url,
                 project_name=project_name,
@@ -79,6 +82,9 @@ class DiffManager:
                 onprem_username=onprem_username,
                 onprem_password=onprem_password,
                 onprem_realm=onprem_realm,
+                idm_base_url=idm_base_url,
+                idm_username=idm_username,
+                idm_password=idm_password,
                 branch=branch,
             )
 
@@ -136,7 +142,6 @@ class DiffManager:
         command_name: str,
         realm: Optional[str] = None,
         jwk_path: Optional[str] = None,
-        client_id: Optional[str] = None,
         sa_id: Optional[str] = None,
         base_url: Optional[str] = None,
         project_name: Optional[str] = None,
@@ -144,6 +149,9 @@ class DiffManager:
         onprem_username: Optional[str] = None,
         onprem_password: Optional[str] = None,
         onprem_realm: Optional[str] = None,
+        idm_base_url: Optional[str] = None,
+        idm_username: Optional[str] = None,
+        idm_password: Optional[str] = None,
         branch: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         """Fetch current data from server"""
@@ -163,7 +171,6 @@ class DiffManager:
             response_filter=response_filter,
             realm=realm,
             jwk_path=jwk_path,
-            client_id=client_id,
             sa_id=sa_id,
             base_url=base_url,
             project_name=project_name,
@@ -171,6 +178,9 @@ class DiffManager:
             onprem_username=onprem_username,
             onprem_password=onprem_password,
             onprem_realm=onprem_realm,
+            idm_base_url=idm_base_url,
+            idm_username=idm_username,
+            idm_password=idm_password,
             branch=branch,
         )
 

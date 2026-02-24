@@ -23,13 +23,15 @@ class SyncHandler:
         file_path: Optional[str] = None,
         realm: Optional[str] = None,
         jwk_path: Optional[str] = None,
-        client_id: Optional[str] = None,
         sa_id: Optional[str] = None,
         project_name: Optional[str] = None,
         auth_mode: Optional[str] = None,
         onprem_username: Optional[str] = None,
         onprem_password: Optional[str] = None,
         onprem_realm: Optional[str] = None,
+        idm_base_url: Optional[str] = None,
+        idm_username: Optional[str] = None,
+        idm_password: Optional[str] = None,
         branch: Optional[str] = None,
         force: bool = False,
     ) -> Optional[Dict[str, Any]]:
@@ -45,13 +47,15 @@ class SyncHandler:
             file_path: Path to source file (local mode)
             realm: Realm name
             jwk_path: JWK path for auth
-            client_id: Client ID for auth
             sa_id: Service account ID
             project_name: Project name
             auth_mode: Authentication mode
-            onprem_username: On-prem username
-            onprem_password: On-prem password
-            onprem_realm: On-prem realm
+            onprem_username: On-prem AM username
+            onprem_password: On-prem AM password
+            onprem_realm: On-prem AM realm
+            idm_base_url: On-prem IDM base URL
+            idm_username: On-prem IDM username
+            idm_password: On-prem IDM password
             branch: Git branch (git mode)
             force: Force deletion without confirmation
 
@@ -67,7 +71,6 @@ class SyncHandler:
             file_path=file_path,
             realm=realm,
             jwk_path=jwk_path,
-            client_id=client_id,
             sa_id=sa_id,
             base_url=base_url,
             project_name=project_name,
@@ -75,6 +78,9 @@ class SyncHandler:
             onprem_username=onprem_username,
             onprem_password=onprem_password,
             onprem_realm=onprem_realm,
+            idm_base_url=idm_base_url,
+            idm_username=idm_username,
+            idm_password=idm_password,
             branch=branch,
             generate_html=False,  # Don't generate HTML for sync operations
         )
@@ -102,7 +108,7 @@ class SyncHandler:
             items_to_delete=items_to_delete,
             delete_func=delete_func,
             token=token,
-            base_url=base_url
+            base_url=base_url,
         )
 
         # Print summary
