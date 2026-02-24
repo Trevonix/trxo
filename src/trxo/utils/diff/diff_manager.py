@@ -38,6 +38,7 @@ class DiffManager:
         idm_base_url: Optional[str] = None,
         idm_username: Optional[str] = None,
         idm_password: Optional[str] = None,
+        am_base_url: Optional[str] = None,
         branch: Optional[str] = None,
         generate_html: bool = True,
         html_output_dir: Optional[str] = None,
@@ -60,6 +61,7 @@ class DiffManager:
             idm_base_url: On-premise IDM base URL
             idm_username: On-premise IDM username
             idm_password: On-premise IDM password
+            am_base_url: On-premise AM base URL
             branch: Git branch
             generate_html: Whether to generate HTML report
             html_output_dir: Output directory for HTML report
@@ -85,6 +87,7 @@ class DiffManager:
                 idm_base_url=idm_base_url,
                 idm_username=idm_username,
                 idm_password=idm_password,
+                am_base_url=am_base_url,
                 branch=branch,
             )
 
@@ -152,6 +155,7 @@ class DiffManager:
         idm_base_url: Optional[str] = None,
         idm_username: Optional[str] = None,
         idm_password: Optional[str] = None,
+        am_base_url: Optional[str] = None,
         branch: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         """Fetch current data from server"""
@@ -181,6 +185,7 @@ class DiffManager:
             idm_base_url=idm_base_url,
             idm_username=idm_username,
             idm_password=idm_password,
+            am_base_url=am_base_url,
             branch=branch,
         )
 

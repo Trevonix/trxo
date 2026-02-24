@@ -51,6 +51,7 @@ class BaseImporter(BaseCommand):
         idm_base_url: Optional[str] = None,
         idm_username: Optional[str] = None,
         idm_password: Optional[str] = None,
+        am_base_url: Optional[str] = None,
         force_import: bool = False,
         branch: Optional[str] = None,
         diff: bool = False,
@@ -75,6 +76,7 @@ class BaseImporter(BaseCommand):
                 idm_base_url=idm_base_url,
                 idm_username=idm_username,
                 idm_password=idm_password,
+                am_base_url=am_base_url,
             )
             self.logger.debug(
                 f"Authentication initialized for {item_type} import, "
@@ -97,6 +99,7 @@ class BaseImporter(BaseCommand):
                     idm_base_url=idm_base_url,
                     idm_username=idm_username,
                     idm_password=idm_password,
+                    am_base_url=am_base_url,
                     branch=branch,
                 )
                 return
@@ -158,6 +161,7 @@ class BaseImporter(BaseCommand):
                     idm_base_url=idm_base_url,
                     idm_username=idm_username,
                     idm_password=idm_password,
+                    am_base_url=am_base_url,
                     branch=branch,
                     force=force_import,
                 )
@@ -481,6 +485,7 @@ class BaseImporter(BaseCommand):
         idm_base_url: Optional[str] = None,
         idm_username: Optional[str] = None,
         idm_password: Optional[str] = None,
+        am_base_url: Optional[str] = None,
         branch: Optional[str] = None,
     ) -> None:
         """Perform diff analysis and display results"""
@@ -507,6 +512,7 @@ class BaseImporter(BaseCommand):
                 idm_base_url=idm_base_url,
                 idm_username=idm_username,
                 idm_password=idm_password,
+                am_base_url=am_base_url,
                 branch=branch,
                 generate_html=True,
             )
@@ -585,6 +591,7 @@ class BaseImporter(BaseCommand):
         idm_base_url: Optional[str] = None,
         idm_username: Optional[str] = None,
         idm_password: Optional[str] = None,
+        am_base_url: Optional[str] = None,
         branch: Optional[str] = None,
         force: bool = False,
     ) -> Optional[Dict[str, Any]]:
@@ -609,6 +616,7 @@ class BaseImporter(BaseCommand):
             idm_base_url=idm_base_url,
             idm_username=idm_username,
             idm_password=idm_password,
+            am_base_url=am_base_url,
             branch=branch,
             force=force,
         )

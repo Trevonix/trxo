@@ -36,6 +36,7 @@ class DataFetcher:
         idm_base_url: Optional[str] = None,
         idm_username: Optional[str] = None,
         idm_password: Optional[str] = None,
+        am_base_url: Optional[str] = None,
         response_filter: Optional[callable] = None,
         branch: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
@@ -57,6 +58,7 @@ class DataFetcher:
             idm_base_url: On-premise IDM base URL
             idm_username: On-premise IDM username
             idm_password: On-premise IDM password
+            am_base_url: On-premise AM base URL
             response_filter: Response filter function
             branch: Git branch (for Git mode)
 
@@ -100,8 +102,10 @@ class DataFetcher:
                     idm_base_url=idm_base_url,
                     idm_username=idm_username,
                     idm_password=idm_password,
+                    am_base_url=am_base_url,
                     response_filter=response_filter,
                     branch=branch,
+                    version=None,
                 )
 
                 return captured_data

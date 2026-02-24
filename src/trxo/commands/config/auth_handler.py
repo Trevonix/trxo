@@ -157,6 +157,7 @@ def setup_onprem_auth(
     current_project: str,
     idm_base_url: Optional[str] = None,
     idm_username: Optional[str] = None,
+    am_base_url: Optional[str] = None,
 ) -> Dict:
     """Setup on-premises authentication configuration.
 
@@ -181,7 +182,7 @@ def setup_onprem_auth(
 
     if username_value:
         am_base_url_value = get_credential_value(
-            base_url,
+            am_base_url or base_url,
             "am_base_url",
             existing_config,
             "\nBase AM URL (example: http://localhost:8080/am)",

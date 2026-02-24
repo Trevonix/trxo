@@ -24,6 +24,9 @@ class CommonOptions:
                 "--base-url",
                 help="Base URL for PingOne Advanced Identity Cloud instance",
             ),
+            "am_base_url": typer.Option(
+                None, "--am-base-url", help="On-Prem AM base URL"
+            ),
             "project_name": typer.Option(
                 None,
                 "--project-name",
@@ -75,6 +78,7 @@ def create_auth_params():
             "--base-url",
             help="Base URL for PingOne Advanced Identity Cloud instance",
         ),
+        typer.Option(None, "--am-base-url", help="On-Prem AM base URL"),
         typer.Option(
             None,
             "--project-name",

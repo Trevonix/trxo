@@ -59,6 +59,7 @@ class BaseCommand(ABC):
         idm_base_url: Optional[str] = None,
         idm_username: Optional[str] = None,
         idm_password: Optional[str] = None,
+        am_base_url: Optional[str] = None,
     ) -> tuple:
         """Initialize authentication and return token/session and base URL.
         Sets self.auth_mode to the active mode ('service-account' or 'onprem').
@@ -89,24 +90,19 @@ class BaseCommand(ABC):
         api_base_url = self.auth_manager.get_base_url(current_project, base_url)
 
         if self.auth_mode == "onprem":
-            # Determine which products are configured
-            products = self.auth_manager.get_onprem_products(current_project)
-
-            # Ensure the current command's product is included in gathering credentials
-            if self.product not in products:
-                products.append(self.product)
-
             token_or_session = None
-            if "am" in products:
+            if self.product == "am":
                 # Get AM session token
                 token_or_session = self.auth_manager.get_onprem_session(
                     current_project,
                     username=onprem_username,
                     password=onprem_password,
                     realm=onprem_realm,
+                    base_url=am_base_url,
                 )
 
-            if "idm" in products or idm_username:
+            # Explicitly check for IDM if that's the target product
+            if self.product == "idm":
                 # Gather IDM credentials (prompt for password if needed)
                 self._idm_username, self._idm_password = (
                     self.auth_manager.get_idm_credentials(
@@ -119,8 +115,8 @@ class BaseCommand(ABC):
                     current_project, idm_base_url
                 )
 
-            # If only IDM configured (no AM), token_or_session stays None.
-            # That's okay — IDM commands use X-OpenIDM headers, not a session token.
+            # Note: We don't initialize both unless strictly necessary.
+            # Most commands target one product (AM or IDM).
         else:
             token_or_session = self.auth_manager.get_token(current_project)
 

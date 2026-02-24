@@ -31,6 +31,9 @@ def setup(
     base_url: Optional[str] = typer.Option(
         None, "--base-url", help="Base URL for PingOne Advanced Identity Cloud instance"
     ),
+    am_base_url: Optional[str] = typer.Option(
+        None, "--am-base-url", help="On-Prem AM base URL"
+    ),
     jwk_path: Optional[str] = typer.Option(
         None, "--jwk-path", help="Path to JWK private key file"
     ),
@@ -136,6 +139,7 @@ def setup(
             current_project=current_project,
             idm_base_url=idm_base_url,
             idm_username=idm_username,
+            am_base_url=am_base_url,
         )
     else:
         error("Invalid --auth-mode. Use 'service-account' or 'onprem'")

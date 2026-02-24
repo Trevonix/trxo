@@ -36,6 +36,7 @@ class AuthManager:
         idm_base_url: Optional[str] = None,
         idm_username: Optional[str] = None,
         idm_password: Optional[str] = None,
+        am_base_url: Optional[str] = None,
     ) -> str:
         """Validate that a project is active or initialize argument mode"""
         current_project = self.config_store.get_current_project()
@@ -78,6 +79,7 @@ class AuthManager:
                     project_name=project_name,
                     idm_base_url=idm_base_url,
                     idm_username=idm_username,
+                    am_base_url=am_base_url,
                 )
             return self._initialize_argument_mode(
                 jwk_path, sa_id, base_url, project_name
@@ -132,6 +134,7 @@ class AuthManager:
         project_name: Optional[str] = None,
         idm_base_url: Optional[str] = None,
         idm_username: Optional[str] = None,
+        am_base_url: Optional[str] = None,
     ) -> str:
         """Initialize in argument mode for on-prem with provided credentials "
         "(no password stored)."""
@@ -152,7 +155,8 @@ class AuthManager:
 
         temp_config = {
             "auth_mode": "onprem",
-            "base_url": base_url,
+            "base_url": am_base_url or base_url,
+            "am_base_url": am_base_url,
             "onprem_products": products,
             "description": "Temporary on-prem project configuration",
         }
@@ -260,10 +264,11 @@ class AuthManager:
         username: Optional[str] = None,
         password: Optional[str] = None,
         realm: Optional[str] = None,
+        base_url: Optional[str] = None,
     ) -> str:
         """Obtain on-prem AM session token (SSO token). Not persisted."""
         config = self.config_store.get_project_config(project_name) or {}
-        base_url = self.get_base_url(project_name)
+        base_url = self.get_base_url(project_name, base_url)
 
         # Defaults from config
         username = username or config.get("onprem_username")

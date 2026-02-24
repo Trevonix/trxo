@@ -32,6 +32,7 @@ class SyncHandler:
         idm_base_url: Optional[str] = None,
         idm_username: Optional[str] = None,
         idm_password: Optional[str] = None,
+        am_base_url: Optional[str] = None,
         branch: Optional[str] = None,
         force: bool = False,
     ) -> Optional[Dict[str, Any]]:
@@ -56,6 +57,7 @@ class SyncHandler:
             idm_base_url: On-prem IDM base URL
             idm_username: On-prem IDM username
             idm_password: On-prem IDM password
+            am_base_url: On-prem AM base URL
             branch: Git branch (git mode)
             force: Force deletion without confirmation
 
@@ -81,6 +83,7 @@ class SyncHandler:
             idm_base_url=idm_base_url,
             idm_username=idm_username,
             idm_password=idm_password,
+            am_base_url=am_base_url,
             branch=branch,
             generate_html=False,  # Don't generate HTML for sync operations
         )

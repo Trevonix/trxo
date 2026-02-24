@@ -51,6 +51,7 @@ class BaseExporter(BaseCommand):
         idm_base_url: Optional[str] = None,
         idm_username: Optional[str] = None,
         idm_password: Optional[str] = None,
+        am_base_url: Optional[str] = None,
         response_filter: Optional[Callable[[Any], Any]] = None,
         version: Optional[str] = None,
         no_version: bool = False,
@@ -78,6 +79,7 @@ class BaseExporter(BaseCommand):
             idm_base_url: On-premise IDM base URL
             idm_username: On-premise IDM username
             idm_password: On-premise IDM password
+            am_base_url: On-premise AM base URL
             response_filter: Response filter function
             version: Version string
             no_version: Skip versioning
@@ -103,6 +105,7 @@ class BaseExporter(BaseCommand):
                 idm_base_url=idm_base_url,
                 idm_username=idm_username,
                 idm_password=idm_password,
+                am_base_url=am_base_url,
             )
             self.logger.debug(
                 f"Authentication initialized for {command_name}, "

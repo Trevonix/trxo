@@ -243,6 +243,11 @@ def create_esv_commands():
         onprem_realm: str = typer.Option(
             "root", "--onprem-realm", help="On-Prem realm"
         ),
+        am_base_url: str = typer.Option(
+
+            None, "--am-base-url", help="On-Prem AM base URL"
+
+        ),
         idm_base_url: str = typer.Option(
             None, "--idm-base-url", help="On-Prem IDM base URL"
         ),
@@ -268,7 +273,7 @@ def create_esv_commands():
             onprem_realm=onprem_realm,
             idm_base_url=idm_base_url,
             idm_username=idm_username,
-            idm_password=idm_password,
+            idm_password=idm_password, am_base_url=am_base_url,
             force_import=force_import,
             branch=branch,
             diff=diff,
@@ -317,6 +322,11 @@ def create_esv_commands():
         onprem_realm: str = typer.Option(
             "root", "--onprem-realm", help="On-Prem realm"
         ),
+        am_base_url: str = typer.Option(
+
+            None, "--am-base-url", help="On-Prem AM base URL"
+
+        ),
         idm_base_url: str = typer.Option(
             None, "--idm-base-url", help="On-Prem IDM base URL"
         ),
@@ -342,7 +352,7 @@ def create_esv_commands():
             onprem_realm=onprem_realm,
             idm_base_url=idm_base_url,
             idm_username=idm_username,
-            idm_password=idm_password,
+            idm_password=idm_password, am_base_url=am_base_url,
             force_import=force_import,
             branch=branch,
             diff=diff,
