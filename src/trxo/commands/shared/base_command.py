@@ -77,6 +77,7 @@ class BaseCommand(ABC):
             idm_base_url=idm_base_url,
             idm_username=idm_username,
             idm_password=idm_password,
+            am_base_url=am_base_url,
         )
         # If not in argument mode, update config if arguments provided
         argument_mode = all([jwk_path, sa_id, base_url])
