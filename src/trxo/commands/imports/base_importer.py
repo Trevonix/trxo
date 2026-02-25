@@ -270,13 +270,32 @@ class BaseImporter(BaseCommand):
         info(f"Loading {item_type} from local file: {file_path}")
 
         try:
-            items_to_process = self.file_loader.load_from_local_file(file_path)
+            # Read raw file content first so hash validation can use
+            # the original exported structure (avoids normalization differences)
+            import os
+            import json
 
-            # Validate required fields
+            if not os.path.isabs(file_path):
+                file_path_abs = os.path.abspath(file_path)
+            else:
+                file_path_abs = file_path
+
+            with open(file_path_abs, "r", encoding="utf-8") as f:
+                raw_data = json.load(f)
+
+            # Normalize items for processing. Prefer importer-specific loader
+            # if it exists (some importers provide custom normalization).
+            if hasattr(self, "load_data_from_file"):
+                items_to_process = self.load_data_from_file(file_path)
+            else:
+                items_to_process = self.file_loader.load_from_local_file(file_path)
+
+            # Validate required fields on normalized items
             self._validate_items(items_to_process)
 
-            # Generate hash for import data and validate against stored export hash
-            if not self.validate_import_hash(items_to_process, force_import):
+            # Validate import hash against raw file content so the hash
+            # matches whatever was generated at export time (wrapper vs list)
+            if not self.validate_import_hash(raw_data, force_import):
                 error("Import validation failed: Hash mismatch with exported data")
                 raise typer.Exit(1)
 
