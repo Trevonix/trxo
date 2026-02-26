@@ -27,10 +27,6 @@ def base_setup_mocks(mocker):
         side_effect=lambda v, *_args, **_kwargs: v,
     )
     mocker.patch(
-        "trxo.commands.config.config_manager.normalize_base_url",
-        side_effect=lambda v, *_args: v,
-    )
-    mocker.patch(
         "trxo.commands.config.config_manager.setup_service_account_auth",
         return_value={"auth_mode": "service-account"},
     )
@@ -48,12 +44,14 @@ def base_setup_mocks(mocker):
 def test_setup_success_service_account(mock_config_store, base_setup_mocks):
     setup(
         jwk_path="jwk.json",
-        client_id="cid",
         sa_id="sid",
         base_url="https://example.com",
+        am_base_url=None,
         auth_mode="service-account",
         onprem_username=None,
         onprem_realm="root",
+        idm_base_url=None,
+        idm_username=None,
         regions=None,
         storage_mode=None,
         git_username=None,
@@ -70,12 +68,14 @@ def test_setup_success_service_account(mock_config_store, base_setup_mocks):
 def test_setup_success_onprem(mock_config_store, base_setup_mocks):
     setup(
         jwk_path=None,
-        client_id=None,
         sa_id=None,
         base_url="https://example.com",
+        am_base_url="http://am",
         auth_mode="onprem",
         onprem_username="user",
         onprem_realm="root",
+        idm_base_url=None,
+        idm_username=None,
         regions=None,
         storage_mode=None,
         git_username=None,
@@ -97,12 +97,14 @@ def test_setup_no_active_project(mocker):
     with pytest.raises(typer.Exit):
         setup(
             jwk_path=None,
-            client_id=None,
             sa_id=None,
             base_url=None,
+            am_base_url=None,
             auth_mode="service-account",
             onprem_username=None,
             onprem_realm="root",
+            idm_base_url=None,
+            idm_username=None,
             regions=None,
             storage_mode=None,
             git_username=None,
@@ -115,12 +117,14 @@ def test_setup_invalid_auth_mode(mock_config_store, base_setup_mocks):
     with pytest.raises(typer.Exit):
         setup(
             jwk_path="jwk.json",
-            client_id="cid",
             sa_id="sid",
             base_url="https://example.com",
+            am_base_url=None,
             auth_mode="invalid",
             onprem_username=None,
             onprem_realm="root",
+            idm_base_url=None,
+            idm_username=None,
             regions=None,
             storage_mode=None,
             git_username=None,
@@ -129,18 +133,22 @@ def test_setup_invalid_auth_mode(mock_config_store, base_setup_mocks):
         )
 
 
-def test_setup_existing_config_without_overrides_exits(mock_config_store, base_setup_mocks):
+def test_setup_existing_config_without_overrides_exits(
+    mock_config_store, base_setup_mocks
+):
     mock_config_store.get_project_config.return_value = {"base_url": "https://old.com"}
 
     with pytest.raises(typer.Exit):
         setup(
             jwk_path=None,
-            client_id=None,
             sa_id=None,
             base_url=None,
+            am_base_url=None,
             auth_mode="service-account",
             onprem_username=None,
             onprem_realm="root",
+            idm_base_url=None,
+            idm_username=None,
             regions=None,
             storage_mode=None,
             git_username=None,
@@ -149,17 +157,21 @@ def test_setup_existing_config_without_overrides_exits(mock_config_store, base_s
         )
 
 
-def test_setup_existing_config_with_override_continues(mock_config_store, base_setup_mocks):
+def test_setup_existing_config_with_override_continues(
+    mock_config_store, base_setup_mocks
+):
     mock_config_store.get_project_config.return_value = {"base_url": "https://old.com"}
 
     setup(
         jwk_path=None,
-        client_id=None,
         sa_id=None,
         base_url="https://new.com",
+        am_base_url=None,
         auth_mode="service-account",
         onprem_username=None,
         onprem_realm="root",
+        idm_base_url=None,
+        idm_username=None,
         regions=None,
         storage_mode=None,
         git_username=None,

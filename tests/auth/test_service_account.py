@@ -27,7 +27,6 @@ def test_get_private_key_from_file(tmp_path, mocker, jwk_dict):
     auth = ServiceAccountAuth(
         jwk_path=str(jwk_file),
         jwk_content=None,
-        client_id="cid",
         sa_id="sid",
         token_url="https://token",
     )
@@ -46,7 +45,6 @@ def test_get_private_key_from_content(mocker, jwk_dict):
     auth = ServiceAccountAuth(
         jwk_path="unused",
         jwk_content=json.dumps(jwk_dict),
-        client_id="cid",
         sa_id="sid",
         token_url="https://token",
     )
@@ -67,7 +65,6 @@ def test_create_jwt_calls_encode(mocker):
 
     auth = ServiceAccountAuth(
         jwk_path="x",
-        client_id="cid",
         sa_id="sid",
         token_url="https://token",
     )
@@ -100,7 +97,6 @@ def test_get_access_token_success(mocker):
 
     auth = ServiceAccountAuth(
         jwk_path="x",
-        client_id="cid",
         sa_id="sid",
         token_url="https://token",
     )
@@ -134,7 +130,6 @@ def test_get_access_token_http_error(mocker):
 
     auth = ServiceAccountAuth(
         jwk_path="x",
-        client_id="cid",
         sa_id="sid",
         token_url="https://token",
     )

@@ -24,7 +24,6 @@ def test_export_email_defaults(mock_exporter):
         branch=None,
         commit=None,
         jwk_path=None,
-        client_id=None,
         sa_id=None,
         base_url=None,
         project_name=None,
@@ -34,12 +33,18 @@ def test_export_email_defaults(mock_exporter):
         onprem_username=None,
         onprem_password=None,
         onprem_realm="root",
+        am_base_url=None,
+        idm_base_url=None,
+        idm_username=None,
+        idm_password=None,
     )
 
     kwargs = mock_exporter.export_data.call_args.kwargs
 
     assert kwargs["command_name"] == "email_templates"
-    assert kwargs["api_endpoint"] == '/openidm/config?_queryFilter=_id sw "emailTemplate"'
+    assert (
+        kwargs["api_endpoint"] == '/openidm/config?_queryFilter=_id sw "emailTemplate"'
+    )
     assert kwargs["headers"]["Accept-API-Version"] == "protocol=2.1,resource=1.0"
     assert kwargs["view"] is False
     assert kwargs["view_columns"] is None
@@ -60,7 +65,6 @@ def test_export_email_custom(mock_exporter):
         branch="main",
         commit="msg",
         jwk_path="jwk.json",
-        client_id="cid",
         sa_id="sid",
         base_url="https://example.com",
         project_name="proj",
@@ -70,6 +74,10 @@ def test_export_email_custom(mock_exporter):
         onprem_username="user",
         onprem_password="pass",
         onprem_realm="custom",
+        am_base_url="http://am",
+        idm_base_url="http://idm",
+        idm_username="idm_user",
+        idm_password="idm_pass",
     )
 
     kwargs = mock_exporter.export_data.call_args.kwargs
@@ -81,7 +89,6 @@ def test_export_email_custom(mock_exporter):
     assert kwargs["branch"] == "main"
     assert kwargs["commit_message"] == "msg"
     assert kwargs["jwk_path"] == "jwk.json"
-    assert kwargs["client_id"] == "cid"
     assert kwargs["sa_id"] == "sid"
     assert kwargs["base_url"] == "https://example.com"
     assert kwargs["project_name"] == "proj"
@@ -91,3 +98,6 @@ def test_export_email_custom(mock_exporter):
     assert kwargs["onprem_username"] == "user"
     assert kwargs["onprem_password"] == "pass"
     assert kwargs["onprem_realm"] == "custom"
+    assert kwargs["am_base_url"] == "http://am"
+    assert kwargs["idm_base_url"] == "http://idm"
+    assert kwargs["idm_username"] == "idm_user"

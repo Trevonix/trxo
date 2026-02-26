@@ -41,7 +41,6 @@ def test_export_gateway_agents_custom_args(mock_exporter):
         view=True,
         view_columns="_id,name",
         jwk_path="jwk.json",
-        client_id="cid",
         sa_id="sid",
         base_url="https://example.com",
         project_name="proj",
@@ -51,6 +50,7 @@ def test_export_gateway_agents_custom_args(mock_exporter):
         onprem_username="user",
         onprem_password="pass",
         onprem_realm="root",
+        am_base_url="http://am",
         version="v1",
         no_version=True,
         branch="main",
@@ -62,7 +62,6 @@ def test_export_gateway_agents_custom_args(mock_exporter):
     assert kwargs["view"] is True
     assert kwargs["view_columns"] == "_id,name"
     assert kwargs["jwk_path"] == "jwk.json"
-    assert kwargs["client_id"] == "cid"
     assert kwargs["sa_id"] == "sid"
     assert kwargs["base_url"] == "https://example.com"
     assert kwargs["project_name"] == "proj"

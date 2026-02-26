@@ -29,7 +29,9 @@ def test_authn_importer_api_endpoint(mocker):
 def test_authn_importer_update_item_success(mocker):
     importer = AuthnImporter(realm="alpha")
 
-    mocker.patch.object(importer, "build_auth_headers", return_value={"Authorization": "Bearer t"})
+    mocker.patch.object(
+        importer, "build_auth_headers", return_value={"Authorization": "Bearer t"}
+    )
     mocker.patch.object(importer, "make_http_request")
     mocker.patch("trxo.commands.imports.authn.info")
 
@@ -42,7 +44,9 @@ def test_authn_importer_update_item_success(mocker):
 def test_authn_importer_update_item_failure(mocker):
     importer = AuthnImporter(realm="alpha")
 
-    mocker.patch.object(importer, "build_auth_headers", return_value={"Authorization": "Bearer t"})
+    mocker.patch.object(
+        importer, "build_auth_headers", return_value={"Authorization": "Bearer t"}
+    )
     mocker.patch.object(importer, "make_http_request", side_effect=Exception("boom"))
     mocker.patch("trxo.commands.imports.authn.error")
 
@@ -59,7 +63,7 @@ def test_import_authn_defaults(mocker):
     )
 
     import_authn = create_authn_import_command()
-    import_authn()
+    import_authn(file="f")
 
     importer.import_from_file.assert_called_once()
     kwargs = importer.import_from_file.call_args.kwargs
@@ -67,7 +71,6 @@ def test_import_authn_defaults(mocker):
     assert "file_path" in kwargs
     assert "realm" in kwargs
     assert "jwk_path" in kwargs
-    assert "client_id" in kwargs
     assert "sa_id" in kwargs
     assert "base_url" in kwargs
     assert "project_name" in kwargs
@@ -95,7 +98,6 @@ def test_import_authn_custom_args(mocker):
         force_import=True,
         branch="b",
         jwk_path="k",
-        client_id="c",
         sa_id="s",
         base_url="u",
         project_name="p",
@@ -103,6 +105,7 @@ def test_import_authn_custom_args(mocker):
         onprem_username="ou",
         onprem_password="op",
         onprem_realm="or",
+        am_base_url="am",
     )
 
     importer.import_from_file.assert_called_once()
@@ -114,7 +117,6 @@ def test_import_authn_custom_args(mocker):
     assert kwargs["force_import"] is True
     assert kwargs["branch"] == "b"
     assert kwargs["jwk_path"] == "k"
-    assert kwargs["client_id"] == "c"
     assert kwargs["sa_id"] == "s"
     assert kwargs["base_url"] == "u"
     assert kwargs["project_name"] == "p"
@@ -122,3 +124,4 @@ def test_import_authn_custom_args(mocker):
     assert kwargs["onprem_username"] == "ou"
     assert kwargs["onprem_password"] == "op"
     assert kwargs["onprem_realm"] == "or"
+    assert kwargs["am_base_url"] == "am"

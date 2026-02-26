@@ -31,7 +31,6 @@ def test_export_journeys_defaults(mock_exporter, mock_info):
         branch=None,
         commit=None,
         jwk_path=None,
-        client_id=None,
         sa_id=None,
         base_url=None,
         project_name=None,
@@ -41,12 +40,16 @@ def test_export_journeys_defaults(mock_exporter, mock_info):
         onprem_username=None,
         onprem_password=None,
         onprem_realm="root",
+        am_base_url=None,
     )
 
     kwargs = mock_exporter.export_data.call_args.kwargs
 
     assert kwargs["command_name"] == "journeys"
-    assert f"/realms/{DEFAULT_REALM}/realm-config/authentication/authenticationtrees/trees" in kwargs["api_endpoint"]
+    assert (
+        f"/realms/{DEFAULT_REALM}/realm-config/authentication/authenticationtrees/trees"
+        in kwargs["api_endpoint"]
+    )
     mock_info.assert_called_once()
     assert kwargs["view"] is None
     assert kwargs["view_columns"] is None
@@ -68,7 +71,6 @@ def test_export_journeys_custom_realm_and_args(mock_exporter, mock_info):
         branch="main",
         commit="msg",
         jwk_path="jwk.json",
-        client_id="cid",
         sa_id="sid",
         base_url="https://example.com",
         project_name="proj",
@@ -78,11 +80,15 @@ def test_export_journeys_custom_realm_and_args(mock_exporter, mock_info):
         onprem_username="user",
         onprem_password="pass",
         onprem_realm="custom",
+        am_base_url="http://am",
     )
 
     kwargs = mock_exporter.export_data.call_args.kwargs
 
-    assert "/realms/custom/realm-config/authentication/authenticationtrees/trees" in kwargs["api_endpoint"]
+    assert (
+        "/realms/custom/realm-config/authentication/authenticationtrees/trees"
+        in kwargs["api_endpoint"]
+    )
     assert kwargs["view"] is True
     assert kwargs["view_columns"] == "_id,name"
     assert kwargs["version"] == "v1"
@@ -90,7 +96,6 @@ def test_export_journeys_custom_realm_and_args(mock_exporter, mock_info):
     assert kwargs["branch"] == "main"
     assert kwargs["commit_message"] == "msg"
     assert kwargs["jwk_path"] == "jwk.json"
-    assert kwargs["client_id"] == "cid"
     assert kwargs["sa_id"] == "sid"
     assert kwargs["base_url"] == "https://example.com"
     assert kwargs["project_name"] == "proj"

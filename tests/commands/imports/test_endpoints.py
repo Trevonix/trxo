@@ -73,7 +73,6 @@ def test_create_endpoints_import_command_calls_import_from_file(mocker):
         branch="main",
         file="x.json",
         jwk_path="jwk",
-        client_id="cid",
         sa_id="sid",
         base_url="http://x",
         project_name="proj",
@@ -81,6 +80,10 @@ def test_create_endpoints_import_command_calls_import_from_file(mocker):
         onprem_username="u",
         onprem_password="p",
         onprem_realm="root",
+        am_base_url="am",
+        idm_base_url="idm",
+        idm_username="idmu",
+        idm_password="idmp",
     )
 
     importer.import_from_file.assert_called_once()
