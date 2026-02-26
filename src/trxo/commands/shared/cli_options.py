@@ -18,12 +18,14 @@ class CommonOptions:
             "jwk_path": typer.Option(
                 None, "--jwk-path", help="Path to JWK private key file"
             ),
-            "client_id": typer.Option(None, "--client-id", help="Client ID"),
             "sa_id": typer.Option(None, "--sa-id", help="Service Account ID"),
             "base_url": typer.Option(
                 None,
                 "--base-url",
                 help="Base URL for PingOne Advanced Identity Cloud instance",
+            ),
+            "am_base_url": typer.Option(
+                None, "--am-base-url", help="On-Prem AM base URL"
             ),
             "project_name": typer.Option(
                 None,
@@ -70,13 +72,13 @@ def create_auth_params():
     """Create authentication parameter definitions for typer commands"""
     return [
         typer.Option(None, "--jwk-path", help="Path to JWK private key file"),
-        typer.Option(None, "--client-id", help="Client ID"),
         typer.Option(None, "--sa-id", help="Service Account ID"),
         typer.Option(
             None,
             "--base-url",
             help="Base URL for PingOne Advanced Identity Cloud instance",
         ),
+        typer.Option(None, "--am-base-url", help="On-Prem AM base URL"),
         typer.Option(
             None,
             "--project-name",

@@ -74,7 +74,6 @@ def test_create_email_templates_import_command_calls_import_from_file(mocker):
         diff=False,
         branch="main",
         jwk_path="jwk",
-        client_id="cid",
         sa_id="sid",
         base_url="http://x",
         project_name="proj",
@@ -82,6 +81,7 @@ def test_create_email_templates_import_command_calls_import_from_file(mocker):
         onprem_username="u",
         onprem_password="p",
         onprem_realm="root",
+        am_base_url="am",
     )
 
     importer.import_from_file.assert_called_once()

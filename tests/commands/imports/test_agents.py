@@ -12,7 +12,9 @@ from trxo.commands.imports.agents import (
 def importer(mocker):
     obj = AgentsImporter("IdentityGatewayAgent", realm="alpha")
     mocker.patch.object(obj, "make_http_request")
-    mocker.patch.object(obj, "build_auth_headers", return_value={"Authorization": "Bearer t"})
+    mocker.patch.object(
+        obj, "build_auth_headers", return_value={"Authorization": "Bearer t"}
+    )
     return obj
 
 
@@ -111,7 +113,6 @@ def test_import_agents_with_args(mocker):
         realm="bravo",
         cherry_pick="x",
         jwk_path="k",
-        client_id="c",
         sa_id="s",
         base_url="b",
         project_name="p",
@@ -119,6 +120,7 @@ def test_import_agents_with_args(mocker):
         onprem_username="u",
         onprem_password="pw",
         onprem_realm="root",
+        am_base_url="am",
         force_import=True,
         diff=True,
         branch="dev",
@@ -131,6 +133,7 @@ def test_import_agents_with_args(mocker):
     assert kwargs["force_import"] is True
     assert kwargs["diff"] is True
     assert kwargs["branch"] == "dev"
+    assert kwargs["am_base_url"] == "am"
 
 
 def test_agents_callback_with_subcommand_no_exit():

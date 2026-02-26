@@ -12,7 +12,6 @@ class ServiceAccountAuth:
     def __init__(
         self,
         jwk_path: str,
-        client_id: str,
         sa_id: str,
         token_url: str,
         *,
@@ -20,7 +19,6 @@ class ServiceAccountAuth:
     ) -> None:
         self.jwk_path = jwk_path
         self.jwk_content = jwk_content
-        self.client_id = client_id
         self.sa_id = sa_id
         self.token_url = token_url
         self.logger = get_logger("trxo.auth.service_account")
@@ -40,7 +38,7 @@ class ServiceAccountAuth:
         """Create signed JWT for authentication"""
         now = int(time.time())
         jwt_payload = {
-            "iss": self.client_id,
+            "iss": self.sa_id,
             "sub": self.sa_id,
             "aud": self.token_url,
             "exp": now + 899,

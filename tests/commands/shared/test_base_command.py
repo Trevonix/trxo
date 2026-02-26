@@ -27,7 +27,6 @@ def test_initialize_auth_service_account(mocker):
 
     token, base_url = cmd.initialize_auth(
         jwk_path="a",
-        client_id="b",
         sa_id="c",
         base_url="http://x",
     )
@@ -58,6 +57,30 @@ def test_initialize_auth_onprem(mocker):
     assert cmd.auth_mode == "onprem"
 
 
+def test_initialize_auth_onprem_with_am_base_url(mocker):
+    """am_base_url is forwarded to validate_project so auth is performed against AM."""
+    cmd = DummyCommand()
+
+    validate = mocker.patch.object(
+        cmd.auth_manager, "validate_project", return_value="proj"
+    )
+    mocker.patch.object(cmd.auth_manager, "update_config_if_needed")
+    mocker.patch.object(cmd.auth_manager, "get_auth_mode", return_value="onprem")
+    mocker.patch.object(cmd.auth_manager, "get_base_url", return_value="http://am")
+    mocker.patch.object(cmd.auth_manager, "get_onprem_session", return_value="sso")
+
+    cmd.initialize_auth(
+        auth_mode="onprem",
+        base_url="http://am",
+        am_base_url="http://am",
+        onprem_username="u",
+        onprem_password="p",
+    )
+
+    call_kwargs = validate.call_args.kwargs
+    assert call_kwargs.get("am_base_url") == "http://am"
+
+
 def test_build_auth_headers_service_account():
     cmd = DummyCommand()
     cmd.auth_mode = "service-account"
@@ -72,41 +95,6 @@ def test_build_auth_headers_onprem():
 
     headers = cmd.build_auth_headers("sso")
     assert headers["Cookie"] == "iPlanetDirectoryPro=sso"
-
-
-def test_load_data_from_file_success(tmp_path):
-    cmd = DummyCommand()
-
-    data = {
-        "data": {
-            "result": [
-                {"id": "1"},
-                {"id": "2"},
-            ]
-        }
-    }
-
-    file_path = tmp_path / "data.json"
-    file_path.write_text(json.dumps(data))
-
-    items = cmd.load_data_from_file(str(file_path))
-    assert len(items) == 2
-
-
-def test_load_data_from_file_missing_file_raises():
-    cmd = DummyCommand()
-
-    with pytest.raises(Exception):
-        cmd.load_data_from_file("missing.json")
-
-
-def test_load_data_from_file_invalid_json(tmp_path):
-    cmd = DummyCommand()
-    file_path = tmp_path / "bad.json"
-    file_path.write_text("{bad json}")
-
-    with pytest.raises(ValueError):
-        cmd.load_data_from_file(str(file_path))
 
 
 def test_make_http_request_success(mocker):

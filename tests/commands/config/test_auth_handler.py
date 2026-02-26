@@ -62,7 +62,6 @@ def test_setup_service_account_auth_success(mocker, base_setup_mocks):
     config = setup_service_account_auth(
         existing_config={},
         jwk_path="~/.keys/jwk.json",
-        client_id="cid",
         sa_id="sid",
         base_url="https://example.com",
         regions="us",
@@ -74,7 +73,6 @@ def test_setup_service_account_auth_success(mocker, base_setup_mocks):
     )
 
     assert config["auth_mode"] == "service-account"
-    assert config["client_id"] == "cid"
     assert config["sa_id"] == "sid"
     assert config["token_url"] == "https://example.com/am/oauth2/access_token"
     assert config["jwk_keyring"] is True
@@ -88,7 +86,6 @@ def test_setup_service_account_auth_git_mode(mocker, base_setup_mocks):
     config = setup_service_account_auth(
         existing_config={},
         jwk_path="~/.keys/jwk.json",
-        client_id="cid",
         sa_id="sid",
         base_url="https://example.com",
         regions="us",
@@ -118,12 +115,13 @@ def test_setup_service_account_auth_keyring_unavailable(mocker):
         return_value=("jwk-raw", "fp", False),
     )
     mocker.patch("trxo.commands.config.auth_handler.ServiceAccountAuth")
-    mocker.patch("trxo.commands.config.auth_handler.validate_authentication", return_value=True)
+    mocker.patch(
+        "trxo.commands.config.auth_handler.validate_authentication", return_value=True
+    )
 
     config = setup_service_account_auth(
         existing_config={},
         jwk_path="~/.keys/jwk.json",
-        client_id="cid",
         sa_id="sid",
         base_url="https://example.com",
         regions="us",
@@ -148,7 +146,6 @@ def test_setup_service_account_auth_validation_failure(mocker, base_setup_mocks)
         setup_service_account_auth(
             existing_config={},
             jwk_path="~/.keys/jwk.json",
-            client_id="cid",
             sa_id="sid",
             base_url="https://example.com",
             regions="us",
@@ -170,7 +167,6 @@ def test_setup_service_account_auth_exception(mocker, base_setup_mocks):
         setup_service_account_auth(
             existing_config={},
             jwk_path="~/.keys/jwk.json",
-            client_id="cid",
             sa_id="sid",
             base_url="https://example.com",
             regions="us",

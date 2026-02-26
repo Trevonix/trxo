@@ -95,17 +95,41 @@ def validate_git_setup(
 def validate_onprem_authentication(
     base_url: str, realm: str, username: str, password: str
 ) -> bool:
-    """Validate on-premises authentication"""
+    """Validate on-premises AM authentication"""
     try:
-        info("\nValidating On-Prem authentication (password will NOT be stored)")
+        info("\nValidating On-Prem AM authentication (password will NOT be stored)")
         client = OnPremAuth(base_url=base_url, realm=realm)
         data = client.authenticate(username=username, password=password)
         if data.get("tokenId"):
-            success("On-Prem authentication successful!")
+            success("On-Prem AM authentication successful!")
             return True
         else:
-            error("On-Prem authentication failed")
+            error("On-Prem AM authentication failed")
             return False
     except Exception as e:
-        error(f"On-Prem authentication failed: {str(e)}")
+        error(f"On-Prem AM authentication failed: {str(e)}")
+        return False
+
+
+def validate_idm_authentication(base_url: str, username: str, password: str) -> bool:
+    """Validate on-premises IDM authentication by calling /openidm/info/ping"""
+    try:
+        import httpx
+
+        info("\nValidating On-Prem IDM authentication (password will NOT be stored)")
+        url = f"{base_url.rstrip('/')}/openidm/info/ping"
+        headers = {
+            "X-OpenIDM-Username": username,
+            "X-OpenIDM-Password": password,
+            "Content-Type": "application/json",
+        }
+        with httpx.Client(timeout=15.0) as client:
+            resp = client.get(url, headers=headers)
+            resp.raise_for_status()
+            data = resp.json()
+            state = data.get("state", data.get("shortDesc", "unknown"))
+            success(f"On-Prem IDM authentication successful! (state: {state})")
+            return True
+    except Exception as e:
+        error(f"On-Prem IDM authentication failed: {str(e)}")
         return False

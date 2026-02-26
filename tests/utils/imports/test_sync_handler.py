@@ -118,6 +118,7 @@ def test_handle_sync_deletions_success(mocker):
 
 
 def test_handle_sync_deletions_passes_all_args(mocker):
+    """Verify that all onprem / IDM / am_base_url args are forwarded to DiffManager."""
     mocker.patch("trxo.utils.imports.sync_handler.info")
     mocker.patch("trxo.utils.imports.sync_handler.warning")
     mocker.patch("trxo.utils.imports.sync_handler.success")
@@ -145,13 +146,16 @@ def test_handle_sync_deletions_passes_all_args(mocker):
         file_path="f.json",
         realm="alpha",
         jwk_path="jwk",
-        client_id="cid",
         sa_id="sid",
         project_name="proj",
         auth_mode="service-account",
         onprem_username="u",
         onprem_password="p",
         onprem_realm="r",
+        am_base_url="http://am",
+        idm_base_url="http://idm",
+        idm_username="idm_user",
+        idm_password="idm_pass",
         branch="main",
         force=True,
     )
@@ -161,7 +165,6 @@ def test_handle_sync_deletions_passes_all_args(mocker):
         file_path="f.json",
         realm="alpha",
         jwk_path="jwk",
-        client_id="cid",
         sa_id="sid",
         base_url="url",
         project_name="proj",
@@ -169,6 +172,10 @@ def test_handle_sync_deletions_passes_all_args(mocker):
         onprem_username="u",
         onprem_password="p",
         onprem_realm="r",
+        idm_base_url="http://idm",
+        idm_username="idm_user",
+        idm_password="idm_pass",
+        am_base_url="http://am",
         branch="main",
         generate_html=False,
     )

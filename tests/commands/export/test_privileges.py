@@ -13,11 +13,10 @@ def mock_exporter(mocker):
     return exporter
 
 
-def test_export_privileges_no_realm(mock_exporter):
-    export_privileges = create_privileges_export_command()
-
-    export_privileges(
-        realm=None,
+def _call_privileges(export_privileges, realm=None, **overrides):
+    """Helper to call export_privileges with sensible defaults."""
+    defaults = dict(
+        realm=realm,
         view=False,
         view_columns=None,
         version=None,
@@ -25,7 +24,6 @@ def test_export_privileges_no_realm(mock_exporter):
         branch=None,
         commit=None,
         jwk_path=None,
-        client_id=None,
         sa_id=None,
         base_url=None,
         project_name=None,
@@ -35,7 +33,16 @@ def test_export_privileges_no_realm(mock_exporter):
         onprem_username=None,
         onprem_password=None,
         onprem_realm="root",
+        am_base_url=None,
     )
+    defaults.update(overrides)
+    export_privileges(**defaults)
+
+
+def test_export_privileges_no_realm(mock_exporter):
+    export_privileges = create_privileges_export_command()
+
+    _call_privileges(export_privileges, realm=None)
 
     kwargs = mock_exporter.export_data.call_args.kwargs
 
@@ -49,7 +56,8 @@ def test_export_privileges_no_realm(mock_exporter):
 def test_export_privileges_with_realm_creates_filter(mock_exporter):
     export_privileges = create_privileges_export_command()
 
-    export_privileges(
+    _call_privileges(
+        export_privileges,
         realm="alpha",
         view=True,
         view_columns="_id,name",
@@ -58,7 +66,6 @@ def test_export_privileges_with_realm_creates_filter(mock_exporter):
         branch="main",
         commit="msg",
         jwk_path="jwk.json",
-        client_id="cid",
         sa_id="sid",
         base_url="https://example.com",
         project_name="proj",
@@ -68,6 +75,7 @@ def test_export_privileges_with_realm_creates_filter(mock_exporter):
         onprem_username="user",
         onprem_password="pass",
         onprem_realm="custom",
+        am_base_url="http://am",
     )
 
     kwargs = mock_exporter.export_data.call_args.kwargs
@@ -85,26 +93,7 @@ def test_export_privileges_with_realm_creates_filter(mock_exporter):
 def test_privileges_response_filter_keeps_only_realm_ids(mock_exporter):
     export_privileges = create_privileges_export_command()
 
-    export_privileges(
-        realm="alpha",
-        view=False,
-        view_columns=None,
-        version=None,
-        no_version=False,
-        branch=None,
-        commit=None,
-        jwk_path=None,
-        client_id=None,
-        sa_id=None,
-        base_url=None,
-        project_name=None,
-        output_dir=None,
-        output_file=None,
-        auth_mode=None,
-        onprem_username=None,
-        onprem_password=None,
-        onprem_realm="root",
-    )
+    _call_privileges(export_privileges, realm="alpha")
 
     response_filter = mock_exporter.export_data.call_args.kwargs["response_filter"]
 
@@ -127,26 +116,7 @@ def test_privileges_response_filter_keeps_only_realm_ids(mock_exporter):
 def test_privileges_response_filter_non_matching_shape_returns_raw(mock_exporter):
     export_privileges = create_privileges_export_command()
 
-    export_privileges(
-        realm="alpha",
-        view=False,
-        view_columns=None,
-        version=None,
-        no_version=False,
-        branch=None,
-        commit=None,
-        jwk_path=None,
-        client_id=None,
-        sa_id=None,
-        base_url=None,
-        project_name=None,
-        output_dir=None,
-        output_file=None,
-        auth_mode=None,
-        onprem_username=None,
-        onprem_password=None,
-        onprem_realm="root",
-    )
+    _call_privileges(export_privileges, realm="alpha")
 
     response_filter = mock_exporter.export_data.call_args.kwargs["response_filter"]
 

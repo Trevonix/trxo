@@ -39,7 +39,6 @@ def test_validate_project_service_account_argument_mode(mocker):
 
     result = manager.validate_project(
         jwk_path="a",
-        client_id="b",
         sa_id="c",
         base_url="d",
     )
@@ -92,7 +91,6 @@ def test_update_config_if_needed_updates_fields(mocker):
 
     manager.update_config_if_needed(
         jwk_path="a",
-        client_id="b",
         sa_id="c",
         base_url="d",
     )
@@ -102,7 +100,6 @@ def test_update_config_if_needed_updates_fields(mocker):
     saved_config = args[1]
 
     assert saved_config["jwk_path"] == "a"
-    assert saved_config["client_id"] == "b"
     assert saved_config["sa_id"] == "c"
     assert saved_config["base_url"] == "d"
     assert "token_url" in saved_config
@@ -213,3 +210,122 @@ def test_get_base_url_missing_raises_exit(mocker):
 
     with pytest.raises(typer.Exit):
         manager.get_base_url("proj")
+
+
+# ─── IDM/on-prem additions ──────────────────────────────────────────────────
+
+
+def test_validate_project_onprem_idm_argument_mode(mocker):
+    """am_base_url + idm_username/idm_password should trigger onprem argument mode."""
+    config_store = mocker.Mock()
+    token_manager = mocker.Mock()
+    config_store.get_current_project.return_value = None
+
+    mocker.patch.object(
+        manager := AuthManager(config_store, token_manager),
+        "_initialize_argument_mode_onprem",
+        return_value="temp_idm",
+    )
+
+    result = manager.validate_project(
+        auth_mode="onprem",
+        base_url="http://am",
+        am_base_url="http://am",
+        idm_username="idm_user",
+        idm_password="idm_pass",
+    )
+
+    assert result == "temp_idm"
+
+
+def test_initialize_argument_mode_onprem_stores_am_base_url(mocker):
+    """Ensure am_base_url is persisted inside the temporary project config."""
+    config_store = mocker.Mock()
+    config_store.get_current_project.return_value = None
+    token_manager = mocker.Mock()
+
+    manager = AuthManager(config_store, token_manager)
+
+    result = manager._initialize_argument_mode_onprem(
+        base_url="http://am",
+        username="amAdmin",
+        am_base_url="http://am",
+    )
+
+    assert result is not None
+    saved = config_store.save_project.call_args[0][1]
+    assert saved.get("am_base_url") == "http://am"
+    assert saved.get("auth_mode") == "onprem"
+
+
+def test_get_base_url_falls_back_to_am_base_url(mocker):
+    """get_base_url should prefer am_base_url config field over base_url."""
+    config_store = mocker.Mock()
+    token_manager = mocker.Mock()
+    config_store.get_project_config.return_value = {
+        "am_base_url": "http://am",
+        "base_url": "http://old",
+    }
+
+    manager = AuthManager(config_store, token_manager)
+    result = manager.get_base_url("proj")
+
+    assert result == "http://am"
+
+
+def test_get_idm_credentials_success(mocker):
+    config_store = mocker.Mock()
+    token_manager = mocker.Mock()
+    config_store.get_project_config.return_value = {
+        "onprem_products": ["idm"],
+        "idm_username": "idmAdmin",
+    }
+
+    manager = AuthManager(config_store, token_manager)
+    username, password = manager.get_idm_credentials("proj", idm_password="secret")
+
+    assert username == "idmAdmin"
+    assert password == "secret"
+
+
+def test_get_idm_credentials_missing_products_raises(mocker):
+    config_store = mocker.Mock()
+    token_manager = mocker.Mock()
+    config_store.get_project_config.return_value = {"onprem_products": []}
+
+    manager = AuthManager(config_store, token_manager)
+
+    with pytest.raises(typer.Exit):
+        manager.get_idm_credentials("proj", idm_password="pw")
+
+
+def test_get_idm_base_url_from_override(mocker):
+    config_store = mocker.Mock()
+    token_manager = mocker.Mock()
+
+    manager = AuthManager(config_store, token_manager)
+    result = manager.get_idm_base_url("proj", idm_base_url_override="http://idm")
+
+    assert result == "http://idm"
+
+
+def test_get_idm_base_url_from_config(mocker):
+    config_store = mocker.Mock()
+    token_manager = mocker.Mock()
+    config_store.get_project_config.return_value = {"idm_base_url": "http://idm-config"}
+
+    manager = AuthManager(config_store, token_manager)
+    result = manager.get_idm_base_url("proj")
+
+    assert result == "http://idm-config"
+
+
+def test_get_idm_base_url_missing_raises(mocker):
+    config_store = mocker.Mock()
+    token_manager = mocker.Mock()
+    config_store.get_project_config.return_value = {}
+
+    manager = AuthManager(config_store, token_manager)
+
+    with pytest.raises(typer.Exit):
+        manager.get_idm_base_url("proj")
