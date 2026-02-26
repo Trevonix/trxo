@@ -37,6 +37,8 @@ class ConfigStore:
 
     def get_project_dir(self, project_name: str) -> Path:
         """Get project-specific directory"""
+        if project_name is None:
+            raise ValueError("project_name cannot be None")
         project_dir = self.base_dir / "projects" / project_name
         os.makedirs(project_dir, exist_ok=True)
         return project_dir

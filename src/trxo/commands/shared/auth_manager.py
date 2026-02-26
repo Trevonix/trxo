@@ -126,6 +126,9 @@ class AuthManager:
         except Exception:
             pass
 
+        self.config_store.set_current_project(temp_project_name)
+        return temp_project_name
+
     def _initialize_argument_mode_onprem(
         self,
         base_url: str,
