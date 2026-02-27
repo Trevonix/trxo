@@ -159,23 +159,79 @@ def create_services_export_command():
             "--realm",
             help=f"Target realm name (used when scope=realm, default: {DEFAULT_REALM})",
         ),
-        view: bool = typer.Option(False, "--view"),
-        view_columns: str = typer.Option(None, "--view-columns"),
-        version: str = typer.Option(None, "--version"),
-        no_version: bool = typer.Option(False, "--no-version"),
-        branch: str = typer.Option(None, "--branch"),
-        commit: str = typer.Option(None, "--commit"),
-        jwk_path: str = typer.Option(None, "--jwk-path"),
+        view: bool = typer.Option(
+            False,
+            "--view",
+            help="Display data in table format instead of exporting to file",
+        ),
+        view_columns: str = typer.Option(
+            None,
+            "--view-columns",
+            help="Comma-separated list of columns to display (e.g., '_id,name,active')",
+        ),
+        version: str = typer.Option(
+            None, "--version", help="Custom version name (default: auto)"
+        ),
+        no_version: bool = typer.Option(
+            False,
+            "--no-version",
+            help="Disable auto versioning for legacy filenames",
+        ),
+        branch: str = typer.Option(
+            None,
+            "--branch",
+            help="Git branch to use for export (Git mode only)",
+        ),
+        commit: str = typer.Option(
+            None, "--commit", help="Custom commit message (Git mode only)"
+        ),
+        jwk_path: str = typer.Option(
+            None, "--jwk-path", help="Path to JWK private key file"
+        ),
         client_id: str = typer.Option(None, "--client-id"),
-        sa_id: str = typer.Option(None, "--sa-id"),
-        base_url: str = typer.Option(None, "--base-url"),
-        project_name: str = typer.Option(None, "--project-name"),
-        output_dir: str = typer.Option(None, "--dir"),
-        output_file: str = typer.Option(None, "--file"),
-        auth_mode: str = typer.Option(None, "--auth-mode"),
-        onprem_username: str = typer.Option(None, "--onprem-username"),
-        onprem_password: str = typer.Option(None, "--onprem-password", hide_input=True),
-        onprem_realm: str = typer.Option("root", "--onprem-realm"),
+        sa_id: str = typer.Option(None, "--sa-id", help="Service Account ID"),
+        base_url: str = typer.Option(
+            None,
+            "--base-url",
+            help="Base URL for PingOne Advanced Identity Cloud instance",
+        ),
+        project_name: str = typer.Option(
+            None,
+            "--project-name",
+            help="Project name for argument mode (optional)",
+        ),
+        output_dir: str = typer.Option(
+            None, "--dir", help="Output directory for JSON files"
+        ),
+        output_file: str = typer.Option(
+            None, "--file", help="Output filename (without .json extension)"
+        ),
+        auth_mode: str = typer.Option(
+            None,
+            "--auth-mode",
+            help="Auth mode override: service-account|onprem",
+        ),
+        onprem_username: str = typer.Option(
+            None, "--onprem-username", help="On-Prem username"
+        ),
+        onprem_password: str = typer.Option(
+            None, "--onprem-password", help="On-Prem password", hide_input=True
+        ),
+        onprem_realm: str = typer.Option(
+            "root", "--onprem-realm", help="On-Prem realm"
+        ),
+        am_base_url: str = typer.Option(
+            None, "--am-base-url", help="On-Prem AM base URL"
+        ),
+        idm_base_url: str = typer.Option(
+            None, "--idm-base-url", help="On-Prem IDM base URL"
+        ),
+        idm_username: str = typer.Option(
+            None, "--idm-username", help="On-Prem IDM username"
+        ),
+        idm_password: str = typer.Option(
+            None, "--idm-password", help="On-Prem IDM password", hide_input=True
+        ),
     ):
         exporter = ServicesExporter()
 
@@ -198,7 +254,6 @@ def create_services_export_command():
             view=view,
             view_columns=view_columns,
             jwk_path=jwk_path,
-            client_id=client_id,
             sa_id=sa_id,
             base_url=base_url,
             project_name=project_name,
@@ -215,6 +270,10 @@ def create_services_export_command():
                 realm=realm,
                 headers=headers,
             ),
+            idm_base_url=idm_base_url,
+            idm_username=idm_username,
+            idm_password=idm_password,
+            am_base_url=am_base_url,
             version=version,
             no_version=no_version,
             branch=branch,

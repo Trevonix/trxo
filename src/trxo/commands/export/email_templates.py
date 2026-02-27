@@ -39,7 +39,6 @@ def create_email_export_command():
         jwk_path: str = typer.Option(
             None, "--jwk-path", help="Path to JWK private key file"
         ),
-        client_id: str = typer.Option(None, "--client-id", help="Client ID"),
         sa_id: str = typer.Option(None, "--sa-id", help="Service Account ID"),
         base_url: str = typer.Option(
             None,
@@ -67,6 +66,20 @@ def create_email_export_command():
         onprem_realm: str = typer.Option(
             "root", "--onprem-realm", help="On-Prem realm"
         ),
+        am_base_url: str = typer.Option(
+
+            None, "--am-base-url", help="On-Prem AM base URL"
+
+        ),
+        idm_base_url: str = typer.Option(
+            None, "--idm-base-url", help="On-Prem IDM base URL"
+        ),
+        idm_username: str = typer.Option(
+            None, "--idm-username", help="On-Prem IDM username"
+        ),
+        idm_password: str = typer.Option(
+            None, "--idm-password", help="On-Prem IDM password", hide_input=True
+        ),
     ):
         """Export email configuration"""
         exporter = BaseExporter()
@@ -83,7 +96,6 @@ def create_email_export_command():
             view=view,
             view_columns=view_columns,
             jwk_path=jwk_path,
-            client_id=client_id,
             sa_id=sa_id,
             base_url=base_url,
             project_name=project_name,
@@ -93,6 +105,9 @@ def create_email_export_command():
             onprem_username=onprem_username,
             onprem_password=onprem_password,
             onprem_realm=onprem_realm,
+            idm_base_url=idm_base_url,
+            idm_username=idm_username,
+            idm_password=idm_password, am_base_url=am_base_url,
             version=version,
             no_version=no_version,
             branch=branch,

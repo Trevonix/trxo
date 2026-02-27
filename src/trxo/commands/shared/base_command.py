@@ -30,6 +30,12 @@ class BaseCommand(ABC):
         self.successful_updates = 0
         self.failed_updates = 0
         self.auth_mode: str = "service-account"
+        self.product: str = "am"  # Default product (overridden by subclasses)
+
+        # IDM credentials (populated during initialize_auth for on-prem IDM)
+        self._idm_username: Optional[str] = None
+        self._idm_password: Optional[str] = None
+        self._idm_base_url: Optional[str] = None
 
         # Initialize logging
         self.logger = get_logger(
@@ -43,7 +49,6 @@ class BaseCommand(ABC):
     def initialize_auth(
         self,
         jwk_path: Optional[str] = None,
-        client_id: Optional[str] = None,
         sa_id: Optional[str] = None,
         base_url: Optional[str] = None,
         project_name: Optional[str] = None,
@@ -51,6 +56,10 @@ class BaseCommand(ABC):
         onprem_username: Optional[str] = None,
         onprem_password: Optional[str] = None,
         onprem_realm: Optional[str] = None,
+        idm_base_url: Optional[str] = None,
+        idm_username: Optional[str] = None,
+        idm_password: Optional[str] = None,
+        am_base_url: Optional[str] = None,
     ) -> tuple:
         """Initialize authentication and return token/session and base URL.
         Sets self.auth_mode to the active mode ('service-account' or 'onprem').
@@ -58,7 +67,6 @@ class BaseCommand(ABC):
         # Validate project with argument mode support (including on-prem argument mode)
         current_project = self.auth_manager.validate_project(
             jwk_path=jwk_path,
-            client_id=client_id,
             sa_id=sa_id,
             base_url=base_url,
             project_name=project_name,
@@ -66,13 +74,15 @@ class BaseCommand(ABC):
             onprem_username=onprem_username,
             onprem_password=onprem_password,
             onprem_realm=onprem_realm,
+            idm_base_url=idm_base_url,
+            idm_username=idm_username,
+            idm_password=idm_password,
+            am_base_url=am_base_url,
         )
         # If not in argument mode, update config if arguments provided
-        argument_mode = all([jwk_path, client_id, sa_id, base_url])
+        argument_mode = all([jwk_path, sa_id, base_url])
         if not argument_mode:
-            self.auth_manager.update_config_if_needed(
-                jwk_path, client_id, sa_id, base_url
-            )
+            self.auth_manager.update_config_if_needed(jwk_path, sa_id, base_url)
 
         # Determine mode and get token/session
         self.auth_mode = self.auth_manager.get_auth_mode(
@@ -81,22 +91,73 @@ class BaseCommand(ABC):
         api_base_url = self.auth_manager.get_base_url(current_project, base_url)
 
         if self.auth_mode == "onprem":
-            # Prompt for credentials if needed and get AM session tokenId (not persisted)
-            token_or_session = self.auth_manager.get_onprem_session(
-                current_project,
-                username=onprem_username,
-                password=onprem_password,
-                realm=onprem_realm,
-            )
+            token_or_session = None
+            if self.product == "am":
+                # Get AM session token
+                token_or_session = self.auth_manager.get_onprem_session(
+                    current_project,
+                    username=onprem_username,
+                    password=onprem_password,
+                    realm=onprem_realm,
+                    base_url=am_base_url,
+                )
+
+            # Explicitly check for IDM if that's the target product
+            if self.product == "idm":
+                # Gather IDM credentials (prompt for password if needed)
+                self._idm_username, self._idm_password = (
+                    self.auth_manager.get_idm_credentials(
+                        current_project,
+                        idm_username=idm_username,
+                        idm_password=idm_password,
+                    )
+                )
+                self._idm_base_url = self.auth_manager.get_idm_base_url(
+                    current_project, idm_base_url
+                )
+
+            # Note: We don't initialize both unless strictly necessary.
+            # Most commands target one product (AM or IDM).
         else:
             token_or_session = self.auth_manager.get_token(current_project)
 
+        if self.auth_mode == "onprem" and self.product == "idm":
+            api_base_url = self._idm_base_url
+
         return token_or_session, api_base_url
 
-    def build_auth_headers(self, token_or_session: str) -> Dict[str, str]:
-        """Return auth headers based on current mode."""
+    def build_auth_headers(
+        self, token_or_session: str, product: Optional[str] = None
+    ) -> Dict[str, str]:
+        """Return auth headers based on current mode and target product.
+
+        Args:
+            token_or_session: Bearer token or AM session token.
+            product: Target product - 'am' or 'idm'. Defaults to self.product.
+        """
+        if not product:
+            product = self.product
+
         if self.auth_mode == "onprem":
-            return {"Cookie": f"iPlanetDirectoryPro={token_or_session}"}
+            if product == "idm":
+                if not self._idm_username or not self._idm_password:
+                    error(
+                        "IDM credentials not available. Configure IDM access or "
+                        "provide --idm-username and --idm-password."
+                    )
+                    raise typer.Exit(1)
+                return {
+                    "X-OpenIDM-Username": self._idm_username,
+                    "X-OpenIDM-Password": self._idm_password,
+                }
+            else:
+                if not token_or_session:
+                    error(
+                        "AM session token not available. Configure AM access or "
+                        "provide --onprem-username and --onprem-password."
+                    )
+                    raise typer.Exit(1)
+                return {"Cookie": f"iPlanetDirectoryPro={token_or_session}"}
         return {"Authorization": f"Bearer {token_or_session}"}
 
     def cleanup(self):

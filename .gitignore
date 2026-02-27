@@ -173,6 +173,7 @@ __pycache__
 .safety-project.ini
 .agent/
 
+<<<<<<< HEAD
 # Coverage reports
 .coverage
 .coverage.*
@@ -180,3 +181,8 @@ __pycache__
 .diff_report
 htmlcov/    
 
+=======
+# Pytest Coverage reports
+.coverage
+.coverage.*
+>>>>>>> 33cc8bec21c90615193d84879ccd8e92687a134f

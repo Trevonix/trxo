@@ -13,7 +13,6 @@ from .settings import get_credential_value, display_config
 from .auth_handler import (
     setup_service_account_auth,
     setup_onprem_auth,
-    normalize_base_url,
 )
 from trxo.logging import LogLevel, setup_logging, get_logger
 
@@ -23,25 +22,33 @@ config_store = ConfigStore()
 
 @app.command()
 def setup(
-    jwk_path: Optional[str] = typer.Option(
-        None, "--jwk-path", help="Path to JWK private key file"
-    ),
-    client_id: Optional[str] = typer.Option(None, "--client-id", help="Client ID"),
-    sa_id: Optional[str] = typer.Option(None, "--sa-id", help="Service Account ID"),
-    base_url: Optional[str] = typer.Option(
-        None, "--base-url", help="Base URL for PingOne Advanced Identity Cloud instance"
-    ),
     auth_mode: Optional[str] = typer.Option(
         "service-account",
         "--auth-mode",
         help="Authentication mode: service-account (default) or onprem",
         case_sensitive=False,
     ),
+    base_url: Optional[str] = typer.Option(
+        None, "--base-url", help="Base URL for PingOne Advanced Identity Cloud instance"
+    ),
+    am_base_url: Optional[str] = typer.Option(
+        None, "--am-base-url", help="On-Prem AM base URL"
+    ),
+    jwk_path: Optional[str] = typer.Option(
+        None, "--jwk-path", help="Path to JWK private key file"
+    ),
+    sa_id: Optional[str] = typer.Option(None, "--sa-id", help="Service Account ID"),
     onprem_username: Optional[str] = typer.Option(
-        None, "--onprem-username", help="On-Prem (AM) username"
+        None, "--onprem-username", help="On-Prem AM username"
     ),
     onprem_realm: Optional[str] = typer.Option(
-        "root", "--onprem-realm", help="On-Prem realm (default: root)"
+        "root", "--onprem-realm", help="On-Prem AM realm (default: root)"
+    ),
+    idm_base_url: Optional[str] = typer.Option(
+        None, "--idm-base-url", help="On-Prem IDM base URL (if different from AM)"
+    ),
+    idm_username: Optional[str] = typer.Option(
+        None, "--idm-username", help="On-Prem IDM username"
     ),
     regions: Optional[str] = typer.Option(None, "--regions", help="Regions"),
     storage_mode: Optional[str] = typer.Option(
@@ -69,7 +76,7 @@ def setup(
 
     # Check if configuration already exists
     if has_existing_config and not any(
-        [jwk_path, client_id, sa_id, base_url, onprem_username]
+        [jwk_path, sa_id, base_url, onprem_username, idm_username]
     ):
         info(f"Found existing configuration for project '{current_project}'")
         info(
@@ -80,28 +87,12 @@ def setup(
 
     info(f"Configuring project: [bold]{current_project}[/bold]\n")
 
-    if not any([jwk_path, client_id, sa_id, base_url, onprem_username]):
+    if not any([jwk_path, sa_id, base_url, onprem_username, idm_username]):
         # Explain what we're doing
         warning("No saved configuration found or arguments provided.")
         info("Please enter your PingOne Advanced Identity Cloud credentials.")
 
-    # Get base URL first (common for both modes)
-    base_url_value = get_credential_value(
-        base_url,
-        "base_url",
-        existing_config,
-        "\nBase URL for PingOne Advanced Identity Cloud instance",
-    )
-
-    # Optional fields
-    regions_value = get_credential_value(
-        regions,
-        "regions",
-        existing_config,
-        "\nRegions (comma-separated)",
-        required=False,
-    )
-
+    # Optional fields (Storage mode can be prompted early)
     storage_mode_value = get_credential_value(
         storage_mode,
         "storage_mode",
@@ -110,19 +101,23 @@ def setup(
         required=False,
     )
 
+    regions_value = get_credential_value(
+        regions,
+        "regions",
+        existing_config,
+        "\nRegions (comma-separated)",
+        required=False,
+    )
+
     # Save auth mode
     auth_mode_value = (auth_mode or "service-account").lower().strip()
-
-    # Normalize base_url based on auth_mode
-    base_url_value = normalize_base_url(base_url_value, auth_mode_value)
 
     if auth_mode_value == "service-account":
         config = setup_service_account_auth(
             existing_config=existing_config,
             jwk_path=jwk_path,
-            client_id=client_id,
             sa_id=sa_id,
-            base_url=base_url_value,
+            base_url=base_url,
             regions=regions_value,
             storage_mode=storage_mode_value,
             git_username=git_username,
@@ -136,12 +131,15 @@ def setup(
             existing_config=existing_config,
             onprem_username=onprem_username,
             onprem_realm=onprem_realm,
-            base_url=base_url_value,
+            base_url=base_url,
             storage_mode=storage_mode_value,
             git_username=git_username,
             git_repo=git_repo,
             git_token=git_token,
             current_project=current_project,
+            idm_base_url=idm_base_url,
+            idm_username=idm_username,
+            am_base_url=am_base_url,
         )
     else:
         error("Invalid --auth-mode. Use 'service-account' or 'onprem'")
@@ -178,13 +176,12 @@ def set_log_level(
     try:
         # Validate log level
         level_upper = level.upper()
-        valid_levels = [
-            lev.value
-            for lev in LogLevel
-        ]
+        valid_levels = [lev.value for lev in LogLevel]
 
         if level_upper not in valid_levels:
-            error(f"Invalid log level '{level}'. Valid levels: {', '.join(valid_levels)}")
+            error(
+                f"Invalid log level '{level}'. Valid levels: {', '.join(valid_levels)}"
+            )
             raise typer.Exit(1)
 
         # Store log level in global settings file
@@ -192,14 +189,14 @@ def set_log_level(
         settings = {}
         if global_settings_file.exists():
             try:
-                with open(global_settings_file, 'r', encoding='utf-8') as f:
+                with open(global_settings_file, "r", encoding="utf-8") as f:
                     settings = json.load(f)
             except (json.JSONDecodeError, IOError):
                 settings = {}
 
         settings["log_level"] = level_upper
 
-        with open(global_settings_file, 'w', encoding='utf-8') as f:
+        with open(global_settings_file, "w", encoding="utf-8") as f:
             json.dump(settings, f, indent=2)
 
         success(f"Log level set to {level_upper}")
@@ -225,7 +222,7 @@ def get_log_level() -> None:
 
         if global_settings_file.exists():
             try:
-                with open(global_settings_file, 'r', encoding='utf-8') as f:
+                with open(global_settings_file, "r", encoding="utf-8") as f:
                     settings = json.load(f)
                     current_level = settings.get("log_level", "INFO")
             except (json.JSONDecodeError, IOError):

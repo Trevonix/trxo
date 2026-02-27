@@ -41,7 +41,6 @@ class BaseImporter(BaseCommand):
         file_path: Optional[str] = None,
         realm: Optional[str] = None,
         jwk_path: Optional[str] = None,
-        client_id: Optional[str] = None,
         sa_id: Optional[str] = None,
         base_url: Optional[str] = None,
         project_name: Optional[str] = None,
@@ -49,6 +48,10 @@ class BaseImporter(BaseCommand):
         onprem_username: Optional[str] = None,
         onprem_password: Optional[str] = None,
         onprem_realm: Optional[str] = None,
+        idm_base_url: Optional[str] = None,
+        idm_username: Optional[str] = None,
+        idm_password: Optional[str] = None,
+        am_base_url: Optional[str] = None,
         force_import: bool = False,
         branch: Optional[str] = None,
         diff: bool = False,
@@ -63,7 +66,6 @@ class BaseImporter(BaseCommand):
             # Initialize authentication
             token, api_base_url = self.initialize_auth(
                 jwk_path=jwk_path,
-                client_id=client_id,
                 sa_id=sa_id,
                 base_url=base_url,
                 project_name=project_name,
@@ -71,6 +73,10 @@ class BaseImporter(BaseCommand):
                 onprem_username=onprem_username,
                 onprem_password=onprem_password,
                 onprem_realm=onprem_realm,
+                idm_base_url=idm_base_url,
+                idm_username=idm_username,
+                idm_password=idm_password,
+                am_base_url=am_base_url,
             )
             self.logger.debug(
                 f"Authentication initialized for {item_type} import, "
@@ -83,7 +89,6 @@ class BaseImporter(BaseCommand):
                     file_path=file_path,
                     realm=realm,
                     jwk_path=jwk_path,
-                    client_id=client_id,
                     sa_id=sa_id,
                     base_url=base_url,
                     project_name=project_name,
@@ -91,6 +96,10 @@ class BaseImporter(BaseCommand):
                     onprem_username=onprem_username,
                     onprem_password=onprem_password,
                     onprem_realm=onprem_realm,
+                    idm_base_url=idm_base_url,
+                    idm_username=idm_username,
+                    idm_password=idm_password,
+                    am_base_url=am_base_url,
                     branch=branch,
                 )
                 return
@@ -143,13 +152,16 @@ class BaseImporter(BaseCommand):
                     file_path=file_path,
                     realm=realm,
                     jwk_path=jwk_path,
-                    client_id=client_id,
                     sa_id=sa_id,
                     project_name=project_name,
                     auth_mode=auth_mode,
                     onprem_username=onprem_username,
                     onprem_password=onprem_password,
                     onprem_realm=onprem_realm,
+                    idm_base_url=idm_base_url,
+                    idm_username=idm_username,
+                    idm_password=idm_password,
+                    am_base_url=am_base_url,
                     branch=branch,
                     force=force_import,
                 )
@@ -258,13 +270,32 @@ class BaseImporter(BaseCommand):
         info(f"Loading {item_type} from local file: {file_path}")
 
         try:
-            items_to_process = self.file_loader.load_from_local_file(file_path)
+            # Read raw file content first so hash validation can use
+            # the original exported structure (avoids normalization differences)
+            import os
+            import json
 
-            # Validate required fields
+            if not os.path.isabs(file_path):
+                file_path_abs = os.path.abspath(file_path)
+            else:
+                file_path_abs = file_path
+
+            with open(file_path_abs, "r", encoding="utf-8") as f:
+                raw_data = json.load(f)
+
+            # Normalize items for processing. Prefer importer-specific loader
+            # if it exists (some importers provide custom normalization).
+            if hasattr(self, "load_data_from_file"):
+                items_to_process = self.load_data_from_file(file_path)
+            else:
+                items_to_process = self.file_loader.load_from_local_file(file_path)
+
+            # Validate required fields on normalized items
             self._validate_items(items_to_process)
 
-            # Generate hash for import data and validate against stored export hash
-            if not self.validate_import_hash(items_to_process, force_import):
+            # Validate import hash against raw file content so the hash
+            # matches whatever was generated at export time (wrapper vs list)
+            if not self.validate_import_hash(raw_data, force_import):
                 error("Import validation failed: Hash mismatch with exported data")
                 raise typer.Exit(1)
 
@@ -418,7 +449,12 @@ class BaseImporter(BaseCommand):
                 git_mgr = self._setup_git_manager(branch)
 
             created = rollback_manager.create_baseline_snapshot(
-                token, api_base_url, git_mgr
+                token,
+                api_base_url,
+                git_manager=git_mgr,
+                auth_mode=self.auth_mode,
+                idm_username=self._idm_username,
+                idm_password=self._idm_password,
             )
 
             if not created:
@@ -458,7 +494,6 @@ class BaseImporter(BaseCommand):
         file_path: Optional[str] = None,
         realm: Optional[str] = None,
         jwk_path: Optional[str] = None,
-        client_id: Optional[str] = None,
         sa_id: Optional[str] = None,
         base_url: Optional[str] = None,
         project_name: Optional[str] = None,
@@ -466,6 +501,10 @@ class BaseImporter(BaseCommand):
         onprem_username: Optional[str] = None,
         onprem_password: Optional[str] = None,
         onprem_realm: Optional[str] = None,
+        idm_base_url: Optional[str] = None,
+        idm_username: Optional[str] = None,
+        idm_password: Optional[str] = None,
+        am_base_url: Optional[str] = None,
         branch: Optional[str] = None,
     ) -> None:
         """Perform diff analysis and display results"""
@@ -482,7 +521,6 @@ class BaseImporter(BaseCommand):
                 file_path=file_path,
                 realm=realm,
                 jwk_path=jwk_path,
-                client_id=client_id,
                 sa_id=sa_id,
                 base_url=base_url,
                 project_name=project_name,
@@ -490,6 +528,10 @@ class BaseImporter(BaseCommand):
                 onprem_username=onprem_username,
                 onprem_password=onprem_password,
                 onprem_realm=onprem_realm,
+                idm_base_url=idm_base_url,
+                idm_username=idm_username,
+                idm_password=idm_password,
+                am_base_url=am_base_url,
                 branch=branch,
                 generate_html=True,
             )
@@ -559,13 +601,16 @@ class BaseImporter(BaseCommand):
         file_path: Optional[str] = None,
         realm: Optional[str] = None,
         jwk_path: Optional[str] = None,
-        client_id: Optional[str] = None,
         sa_id: Optional[str] = None,
         project_name: Optional[str] = None,
         auth_mode: Optional[str] = None,
         onprem_username: Optional[str] = None,
         onprem_password: Optional[str] = None,
         onprem_realm: Optional[str] = None,
+        idm_base_url: Optional[str] = None,
+        idm_username: Optional[str] = None,
+        idm_password: Optional[str] = None,
+        am_base_url: Optional[str] = None,
         branch: Optional[str] = None,
         force: bool = False,
     ) -> Optional[Dict[str, Any]]:
@@ -581,13 +626,16 @@ class BaseImporter(BaseCommand):
             file_path=file_path,
             realm=realm,
             jwk_path=jwk_path,
-            client_id=client_id,
             sa_id=sa_id,
             project_name=project_name,
             auth_mode=auth_mode,
             onprem_username=onprem_username,
             onprem_password=onprem_password,
             onprem_realm=onprem_realm,
+            idm_base_url=idm_base_url,
+            idm_username=idm_username,
+            idm_password=idm_password,
+            am_base_url=am_base_url,
             branch=branch,
             force=force,
         )

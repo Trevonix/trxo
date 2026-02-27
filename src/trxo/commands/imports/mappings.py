@@ -17,6 +17,10 @@ from .base_importer import BaseImporter
 class MappingsImporter(BaseImporter):
     """Importer for PingIDM sync mappings with smart upsert logic"""
 
+    def __init__(self):
+        super().__init__()
+        self.product = "idm"
+
     def get_required_fields(self) -> List[str]:
         return ["name"]
 
@@ -25,6 +29,18 @@ class MappingsImporter(BaseImporter):
 
     def get_api_endpoint(self, item_id: str, base_url: str) -> str:
         return f"{base_url}/openidm/config/sync"
+
+    def _wrap_for_diff(self, data):
+        """
+        Adapt IDM sync config to the default diff shape expected by BaseImporter.
+        BaseImporter expects: { "result": [ ...items... ] }
+        IDM sync config is:   { "mappings": [ ... ] }
+        """
+        if isinstance(data, dict) and "mappings" in data:
+            return {"result": data["mappings"]}
+        if isinstance(data, list):
+            return {"result": data}
+        return {"result": [data]}
 
     def _get_current_sync_config(self, token: str, base_url: str) -> Dict[str, Any]:
         """Fetch current sync configuration"""
@@ -196,7 +212,6 @@ class MappingsImporter(BaseImporter):
         file_path: str,
         realm: str = None,
         jwk_path: str = None,
-        client_id: str = None,
         sa_id: str = None,
         base_url: str = None,
         project_name: str = None,
@@ -204,22 +219,26 @@ class MappingsImporter(BaseImporter):
         onprem_username: str = None,
         onprem_password: str = None,
         onprem_realm: str = None,
+        idm_base_url: str = None,
+        idm_username: str = None,
+        idm_password: str = None,
+        am_base_url: str = None,
         force_import: bool = False,
         branch: str = None,
         diff: bool = False,
+        **kwargs,
     ) -> None:
         """Override to handle both single mappings and arrays of mappings"""
 
         # Check if we should use Git mode or local mode
         storage_mode = self._get_storage_mode()
-
-        if storage_mode == "git" or file_path is None:
-            # Use parent class Git mode logic
+        if diff:
+            # Tell BaseImporter to adapt mappings to default diff shape
+            self._diff_adapter = self._wrap_for_diff
             super().import_from_file(
                 file_path=file_path,
                 realm=realm,
                 jwk_path=jwk_path,
-                client_id=client_id,
                 sa_id=sa_id,
                 base_url=base_url,
                 project_name=project_name,
@@ -227,9 +246,38 @@ class MappingsImporter(BaseImporter):
                 onprem_username=onprem_username,
                 onprem_password=onprem_password,
                 onprem_realm=onprem_realm,
+                idm_base_url=idm_base_url,
+                idm_username=idm_username,
+                idm_password=idm_password,
+                am_base_url=am_base_url,
                 force_import=force_import,
                 branch=branch,
                 diff=diff,
+                **kwargs,
+            )
+            return
+
+        if storage_mode == "git" or file_path is None:
+            # Use parent class Git mode logic
+            super().import_from_file(
+                file_path=file_path,
+                realm=realm,
+                jwk_path=jwk_path,
+                sa_id=sa_id,
+                base_url=base_url,
+                project_name=project_name,
+                auth_mode=auth_mode,
+                onprem_username=onprem_username,
+                onprem_password=onprem_password,
+                onprem_realm=onprem_realm,
+                idm_base_url=idm_base_url,
+                idm_username=idm_username,
+                idm_password=idm_password,
+                am_base_url=am_base_url,
+                force_import=force_import,
+                branch=branch,
+                diff=diff,
+                **kwargs,
             )
             return
 
@@ -238,7 +286,6 @@ class MappingsImporter(BaseImporter):
             # Initialize authentication
             token, api_base_url = self.initialize_auth(
                 jwk_path=jwk_path,
-                client_id=client_id,
                 sa_id=sa_id,
                 base_url=base_url,
                 project_name=project_name,
@@ -246,6 +293,10 @@ class MappingsImporter(BaseImporter):
                 onprem_username=onprem_username,
                 onprem_password=onprem_password,
                 onprem_realm=onprem_realm,
+                idm_base_url=idm_base_url,
+                idm_username=idm_username,
+                idm_password=idm_password,
+                am_base_url=am_base_url,
             )
 
             # Load and parse file with flexible format support
@@ -315,7 +366,6 @@ def create_mappings_import_command():
         jwk_path: str = typer.Option(
             None, "--jwk-path", help="Path to JWK private key file"
         ),
-        client_id: str = typer.Option(None, "--client-id", help="Client ID"),
         sa_id: str = typer.Option(None, "--sa-id", help="Service Account ID"),
         base_url: str = typer.Option(
             None,
@@ -337,6 +387,18 @@ def create_mappings_import_command():
         onprem_realm: str = typer.Option(
             "root", "--onprem-realm", help="On-Prem realm"
         ),
+        am_base_url: str = typer.Option(
+            None, "--am-base-url", help="On-Prem AM base URL"
+        ),
+        idm_base_url: str = typer.Option(
+            None, "--idm-base-url", help="On-Prem IDM base URL"
+        ),
+        idm_username: str = typer.Option(
+            None, "--idm-username", help="On-Prem IDM username"
+        ),
+        idm_password: str = typer.Option(
+            None, "--idm-password", help="On-Prem IDM password", hide_input=True
+        ),
         force_import: bool = typer.Option(
             False, "--force-import", "-f", help="Skip hash validation and force import"
         ),
@@ -356,7 +418,6 @@ def create_mappings_import_command():
             file_path=file,
             realm=None,  # Root-level config
             jwk_path=jwk_path,
-            client_id=client_id,
             sa_id=sa_id,
             base_url=base_url,
             project_name=project_name,
@@ -364,6 +425,10 @@ def create_mappings_import_command():
             onprem_username=onprem_username,
             onprem_password=onprem_password,
             onprem_realm=onprem_realm,
+            idm_base_url=idm_base_url,
+            idm_username=idm_username,
+            idm_password=idm_password,
+            am_base_url=am_base_url,
             force_import=force_import,
             branch=branch,
             diff=diff,

@@ -23,15 +23,13 @@ theme:
     - content.code.copy
     - content.code.annotate
   palette:
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
+    - scheme: default
       primary: indigo
       accent: indigo
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
+    - scheme: slate
       primary: indigo
       accent: indigo
       toggle:
@@ -64,9 +62,13 @@ markdown_extensions:
   - attr_list
   - md_in_html
 
+extra_javascript:
+  - javascripts/gateway.js
+  - javascripts/email-validation.js
+
 
 nav:
-  - Home: index.md
+  - Home: home.md
   - Getting Started:
       - Installation: installation.md
       - Usage: usage.md

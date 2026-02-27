@@ -37,7 +37,7 @@ class TokenManager:
             error(f"No configuration found for project '{project_name}'")
             raise ValueError(f"Project '{project_name}' not configured")
 
-        has_core = all(key in config for key in ["client_id", "sa_id", "token_url"])
+        has_core = all(key in config for key in ["sa_id", "token_url"])
         has_jwk = ("jwk" in config) or ("jwk_path" in config)
         if not (has_core and has_jwk):
             self.logger.error(
@@ -73,7 +73,6 @@ class TokenManager:
 
             auth = ServiceAccountAuth(
                 jwk_path=config.get("jwk_path", ""),
-                client_id=config["client_id"],
                 sa_id=config["sa_id"],
                 token_url=config["token_url"],
                 jwk_content=jwk_content,

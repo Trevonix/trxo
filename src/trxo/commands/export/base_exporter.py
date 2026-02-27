@@ -39,7 +39,6 @@ class BaseExporter(BaseCommand):
         view: bool = False,
         view_columns: Optional[str] = None,
         jwk_path: Optional[str] = None,
-        client_id: Optional[str] = None,
         sa_id: Optional[str] = None,
         base_url: Optional[str] = None,
         project_name: Optional[str] = None,
@@ -49,6 +48,10 @@ class BaseExporter(BaseCommand):
         onprem_username: Optional[str] = None,
         onprem_password: Optional[str] = None,
         onprem_realm: Optional[str] = None,
+        idm_base_url: Optional[str] = None,
+        idm_username: Optional[str] = None,
+        idm_password: Optional[str] = None,
+        am_base_url: Optional[str] = None,
         response_filter: Optional[Callable[[Any], Any]] = None,
         version: Optional[str] = None,
         no_version: bool = False,
@@ -64,16 +67,19 @@ class BaseExporter(BaseCommand):
             view: Whether to display data
             view_columns: Columns to display
             jwk_path: Path to JWK file
-            client_id: Client ID
             sa_id: Service account ID
             base_url: Base URL
             project_name: Project name
             output_dir: Output directory
             output_file: Output file name
             auth_mode: Authentication mode
-            onprem_username: On-premise username
-            onprem_password: On-premise password
-            onprem_realm: On-premise realm
+            onprem_username: On-premise AM username
+            onprem_password: On-premise AM password
+            onprem_realm: On-premise AM realm
+            idm_base_url: On-premise IDM base URL
+            idm_username: On-premise IDM username
+            idm_password: On-premise IDM password
+            am_base_url: On-premise AM base URL
             response_filter: Response filter function
             version: Version string
             no_version: Skip versioning
@@ -82,10 +88,13 @@ class BaseExporter(BaseCommand):
         """
         self.logger.info(f"Starting export operation: {command_name}")
         try:
+            # Determine product type from endpoint for auth context and headers
+            product = "idm" if "/openidm/" in api_endpoint else "am"
+            self.product = product
+
             # Initialize authentication
             token, api_base_url = self.initialize_auth(
                 jwk_path=jwk_path,
-                client_id=client_id,
                 sa_id=sa_id,
                 base_url=base_url,
                 project_name=project_name,
@@ -93,13 +102,26 @@ class BaseExporter(BaseCommand):
                 onprem_username=onprem_username,
                 onprem_password=onprem_password,
                 onprem_realm=onprem_realm,
+                idm_base_url=idm_base_url,
+                idm_username=idm_username,
+                idm_password=idm_password,
+                am_base_url=am_base_url,
             )
-            self.logger.debug("Authentication initialized for {command_name}, "
-                              f"auth_mode: {self.auth_mode}")
+            self.logger.debug(
+                f"Authentication initialized for {command_name}, "
+                f"auth_mode: {self.auth_mode}, product: {product}"
+            )
 
             # Store current auth details for response filters
             self._current_token = token
             self._current_api_base_url = api_base_url
+
+            # Determine product type from endpoint for auth headers (already set above)
+            product = self.product
+
+            # For IDM endpoints in on-prem mode, use IDM base URL if available
+            if product == "idm" and self.auth_mode == "onprem" and self._idm_base_url:
+                api_base_url = self._idm_base_url
 
             # Prepare headers with authentication
             if headers is None:
@@ -107,7 +129,7 @@ class BaseExporter(BaseCommand):
                     "Content-Type": "application/json",
                     "Accept-API-Version": "protocol=2.1,resource=1.0",
                 }
-            headers = {**headers, **self.build_auth_headers(token)}
+            headers = {**headers, **self.build_auth_headers(token, product=product)}
 
             # Make API call
             url = self._construct_api_url(api_base_url, api_endpoint)
@@ -165,7 +187,9 @@ class BaseExporter(BaseCommand):
                     branch,
                     commit_message,
                 )
-                self.logger.info(f"Export operation completed successfully: {command_name}")
+                self.logger.info(
+                    f"Export operation completed successfully: {command_name}"
+                )
 
         except Exception as e:
             self.logger.error(f"Export failed for {command_name}: {str(e)}")

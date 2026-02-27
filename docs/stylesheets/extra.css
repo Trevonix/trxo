@@ -85,3 +85,146 @@ figcaption {
 [data-md-color-scheme="slate"] figcaption {
   color: #aaa;
 }
+
+/* Contact Form Iframe Styling */
+/* Embedded Brevo Form Styling */
+
+/* Main wrapper card */
+.sib-form-container {
+  background-color: var(--md-default-bg-color);
+  /* Match theme bg */
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  /* Native-like shadow */
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 2rem;
+  max-width: 640px;
+  /* Increased for better desktop experience */
+  margin: -2rem auto;
+  /* Center horizontally */
+}
+
+/* Dark mode wrapper */
+[data-md-color-scheme="slate"] .sib-form-container {
+  background-color: var(--md-code-bg-color);
+  /* Lighter slate for contrast */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Reset Brevo container - Force wider on desktop */
+#sib-container {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  text-align: left !important;
+  max-width: 100% !important;
+  /* Override inline style */
+  width: 100% !important;
+}
+
+
+/* Labels */
+#sib-container .entry__label {
+  color: var(--md-typeset-color) !important;
+  font-weight: 600 !important;
+  font-size: 0.8rem !important;
+  margin-bottom: 0.4rem;
+  display: block;
+}
+
+/* Input Fields */
+#sib-container input[type="text"],
+#sib-container input[type="email"],
+#sib-container textarea {
+  background-color: var(--md-default-bg-color) !important;
+  color: var(--md-typeset-color) !important;
+  border: 1px solid rgba(0, 0, 0, 0.15) !important;
+  border-radius: 4px !important;
+  padding: 0.6rem 0.8rem !important;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit !important;
+  /* Use site font */
+  transition: all 0.2s ease;
+}
+
+/* Input Focus */
+#sib-container input:focus,
+#sib-container textarea:focus {
+  border-color: var(--md-primary-fg-color) !important;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(120, 130, 200, 0.2);
+}
+
+/* Submit Button */
+.sib-form-block__button {
+  background-color: var(--md-primary-fg-color) !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+  border-radius: 4px !important;
+  padding: 0.75rem 1.5rem !important;
+  width: 100%;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: opacity 0.2s;
+  cursor: pointer;
+  display: flex !important;
+  justify-content: center;
+  align-items: center;
+  border: none !important;
+}
+
+.sib-form-block__button:hover {
+  opacity: 0.9;
+}
+
+/* Button Icon */
+.sib-form-block__button svg {
+  margin-right: 8px;
+  fill: currentColor;
+}
+
+/* Clean up helper texts */
+.sib-text-form-block p {
+  color: var(--md-typeset-color) !important;
+  opacity: 0.8;
+}
+
+.entry__specification {
+  color: var(--md-typeset-color) !important;
+  opacity: 0.6;
+}
+
+/* Message Panels */
+.sib-form-message-panel {
+  border-radius: 4px !important;
+  margin-bottom: 1rem;
+  padding: 10px;
+}
+
+/* Mobile adjustments */
+@media screen and (max-width: 600px) {
+  .sib-form-container {
+    padding: 1.5rem 1rem;
+    max-width: 100%;
+  }
+
+  .gateway-container {
+    padding: 1rem;
+  }
+
+  [data-md-color-scheme="slate"] .sib-form-container {
+    background-color: var(--md-code-bg-color);
+  }
+}
+
+/* Tablet adjustments */
+@media screen and (min-width: 601px) and (max-width: 768px) {
+  .sib-form-container {
+    max-width: 90%;
+    padding: 1.75rem;
+  }
+}

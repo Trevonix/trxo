@@ -26,7 +26,6 @@ class AuthManager:
     def validate_project(
         self,
         jwk_path: Optional[str] = None,
-        client_id: Optional[str] = None,
         sa_id: Optional[str] = None,
         base_url: Optional[str] = None,
         project_name: Optional[str] = None,
@@ -34,17 +33,22 @@ class AuthManager:
         onprem_username: Optional[str] = None,
         onprem_password: Optional[str] = None,
         onprem_realm: Optional[str] = None,
+        idm_base_url: Optional[str] = None,
+        idm_username: Optional[str] = None,
+        idm_password: Optional[str] = None,
+        am_base_url: Optional[str] = None,
     ) -> str:
         """Validate that a project is active or initialize argument mode"""
         current_project = self.config_store.get_current_project()
 
         # Check if we're in argument mode (all credentials provided)
-        sa_arg_mode = all([jwk_path, client_id, sa_id, base_url])
+        sa_arg_mode = all([jwk_path, sa_id, base_url])
         onprem_arg_mode = (
             (auth_mode or "").lower() == "onprem"
             and base_url
-            and onprem_username
-            and onprem_password
+            and (
+                (onprem_username and onprem_password) or (idm_username and idm_password)
+            )
         )
         argument_mode = sa_arg_mode or onprem_arg_mode
 
@@ -59,7 +63,6 @@ class AuthManager:
             console.print()
             info("   2️⃣  Use pipeline mode with all credentials:")
             info("      • --jwk-path <path-to-jwk-file>")
-            info("      • --client-id <your-client-id>")
             info("      • --sa-id <your-service-account-id>")
             info("      • --base-url <your-ping-aic-url>")
             console.print()
@@ -74,16 +77,17 @@ class AuthManager:
                     username=onprem_username,
                     realm=onprem_realm,
                     project_name=project_name,
+                    idm_base_url=idm_base_url,
+                    idm_username=idm_username,
+                    am_base_url=am_base_url,
                 )
             return self._initialize_argument_mode(
-                jwk_path, client_id, sa_id, base_url, project_name
+                jwk_path, sa_id, base_url, project_name
             )
         else:
             return current_project
 
-    def _initialize_argument_mode(
-        self, jwk_path, client_id, sa_id, base_url, project_name=None
-    ):
+    def _initialize_argument_mode(self, jwk_path, sa_id, base_url, project_name=None):
         """Initialize in argument mode with provided credentials"""
         # Create temporary project name for this session
         if project_name:
@@ -101,7 +105,6 @@ class AuthManager:
         # Create temporary configuration
         temp_config = {
             "jwk_path": jwk_path,
-            "client_id": client_id,
             "sa_id": sa_id,
             "base_url": base_url,
             "token_url": token_url,
@@ -126,9 +129,12 @@ class AuthManager:
     def _initialize_argument_mode_onprem(
         self,
         base_url: str,
-        username: str,
+        username: Optional[str] = None,
         realm: Optional[str] = None,
         project_name: Optional[str] = None,
+        idm_base_url: Optional[str] = None,
+        idm_username: Optional[str] = None,
+        am_base_url: Optional[str] = None,
     ) -> str:
         """Initialize in argument mode for on-prem with provided credentials "
         "(no password stored)."""
@@ -140,13 +146,29 @@ class AuthManager:
         self._temp_project = temp_project_name
         self._original_project = self.config_store.get_current_project()
 
+        # Determine which products are configured
+        products = []
+        if username:
+            products.append("am")
+        if idm_username:
+            products.append("idm")
+
         temp_config = {
             "auth_mode": "onprem",
-            "base_url": base_url,
-            "onprem_username": username,
-            "onprem_realm": (realm or "root").strip("/"),
+            "base_url": am_base_url or base_url,
+            "am_base_url": am_base_url,
+            "onprem_products": products,
             "description": "Temporary on-prem project configuration",
         }
+
+        if username:
+            temp_config["onprem_username"] = username
+            temp_config["onprem_realm"] = (realm or "root").strip("/")
+
+        if idm_username:
+            temp_config["idm_username"] = idm_username
+            if idm_base_url:
+                temp_config["idm_base_url"] = idm_base_url
 
         self.config_store.save_project(temp_project_name, temp_config)
         self.config_store.set_current_project(temp_project_name)
@@ -182,12 +204,11 @@ class AuthManager:
     def update_config_if_needed(
         self,
         jwk_path: Optional[str],
-        client_id: Optional[str],
         sa_id: Optional[str],
         base_url: Optional[str],
     ) -> None:
         """Update configuration if any arguments are provided"""
-        if any([jwk_path, client_id, sa_id, base_url]):
+        if any([jwk_path, sa_id, base_url]):
             info("Updating configuration with provided arguments...")
             try:
                 current_project = self.config_store.get_current_project()
@@ -203,8 +224,6 @@ class AuthManager:
                 # Update only the provided fields
                 if jwk_path:
                     current_config["jwk_path"] = jwk_path
-                if client_id:
-                    current_config["client_id"] = client_id
                 if sa_id:
                     current_config["sa_id"] = sa_id
                 if base_url:
@@ -226,6 +245,11 @@ class AuthManager:
         config = self.config_store.get_project_config(project_name) or {}
         return config.get("auth_mode", "service-account")
 
+    def get_onprem_products(self, project_name: str) -> list:
+        """Get list of configured on-prem products: ['am'], ['idm'], or ['am', 'idm']"""
+        config = self.config_store.get_project_config(project_name) or {}
+        return config.get("onprem_products", ["am"])
+
     def get_token(self, project_name: str) -> str:
         """Get authentication token for the project (service-account mode)"""
         try:
@@ -240,15 +264,11 @@ class AuthManager:
         username: Optional[str] = None,
         password: Optional[str] = None,
         realm: Optional[str] = None,
+        base_url: Optional[str] = None,
     ) -> str:
         """Obtain on-prem AM session token (SSO token). Not persisted."""
         config = self.config_store.get_project_config(project_name) or {}
-        base_url = config.get("base_url")
-        if not base_url:
-            error(
-                "Base URL not configured. Run 'trxo config setup' first or provide --base-url"
-            )
-            raise typer.Exit(1)
+        base_url = self.get_base_url(project_name, base_url)
 
         # Defaults from config
         username = username or config.get("onprem_username")
@@ -256,27 +276,73 @@ class AuthManager:
 
         # Prompt if missing
         if not username:
-            username = typer.prompt("On-Prem username", default="amAdmin")
+            username = typer.prompt("On-Prem AM username", default="amAdmin")
         if not password:
-            password = typer.prompt("On-Prem password", hide_input=True)
+            password = typer.prompt("On-Prem AM password", hide_input=True)
 
         try:
             client = OnPremAuth(base_url=base_url, realm=realm)
             data = client.authenticate(username=username, password=password)
             return data["tokenId"]
         except Exception as e:
-            error(f"On-Prem authentication failed: {e}")
+            error(f"On-Prem AM authentication failed: {e}")
             raise typer.Exit(1)
+
+    def get_idm_credentials(
+        self,
+        project_name: str,
+        idm_username: Optional[str] = None,
+        idm_password: Optional[str] = None,
+    ) -> tuple:
+        """Get IDM credentials (username, password). Password is prompted if not provided."""
+        config = self.config_store.get_project_config(project_name) or {}
+
+        # Check if IDM is configured
+        products = config.get("onprem_products", [])
+        if "idm" not in products and not idm_username:
+            error(
+                "IDM credentials not configured for this project.\n"
+                "💡 Run 'trxo config setup --auth-mode onprem' to add IDM access,\n"
+                "   or provide --idm-username and --idm-password."
+            )
+            raise typer.Exit(1)
+
+        username = idm_username or config.get("idm_username")
+        if not username:
+            username = typer.prompt("On-Prem IDM username", default="openidm-admin")
+        if not idm_password:
+            idm_password = typer.prompt("On-Prem IDM password", hide_input=True)
+
+        return username, idm_password
+
+    def get_idm_base_url(
+        self, project_name: str, idm_base_url_override: Optional[str] = None
+    ) -> str:
+        """Get IDM base URL based on override or configuration."""
+        if idm_base_url_override:
+            return idm_base_url_override
+
+        config = self.config_store.get_project_config(project_name) or {}
+        idm_url = config.get("idm_base_url")
+        if idm_url:
+            return idm_url
+
+        error(
+            "IDM Base URL not configured. Run 'trxo config setup' first or provide --idm-base-url"
+        )
+        raise typer.Exit(1)
 
     def get_base_url(
         self, project_name: str, base_url_override: Optional[str] = None
     ) -> str:
-        """Get base URL from config or override"""
+        """Get AM/Primary base URL.
+        Priority: Override > config['am_base_url'] > config['base_url'].
+        """
         if base_url_override:
             return base_url_override
 
-        config = self.config_store.get_project_config(project_name)
-        api_base_url = config.get("base_url") if config else None
+        config = self.config_store.get_project_config(project_name) or {}
+        api_base_url = config.get("am_base_url") or config.get("base_url")
 
         if not api_base_url:
             error(

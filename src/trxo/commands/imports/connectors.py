@@ -20,6 +20,7 @@ class ConnectorsImporter(BaseImporter):
 
     def __init__(self):
         super().__init__()
+        self.product = "idm"
         self.max_retries = 3
         self.skip_delays = False
         self.wait_time = 5
@@ -173,7 +174,6 @@ class ConnectorsImporter(BaseImporter):
         file_path: str,
         realm: str = None,
         jwk_path: str = None,
-        client_id: str = None,
         sa_id: str = None,
         base_url: str = None,
         project_name: str = None,
@@ -181,9 +181,14 @@ class ConnectorsImporter(BaseImporter):
         onprem_username: str = None,
         onprem_password: str = None,
         onprem_realm: str = None,
+        idm_base_url: str = None,
+        idm_username: str = None,
+        idm_password: str = None,
+        am_base_url: str = None,
         force_import: bool = False,
         branch: str = None,
         diff: bool = False,
+        **kwargs,
     ) -> None:
         """Override to handle both single connectors and arrays of connectors"""
 
@@ -196,7 +201,6 @@ class ConnectorsImporter(BaseImporter):
                 file_path=file_path,
                 realm=realm,
                 jwk_path=jwk_path,
-                client_id=client_id,
                 sa_id=sa_id,
                 base_url=base_url,
                 project_name=project_name,
@@ -204,9 +208,14 @@ class ConnectorsImporter(BaseImporter):
                 onprem_username=onprem_username,
                 onprem_password=onprem_password,
                 onprem_realm=onprem_realm,
+                idm_base_url=idm_base_url,
+                idm_username=idm_username,
+                idm_password=idm_password,
+                am_base_url=am_base_url,
                 force_import=force_import,
                 branch=branch,
                 diff=diff,
+                **kwargs,
             )
             return
 
@@ -215,7 +224,6 @@ class ConnectorsImporter(BaseImporter):
             # Initialize authentication
             token, api_base_url = self.initialize_auth(
                 jwk_path=jwk_path,
-                client_id=client_id,
                 sa_id=sa_id,
                 base_url=base_url,
                 project_name=project_name,
@@ -223,6 +231,10 @@ class ConnectorsImporter(BaseImporter):
                 onprem_username=onprem_username,
                 onprem_password=onprem_password,
                 onprem_realm=onprem_realm,
+                idm_base_url=idm_base_url,
+                idm_username=idm_username,
+                idm_password=idm_password,
+                am_base_url=am_base_url,
             )
 
             # Load and parse file with flexible format support
@@ -325,7 +337,6 @@ def create_connectors_import_command():
         jwk_path: str = typer.Option(
             None, "--jwk-path", help="Path to JWK private key file"
         ),
-        client_id: str = typer.Option(None, "--client-id", help="Client ID"),
         sa_id: str = typer.Option(None, "--sa-id", help="Service Account ID"),
         base_url: str = typer.Option(
             None,
@@ -346,6 +357,18 @@ def create_connectors_import_command():
         ),
         onprem_realm: str = typer.Option(
             "root", "--onprem-realm", help="On-Prem realm"
+        ),
+        am_base_url: str = typer.Option(
+            None, "--am-base-url", help="On-Prem AM base URL"
+        ),
+        idm_base_url: str = typer.Option(
+            None, "--idm-base-url", help="On-Prem IDM base URL"
+        ),
+        idm_username: str = typer.Option(
+            None, "--idm-username", help="On-Prem IDM username"
+        ),
+        idm_password: str = typer.Option(
+            None, "--idm-password", help="On-Prem IDM password", hide_input=True
         ),
         force_import: bool = typer.Option(
             False, "--force-import", "-f", help="Skip hash validation and force import"
@@ -386,7 +409,6 @@ def create_connectors_import_command():
             file_path=file,
             realm=None,  # Root-level config
             jwk_path=jwk_path,
-            client_id=client_id,
             sa_id=sa_id,
             base_url=base_url,
             project_name=project_name,
@@ -394,6 +416,10 @@ def create_connectors_import_command():
             onprem_username=onprem_username,
             onprem_password=onprem_password,
             onprem_realm=onprem_realm,
+            idm_base_url=idm_base_url,
+            idm_username=idm_username,
+            idm_password=idm_password,
+            am_base_url=am_base_url,
             force_import=force_import,
             branch=branch,
             diff=diff,
