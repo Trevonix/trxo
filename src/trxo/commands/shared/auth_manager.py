@@ -45,7 +45,7 @@ class AuthManager:
         sa_arg_mode = all([jwk_path, sa_id, base_url])
         onprem_arg_mode = (
             (auth_mode or "").lower() == "onprem"
-            and base_url
+            and (base_url or am_base_url or idm_base_url)
             and (
                 (onprem_username and onprem_password) or (idm_username and idm_password)
             )
@@ -126,9 +126,12 @@ class AuthManager:
         except Exception:
             pass
 
+        self.config_store.set_current_project(temp_project_name)
+        return temp_project_name
+
     def _initialize_argument_mode_onprem(
         self,
-        base_url: str,
+        base_url: Optional[str] = None,
         username: Optional[str] = None,
         realm: Optional[str] = None,
         project_name: Optional[str] = None,
@@ -174,7 +177,6 @@ class AuthManager:
         self.config_store.set_current_project(temp_project_name)
 
         try:
-            success("✅ argument mode (onprem) initialized successfully")
             return temp_project_name
         except Exception as e:
             if self._original_project:

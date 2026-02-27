@@ -232,7 +232,7 @@ def setup_onprem_auth(
             idm_base_url,
             "idm_base_url",
             existing_config,
-            "\nIDM Base URL (example: http://localhost:8080/)",
+            "\nIDM Base URL (example: http://localhost:8080)",
             required=True,
         )
         effective_idm_url = idm_base_url_value
