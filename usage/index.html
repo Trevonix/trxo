@@ -1,0 +1,1474 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Manage, compare, and deploy Ping configurations safely and consistently with TRXO.">
+      
+      
+      
+        <link rel="canonical" href="https://trevonix.github.io/trxo/usage/">
+      
+      
+        <link rel="prev" href="../installation/">
+      
+      
+        <link rel="next" href="../setup_and_auth/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/logo/trevonix-logo.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.3">
+    
+    
+      
+        <title>Usage - TRXO - Ping Identity configuration management tool</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#trxo-usage-guide" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="TRXO - Ping Identity configuration management tool" class="md-header__button md-logo" aria-label="TRXO - Ping Identity configuration management tool" data-md-component="logo">
+      
+  <img src="../assets/logo/trevonix-logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            TRXO - Ping Identity configuration management tool
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Usage
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Trevonix/trxo" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../home/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../installation/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../advanced_features/" class="md-tabs__link">
+          
+  
+  
+  Features
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="TRXO - Ping Identity configuration management tool" class="md-nav__button md-logo" aria-label="TRXO - Ping Identity configuration management tool" data-md-component="logo">
+      
+  <img src="../assets/logo/trevonix-logo.png" alt="logo">
+
+    </a>
+    TRXO - Ping Identity configuration management tool
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Trevonix/trxo" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../home/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Usage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-project-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Project Workflow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-export-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Export Commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Export Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basic-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic Export
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#general-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        General Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#local-storage-options-filesystem-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local Storage Options (Filesystem Only)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#git-storage-options-git-mode-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Git Storage Options (Git Mode Only)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cicd-automation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI/CD &amp; Automation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-import-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Import Commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Import Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#local-file-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local File System
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#git-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Git Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cicd-automation_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI/CD &amp; Automation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-batch-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Batch Operations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Batch Operations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#batch-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Batch Export
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batch-import" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Batch Import
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-log-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Log Management
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../setup_and_auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Setup & Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../storage_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Storage Setup
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Features
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Features
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced_features/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Features
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../batch_operations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batch Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../service-account-token-lifetime-and-scopes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Service Account Tokens
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-project-workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Project Workflow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-export-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Export Commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Export Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basic-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Basic Export
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#general-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        General Options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#local-storage-options-filesystem-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local Storage Options (Filesystem Only)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#git-storage-options-git-mode-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Git Storage Options (Git Mode Only)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cicd-automation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI/CD &amp; Automation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-import-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Import Commands
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Import Commands">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#local-file-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local File System
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#git-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Git Mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cicd-automation_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI/CD &amp; Automation
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-batch-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Batch Operations
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Batch Operations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#batch-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Batch Export
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batch-import" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Batch Import
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-log-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Log Management
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+                
+
+
+
+
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="trxo-usage-guide">TRXO Usage Guide<a class="headerlink" href="#trxo-usage-guide" title="Permanent link">&para;</a></h1>
+<p>This guide outlines the standard workflow for managing Ping Identity configurations.</p>
+<h2 id="1-project-workflow">1. Project Workflow<a class="headerlink" href="#1-project-workflow" title="Permanent link">&para;</a></h2>
+<p>Start by creating a dedicated workspace for your specific migration or environment task.</p>
+<p><strong>Create a Project:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>trxo<span class="w"> </span>project<span class="w"> </span>create<span class="w"> </span>my-migration-project
+</span></code></pre></div></p>
+<p><strong>List Projects:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>trxo<span class="w"> </span>projects
+</span></code></pre></div></p>
+<p><strong>Switch Context:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>trxo<span class="w"> </span>project<span class="w"> </span>switch<span class="w"> </span>my-migration-project
+</span></code></pre></div></p>
+<h2 id="2-configuration">2. Configuration<a class="headerlink" href="#2-configuration" title="Permanent link">&para;</a></h2>
+<p>Initialize your project configuration for Authentication and Storage.</p>
+<p><div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>trxo<span class="w"> </span>config<span class="w"> </span>setup
+</span></code></pre></div>
+*   For detailed <strong>Authentication</strong> options, see <a href="../setup_and_auth/">Project Setup &amp; Auth Guide</a>.
+*   For detailed <strong>Storage Mode</strong> setup (Local vs Git), see <a href="../storage_setup/">Storage Setup Guide</a>.</p>
+<p><strong>View Current Configuration:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>trxo<span class="w"> </span>config<span class="w"> </span>show
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="c1"># displays current configuration</span>
+</span></code></pre></div></p>
+<hr />
+<h2 id="3-export-commands">3. Export Commands<a class="headerlink" href="#3-export-commands" title="Permanent link">&para;</a></h2>
+<p>Export configurations from your source environment.</p>
+<h3 id="basic-export">Basic Export<a class="headerlink" href="#basic-export" title="Permanent link">&para;</a></h3>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Export all scripts from the default realm (alpha)</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>trxo<span class="w"> </span><span class="nb">export</span><span class="w"> </span>scripts
+</span></code></pre></div>
+<p><img alt="TRXO Export Scripts" class="screenshot" src="../assets/screenshots/trxo-export-scripts.png" />
+<em>Exporting AM scripts to local storage</em></p>
+<h3 id="general-options">General Options<a class="headerlink" href="#general-options" title="Permanent link">&para;</a></h3>
+<p><strong>Specific Realm:</strong>
+Export from a non-default realm (e.g., 'bravo' or root).
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>trxo<span class="w"> </span><span class="nb">export</span><span class="w"> </span>scripts<span class="w"> </span>--realm<span class="w"> </span>bravo
+</span></code></pre></div></p>
+<p><strong>View Data (Dry Run):</strong>
+Preview data in the terminal without saving to file.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>trxo<span class="w"> </span><span class="nb">export</span><span class="w"> </span>realms<span class="w"> </span>--view
+</span></code></pre></div></p>
+<p><img alt="TRXO Export Realms View" class="screenshot" src="../assets/screenshots/trxo-export-realms-view.png" />
+<em>Previewing realm configuration in the terminal</em></p>
+<p><strong>View Specific Columns:</strong>
+Restrict the view output to specific fields (e.g., just IDs and Names).
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>trxo<span class="w"> </span><span class="nb">export</span><span class="w"> </span>realms<span class="w"> </span>--view<span class="w"> </span>--view-columns<span class="w"> </span>_id,name
+</span></code></pre></div></p>
+<h3 id="local-storage-options-filesystem-only">Local Storage Options (Filesystem Only)<a class="headerlink" href="#local-storage-options-filesystem-only" title="Permanent link">&para;</a></h3>
+<p><strong>Custom Directory:</strong>
+Save export files to a specific directory. Creates the directory if it doesn't exist.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>trxo<span class="w"> </span><span class="nb">export</span><span class="w"> </span>journeys<span class="w"> </span>--dir<span class="w"> </span>journeys-export
+</span></code></pre></div></p>
+<p><strong>Custom Filename:</strong>
+Save to a specific manual filename.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>trxo<span class="w"> </span><span class="nb">export</span><span class="w"> </span>journeys<span class="w"> </span>--file<span class="w"> </span>new-journeys
+</span></code></pre></div></p>
+<p><strong>Specific Version:</strong>
+Tag the export file with a semantic version.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>trxo<span class="w"> </span><span class="nb">export</span><span class="w"> </span>journeys<span class="w"> </span>--version<span class="w"> </span>prod-ready
+</span></code></pre></div></p>
+<h3 id="git-storage-options-git-mode-only">Git Storage Options (Git Mode Only)<a class="headerlink" href="#git-storage-options-git-mode-only" title="Permanent link">&para;</a></h3>
+<p><strong>Branch:</strong>
+Export to a specific branch. If the branch exists, it adds/updates files; if not, it creates the branch.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>trxo<span class="w"> </span><span class="nb">export</span><span class="w"> </span>oauth<span class="w"> </span>--branch<span class="w"> </span>bravo-oauth2-clients
+</span></code></pre></div></p>
+<p><strong>Commit Message:</strong>
+Provide a custom commit message describing the export.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>trxo<span class="w"> </span><span class="nb">export</span><span class="w"> </span>oauth<span class="w"> </span>--branch<span class="w"> </span>bravo-oauth2-clients<span class="w"> </span>--message<span class="w"> </span><span class="s2">&quot;Exporting OAuth2 Clients from tenant&quot;</span>
+</span></code></pre></div></p>
+<h3 id="cicd-automation">CI/CD &amp; Automation<a class="headerlink" href="#cicd-automation" title="Permanent link">&para;</a></h3>
+<p>Run exports without interactive prompts or project setup by passing credentials directly.</p>
+<p><strong>PingOne Advanced Identity Cloud (Service Account):</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>trxo<span class="w"> </span><span class="nb">export</span><span class="w"> </span>scripts<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span>--jwk-path<span class="w"> </span>/path/to/private.key<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span>--client-id<span class="w"> </span>service-account-client-id<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">  </span>--sa-id<span class="w"> </span>service-account-uuid<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">  </span>--base-url<span class="w"> </span>https://&lt;tenant&gt;.forgeblocks.com
+</span></code></pre></div></p>
+<p><strong>PingAM (On-Premise):</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>trxo<span class="w"> </span><span class="nb">export</span><span class="w"> </span>scripts<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span>--auth-mode<span class="w"> </span>onprem<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span>--base-url<span class="w"> </span>https://am.example.com/am<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">  </span>--onprem-username<span class="w"> </span>amAdmin<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w">  </span>--onprem-password<span class="w"> </span>SecurityPhrase1!
+</span></code></pre></div></p>
+<hr />
+<h2 id="4-import-commands">4. Import Commands<a class="headerlink" href="#4-import-commands" title="Permanent link">&para;</a></h2>
+<p>Import configurations into your target environment. Options vary based on Local or Git storage mode.</p>
+<p><strong>View Available Commands:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>trxo<span class="w"> </span>import<span class="w"> </span>--help
+</span></code></pre></div></p>
+<h3 id="local-file-system">Local File System<a class="headerlink" href="#local-file-system" title="Permanent link">&para;</a></h3>
+<p>Import configuration files from your local directory.</p>
+<p><strong>Standard Import:</strong>
+Imports from local file to default realm (alpha).
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>trxo<span class="w"> </span>import<span class="w"> </span>authn<span class="w"> </span>--file<span class="w"> </span>&lt;file-name&gt;
+</span></code></pre></div></p>
+<p><img alt="TRXO Import Authentication" class="screenshot" src="../assets/screenshots/trxo-import-authn.png" />
+<em>Importing authentication configuration from a file</em></p>
+<p><strong>Specific Realm:</strong>
+Import file content to a specific target realm.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>trxo<span class="w"> </span>import<span class="w"> </span>authn<span class="w"> </span>--file<span class="w"> </span>&lt;file-name&gt;<span class="w"> </span>--realm<span class="w"> </span>&lt;realm-name&gt;
+</span></code></pre></div></p>
+<p><strong>Cherry-Pick:</strong>
+Import only specific items (single ID or comma-separated list).
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>trxo<span class="w"> </span>import<span class="w"> </span>scripts<span class="w"> </span>--file<span class="w"> </span>&lt;file-name&gt;<span class="w"> </span>--cherry-pick<span class="w"> </span>id1,id2
+</span></code></pre></div></p>
+<p><strong>Diff Mode:</strong>
+Compare the import file against the target environment before applying changes.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>trxo<span class="w"> </span>import<span class="w"> </span>scripts<span class="w"> </span>--file<span class="w"> </span>&lt;file-name&gt;<span class="w"> </span>--diff
+</span></code></pre></div></p>
+<p><strong>Sync Mode:</strong>
+Mirror the import data to the target (deletes extra items on server).
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>trxo<span class="w"> </span>import<span class="w"> </span>scripts<span class="w"> </span>--file<span class="w"> </span>&lt;file-name&gt;<span class="w"> </span>--sync
+</span></code></pre></div></p>
+<p><strong>Force Import:</strong>
+Skip hash integrity checks if file was manually modified.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>trxo<span class="w"> </span>import<span class="w"> </span>scripts<span class="w"> </span>--file<span class="w"> </span>&lt;file-name&gt;<span class="w"> </span>--force-import
+</span></code></pre></div></p>
+<h3 id="git-mode">Git Mode<a class="headerlink" href="#git-mode" title="Permanent link">&para;</a></h3>
+<p>Import configurations directly from the linked Git repository.</p>
+<p><strong>Default Branch:</strong>
+Takes data from the currently checked-out branch.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>trxo<span class="w"> </span>import<span class="w"> </span>scripts
+</span></code></pre></div></p>
+<p><strong>Specific Branch:</strong>
+Import data from a specific branch.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-24-1"><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>trxo<span class="w"> </span>import<span class="w"> </span>scripts<span class="w"> </span>--branch<span class="w"> </span>&lt;branch-name&gt;
+</span></code></pre></div></p>
+<p><strong>Rollback:</strong>
+Automatically restore previous state if import fails (Git mode only).
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-25-1"><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>trxo<span class="w"> </span>import<span class="w"> </span>scripts<span class="w"> </span>--rollback
+</span></code></pre></div></p>
+<h3 id="cicd-automation_1">CI/CD &amp; Automation<a class="headerlink" href="#cicd-automation_1" title="Permanent link">&para;</a></h3>
+<p><strong>PingOne Advanced Identity Cloud:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a>trxo<span class="w"> </span>import<span class="w"> </span>scripts<span class="w"> </span>--file<span class="w"> </span>&lt;file-name&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="w">  </span>--jwk-path<span class="w"> </span>/path/to/private.key<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="w">  </span>--client-id<span class="w"> </span>service-account-client-id<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-26-4"><a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a><span class="w">  </span>--sa-id<span class="w"> </span>service-account-uuid<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-26-5"><a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a><span class="w">  </span>--base-url<span class="w"> </span>https://&lt;tenant&gt;.forgeblocks.com
+</span></code></pre></div></p>
+<p><strong>PingAM (On-Premise):</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-27-1"><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>trxo<span class="w"> </span>import<span class="w"> </span>scripts<span class="w"> </span>--file<span class="w"> </span>&lt;file-name&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-27-2"><a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a><span class="w">  </span>--auth-mode<span class="w"> </span>onprem<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-27-3"><a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a><span class="w">  </span>--base-url<span class="w"> </span>https://am.example.com/am<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-27-4"><a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a><span class="w">  </span>--onprem-username<span class="w"> </span>amAdmin<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-27-5"><a id="__codelineno-27-5" name="__codelineno-27-5" href="#__codelineno-27-5"></a><span class="w">  </span>--onprem-password<span class="w"> </span>SecurityPhrase1!
+</span></code></pre></div></p>
+<p>For more detailed explanations, see <a href="../advanced_features/">Advanced Features Guide</a>.</p>
+<hr />
+<h2 id="5-batch-operations">5. Batch Operations<a class="headerlink" href="#5-batch-operations" title="Permanent link">&para;</a></h2>
+<p>Execute multiple configuration commands in a single operation.</p>
+<p><strong>View Available Commands:</strong>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>trxo<span class="w"> </span>batch<span class="w"> </span>--help
+</span></code></pre></div></p>
+<h3 id="batch-export">Batch Export<a class="headerlink" href="#batch-export" title="Permanent link">&para;</a></h3>
+<p><strong>Export All:</strong>
+Runs the export for all supported commands.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-29-1"><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>trxo<span class="w"> </span>batch<span class="w"> </span><span class="nb">export</span><span class="w"> </span>--all
+</span></code></pre></div></p>
+<p><strong>Selected Commands:</strong>
+Export specific configuration types in one shot.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-30-1"><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>trxo<span class="w"> </span>batch<span class="w"> </span><span class="nb">export</span><span class="w"> </span>authn<span class="w"> </span>services
+</span></code></pre></div></p>
+<p><img alt="TRXO Batch Export" class="screenshot" src="../assets/screenshots/trxo-batch-export.png" />
+<em>Executing multiple export commands in batch mode</em></p>
+<p><strong>Error Handling:</strong>
+Pause execution immediately if any command fails (default is <code>continue-on-error</code>).
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-31-1"><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a>trxo<span class="w"> </span>batch<span class="w"> </span><span class="nb">export</span><span class="w"> </span>authn<span class="w"> </span>services<span class="w"> </span>managed<span class="w"> </span>--stop-on-error
+</span></code></pre></div></p>
+<h3 id="batch-import">Batch Import<a class="headerlink" href="#batch-import" title="Permanent link">&para;</a></h3>
+<p><strong>From Directory:</strong>
+Searches the directory for files matching the specified commands and imports them.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-32-1"><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>trxo<span class="w"> </span>batch<span class="w"> </span>import<span class="w"> </span>--dir<span class="w"> </span>batch-export/<span class="w"> </span>command1<span class="w"> </span>command2
+</span></code></pre></div></p>
+<p><strong>From Config File:</strong>
+Import using a JSON manifest file containing detailed paths and options.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-33-1"><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>trxo<span class="w"> </span>batch<span class="w"> </span>import<span class="w"> </span>--config-file<span class="w"> </span>batch_config.json
+</span></code></pre></div></p>
+<p>For more details, see <a href="../batch_operations/">Batch Operations Guide</a>.</p>
+<hr />
+<h2 id="6-log-management">6. Log Management<a class="headerlink" href="#6-log-management" title="Permanent link">&para;</a></h2>
+<p>Manage and monitor TRXO application logs for troubleshooting and auditing.</p>
+<p><strong>View Recent Logs:</strong>
+Displays the last 20 lines of logs in the console.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-34-1"><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a>trxo<span class="w"> </span>logs<span class="w"> </span>show
+</span></code></pre></div></p>
+<p><strong>Advanced Log View:</strong>
+Filter logs and follow live output.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-35-1"><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>trxo<span class="w"> </span>logs<span class="w"> </span>show<span class="w"> </span>--lines<span class="w"> </span><span class="m">30</span><span class="w"> </span>--follow<span class="w"> </span>--level<span class="w"> </span>INFO
+</span></code></pre></div>
+*   <code>--lines</code>: Specify the number of lines to display from the end.
+*   <code>--follow</code>: Monitor logs live as they are written.
+*   <code>--level</code>: Filter by log level (DEBUG, INFO, WARNING, ERROR).</p>
+<p><strong>View Log Configuration:</strong>
+Displays log file paths, current level, and retention settings.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-36-1"><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>trxo<span class="w"> </span>logs<span class="w"> </span>info
+</span></code></pre></div></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../installation/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Installation">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Installation
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../setup_and_auth/" class="md-footer__link md-footer__link--next" aria-label="Next: Setup &amp; Authentication">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Setup & Authentication
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; <a href="https://trevonix.com" target="_blank" rel="noopener">Trevonix</a> · TRXO — Ping Identity configuration management tool
+<br>
+Developed by <b>Trevonix</b>
+
+    </div>
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tabs", "navigation.tracking", "navigation.sections", "navigation.expand", "navigation.path", "navigation.top", "navigation.footer", "search.highlight", "search.suggest", "search.share", "content.code.copy", "content.code.annotate"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../javascripts/gateway.js"></script>
+      
+        <script src="../javascripts/email-validation.js"></script>
+      
+    
+  </body>
+</html>
