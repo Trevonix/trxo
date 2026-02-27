@@ -88,7 +88,9 @@ class BaseCommand(ABC):
         self.auth_mode = self.auth_manager.get_auth_mode(
             current_project, override=auth_mode
         )
-        api_base_url = self.auth_manager.get_base_url(current_project, base_url)
+        api_base_url = None
+        if self.auth_mode != "onprem" or self.product == "am":
+            api_base_url = self.auth_manager.get_base_url(current_project, base_url)
 
         if self.auth_mode == "onprem":
             token_or_session = None
