@@ -57,6 +57,7 @@ class BaseExporter(BaseCommand):
         no_version: bool = False,
         branch: Optional[str] = None,
         commit_message: Optional[str] = None,
+        **kwargs,
     ) -> None:
         """Export data with authentication and save to file
 
@@ -127,7 +128,7 @@ class BaseExporter(BaseCommand):
             if headers is None:
                 headers = {
                     "Content-Type": "application/json",
-                    "Accept-API-Version": "resource=1.0",
+                    "Accept-API-Version": "protocol=1.0,resource=1.0",
                 }
             headers = {**headers, **self.build_auth_headers(token, product=product)}
 

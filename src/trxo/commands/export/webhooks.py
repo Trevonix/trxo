@@ -98,7 +98,7 @@ def create_webhooks_export_command():
 
         headers = {
             "Content-Type": "application/json",
-            "Accept-API-Version": "protocol=2.1,resource=1.0",
+            "Accept-API-Version": "protocol=1.0,resource=1.0",
         }
 
         exporter.export_data(

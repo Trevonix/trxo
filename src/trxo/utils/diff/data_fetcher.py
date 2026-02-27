@@ -12,6 +12,7 @@ from trxo.utils.console import info, error, warning
 from trxo.commands.export.base_exporter import BaseExporter
 from trxo.commands.export.scripts import decode_script_response
 from trxo.constants import DEFAULT_REALM
+from trxo.commands.export.saml import process_saml_response
 
 
 class DataFetcher:
@@ -77,7 +78,8 @@ class DataFetcher:
                 captured_data = data
                 # Return a dummy path since we're not actually saving
                 return Path("/tmp/dummy_path.json")
-
+            if command_name == "saml":
+                response_filter = process_saml_response(self.exporter, realm)
             # Temporarily replace save_response to capture data
             self.exporter.save_response = capture_data
 
@@ -108,6 +110,8 @@ class DataFetcher:
                     version=None,
                 )
 
+                if isinstance(captured_data, dict) and "data" in captured_data:
+                    return captured_data["data"]
                 return captured_data
 
             finally:
@@ -181,7 +185,14 @@ class DataFetcher:
 
             with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                info(f"📁 Loaded data from {file_path}")
+                if isinstance(data, dict) and isinstance(data.get("data"), dict):
+                    inner = data["data"]
+
+                    if isinstance(inner.get("clients"), list):
+                        return {"result": inner["clients"]}
+
+                    if isinstance(inner.get("result"), list):
+                        return {"result": inner["result"]}
                 return data
 
         except Exception as e:

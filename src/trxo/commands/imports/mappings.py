@@ -30,6 +30,18 @@ class MappingsImporter(BaseImporter):
     def get_api_endpoint(self, item_id: str, base_url: str) -> str:
         return f"{base_url}/openidm/config/sync"
 
+    def _wrap_for_diff(self, data):
+        """
+        Adapt IDM sync config to the default diff shape expected by BaseImporter.
+        BaseImporter expects: { "result": [ ...items... ] }
+        IDM sync config is:   { "mappings": [ ... ] }
+        """
+        if isinstance(data, dict) and "mappings" in data:
+            return {"result": data["mappings"]}
+        if isinstance(data, list):
+            return {"result": data}
+        return {"result": [data]}
+
     def _get_current_sync_config(self, token: str, base_url: str) -> Dict[str, Any]:
         """Fetch current sync configuration"""
         url = self.get_api_endpoint("", base_url)
@@ -220,6 +232,30 @@ class MappingsImporter(BaseImporter):
 
         # Check if we should use Git mode or local mode
         storage_mode = self._get_storage_mode()
+        if diff:
+            # Tell BaseImporter to adapt mappings to default diff shape
+            self._diff_adapter = self._wrap_for_diff
+            super().import_from_file(
+                file_path=file_path,
+                realm=realm,
+                jwk_path=jwk_path,
+                sa_id=sa_id,
+                base_url=base_url,
+                project_name=project_name,
+                auth_mode=auth_mode,
+                onprem_username=onprem_username,
+                onprem_password=onprem_password,
+                onprem_realm=onprem_realm,
+                idm_base_url=idm_base_url,
+                idm_username=idm_username,
+                idm_password=idm_password,
+                am_base_url=am_base_url,
+                force_import=force_import,
+                branch=branch,
+                diff=diff,
+                **kwargs,
+            )
+            return
 
         if storage_mode == "git" or file_path is None:
             # Use parent class Git mode logic

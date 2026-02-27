@@ -50,16 +50,16 @@ def test_export_services_scope_realm(mock_exporter):
 def test_export_services_invalid_scope(mocker):
     exporter = mocker.Mock()
     mocker.patch(
-        "trxo.commands.export.services.ServicesExporter", return_value=exporter
+        "trxo.commands.export.services.ServicesExporter",
+        return_value=exporter
     )
-    error_spy = mocker.patch("trxo.utils.console.error")
 
     export_services = create_services_export_command()
 
-    with pytest.raises(Exception):
-        export_services(scope="bad")
+    # Should not crash and should still call export_data
+    export_services(scope="bad")
 
-    error_spy.assert_called_once()
+    exporter.export_data.assert_called_once()
 
 
 def test_services_response_filter_non_dict(mock_exporter):

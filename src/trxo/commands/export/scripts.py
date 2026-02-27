@@ -149,7 +149,7 @@ def create_scripts_export_command():
         exporter = BaseExporter()
 
         headers = {
-            "Accept-API-Version": "protocol=2.1,resource=1.0",
+            "Accept-API-Version": "protocol=1.0,resource=1.0",
             "Content-Type": "application/json",
         }
 

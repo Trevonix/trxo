@@ -53,7 +53,7 @@ class AgentsImporter(BaseImporter):
         url = self.get_api_endpoint(item_id, base_url)
         headers = {
             "Content-Type": "application/json",
-            "Accept-API-Version": "resource=1.0",
+            "Accept-API-Version": "protocol=1.0,resource=1.0",
         }
         headers = {**headers, **self.build_auth_headers(token)}
         payload = self._build_payload(item_data)

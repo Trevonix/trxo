@@ -13,10 +13,136 @@ from .base_exporter import BaseExporter
 from trxo.constants import DEFAULT_REALM
 
 
+def services_response_filter(data, *, exporter, scope, realm, headers):
+    """Filter to fetch complete service configurations"""
+    if not isinstance(data, dict) or "result" not in data:
+        return data
+
+    services_list = data["result"]
+    if not services_list:
+        return data
+
+    token, api_base_url = exporter.get_current_auth()
+    if not token or not api_base_url:
+        warning("Authentication not available for detailed service fetch")
+        return data
+
+    complete_services = []
+    auth_headers = {**headers, **exporter.build_auth_headers(token)}
+
+    for service_summary in services_list:
+        service_id = service_summary.get("_id")
+        if not service_id:
+            complete_services.append(service_summary)
+            continue
+
+        if service_id == "DataStoreService":
+            continue
+
+        if scope.lower() == "global":
+            detail_url = exporter._construct_api_url(
+                api_base_url, f"/am/json/global-config/services/{service_id}"
+            )
+        else:
+            detail_url = exporter._construct_api_url(
+                api_base_url,
+                f"/am/json/realms/root/realms/{realm}/realm-config/services/{service_id}",
+            )
+
+        try:
+            detail_response = exporter.make_http_request(
+                detail_url, "GET", auth_headers
+            )
+            complete_service = detail_response.json()
+
+            try:
+                nd_url = f"{detail_url}?_action=nextdescendents"
+                nd_response = exporter.make_http_request(nd_url, "POST", auth_headers)
+                nd_result = nd_response.json()
+                descendants = nd_result.get("result", [])
+                complete_service["nextDescendents"] = [
+                    {k: v for k, v in d.items() if k != "_rev"} for d in descendants
+                ]
+
+            except Exception:
+                complete_service["nextDescendents"] = []
+
+            complete_services.append(complete_service)
+        except Exception as e:
+            warning(f"Failed to fetch complete config for service '{service_id}': {e}")
+            complete_services.append(service_summary)
+
+    return {**data, "result": complete_services}
+
+
 class ServicesExporter(BaseExporter):
     """Custom exporter for services that fetches complete configurations"""
 
-    pass
+    def export_as_dict(
+        self,
+        scope: str = "realm",
+        realm: str = DEFAULT_REALM,
+        jwk_path=None,
+        client_id=None,
+        sa_id=None,
+        base_url=None,
+        project_name=None,
+        auth_mode=None,
+        onprem_username=None,
+        onprem_password=None,
+        onprem_realm="root",
+    ):
+        headers = {
+            "Accept-API-Version": "protocol=2.1,resource=1.0",
+            "Content-Type": "application/json",
+        }
+
+        if scope.lower() == "global":
+            api_endpoint = "/am/json/global-config/services?_queryFilter=true"
+        else:
+            api_endpoint = (
+                f"/am/json/realms/root/realms/{realm}/realm-config/services?_queryFilter=true"
+            )
+
+        captured = {}
+        original_save_response = self.save_response
+
+        def capture_save_response(payload, *args, **kwargs):
+            if isinstance(payload, dict) and "data" in payload:
+                captured["data"] = payload["data"]
+            else:
+                captured["data"] = payload
+            return None
+
+        self.save_response = capture_save_response
+
+        try:
+            self.export_data(
+                command_name="services",
+                api_endpoint=api_endpoint,
+                headers=headers,
+                view=False,
+                jwk_path=jwk_path,
+                client_id=client_id,
+                sa_id=sa_id,
+                base_url=base_url,
+                project_name=project_name,
+                auth_mode=auth_mode,
+                onprem_username=onprem_username,
+                onprem_password=onprem_password,
+                onprem_realm=onprem_realm,
+                response_filter=lambda data: services_response_filter(
+                    data,
+                    exporter=self,
+                    scope=scope,
+                    realm=realm,
+                    headers=headers,
+                ),
+            )
+        finally:
+            self.save_response = original_save_response
+
+        return captured.get("data")
 
 
 def create_services_export_command():
@@ -26,18 +152,12 @@ def create_services_export_command():
         scope: str = typer.Option(
             "realm",
             "--scope",
-            help=(
-                "Service scope: 'global' for global services or 'realm' "
-                "for realm services"
-            ),
+            help="Service scope: 'global' for global services or 'realm' for realm services",
         ),
         realm: str = typer.Option(
             DEFAULT_REALM,
             "--realm",
-            help=(
-                f"Target realm name (used when scope=realm, "
-                f"default: {DEFAULT_REALM})"
-            ),
+            help=f"Target realm name (used when scope=realm, default: {DEFAULT_REALM})",
         ),
         view: bool = typer.Option(
             False,
@@ -68,6 +188,7 @@ def create_services_export_command():
         jwk_path: str = typer.Option(
             None, "--jwk-path", help="Path to JWK private key file"
         ),
+        client_id: str = typer.Option(None, "--client-id"),
         sa_id: str = typer.Option(None, "--sa-id", help="Service Account ID"),
         base_url: str = typer.Option(
             None,
@@ -100,9 +221,7 @@ def create_services_export_command():
             "root", "--onprem-realm", help="On-Prem realm"
         ),
         am_base_url: str = typer.Option(
-
             None, "--am-base-url", help="On-Prem AM base URL"
-
         ),
         idm_base_url: str = typer.Option(
             None, "--idm-base-url", help="On-Prem IDM base URL"
@@ -114,7 +233,6 @@ def create_services_export_command():
             None, "--idm-password", help="On-Prem IDM password", hide_input=True
         ),
     ):
-        """Export services configuration with complete data for each service"""
         exporter = ServicesExporter()
 
         headers = {
@@ -122,110 +240,15 @@ def create_services_export_command():
             "Content-Type": "application/json",
         }
 
-        # Determine API endpoints and command name based on scope
         if scope.lower() == "global":
-            command_name = "services"  # Consistent naming
             api_endpoint = "/am/json/global-config/services?_queryFilter=true"
-        elif scope.lower() == "realm":
-            command_name = "services"
-            api_endpoint = (
-                f"/am/json/realms/root/realms/{realm}/realm-config/"
-                "services?_queryFilter=true"
-            )
         else:
-            from trxo.utils.console import error
+            api_endpoint = (
+                f"/am/json/realms/root/realms/{realm}/realm-config/services?_queryFilter=true"
+            )
 
-            error("Invalid scope. Use 'global' or 'realm'")
-            raise typer.Exit(1)
-
-        # Custom response filter to fetch complete service configurations
-        def services_response_filter(data):
-            """Filter to fetch complete service configurations"""
-            if not isinstance(data, dict) or "result" not in data:
-                return data
-
-            services_list = data["result"]
-            if not services_list:
-                return data
-
-            # Get authentication details from exporter
-            token, api_base_url = exporter.get_current_auth()
-            if not token or not api_base_url:
-                warning("Authentication not available for detailed service fetch")
-                return data
-
-            complete_services = []
-            auth_headers = {**headers, **exporter.build_auth_headers(token)}
-
-            for service_summary in services_list:
-                service_id = service_summary.get("_id")
-                if not service_id:
-                    complete_services.append(service_summary)
-                    continue
-
-                # Skip problematic services that cannot be processed
-                # DataStoreService is a known service that fails during export
-                if service_id == "DataStoreService":
-                    # info(f"Skipping service '{service_id}' "
-                    #      "(known compatibility issue)")
-                    continue
-
-                # Build detail endpoint
-                if scope.lower() == "global":
-                    detail_url = exporter._construct_api_url(
-                        api_base_url, f"/am/json/global-config/services/{service_id}"
-                    )
-                else:
-                    detail_url = exporter._construct_api_url(
-                        api_base_url,
-                        f"/am/json/realms/root/realms/{realm}/"
-                        f"realm-config/services/{service_id}",
-                    )
-
-                try:
-                    detail_response = exporter.make_http_request(
-                        detail_url, "GET", auth_headers
-                    )
-                    complete_service = detail_response.json()
-
-                    # Fetch nextDescendents
-                    try:
-                        next_descendents_url = f"{detail_url}?_action=nextdescendents"
-                        # Use POST as requested
-                        nd_response = exporter.make_http_request(
-                            next_descendents_url, "POST", auth_headers
-                        )
-                        nd_result = nd_response.json()
-
-                        descendants = nd_result.get("result", [])
-                        # Clean _rev from descendants
-                        cleaned_descendants = []
-                        for desc in descendants:
-                            # Create a copy to avoid modifying original if it matters,
-                            # though here it's new data
-                            clean_desc = desc.copy()
-                            clean_desc.pop("_rev", None)
-                            cleaned_descendants.append(clean_desc)
-
-                        complete_service["nextDescendents"] = cleaned_descendants
-                    except Exception:
-                        # Log warning but continue with service export
-                        complete_service["nextDescendents"] = []
-
-                    complete_services.append(complete_service)
-                except Exception as e:
-                    warning(
-                        f"Failed to fetch complete config for service "
-                        f"'{service_id}': {e}"
-                    )
-                    complete_services.append(service_summary)
-
-            # Return data with complete services
-            return {**data, "result": complete_services}
-
-        # Use BaseExporter with custom response filter for complete service data
         exporter.export_data(
-            command_name=command_name,
+            command_name="services",
             api_endpoint=api_endpoint,
             headers=headers,
             view=view,
@@ -240,10 +263,17 @@ def create_services_export_command():
             onprem_username=onprem_username,
             onprem_password=onprem_password,
             onprem_realm=onprem_realm,
+            response_filter=lambda data: services_response_filter(
+                data,
+                exporter=exporter,
+                scope=scope,
+                realm=realm,
+                headers=headers,
+            ),
             idm_base_url=idm_base_url,
             idm_username=idm_username,
-            idm_password=idm_password, am_base_url=am_base_url,
-            response_filter=services_response_filter,
+            idm_password=idm_password,
+            am_base_url=am_base_url,
             version=version,
             no_version=no_version,
             branch=branch,

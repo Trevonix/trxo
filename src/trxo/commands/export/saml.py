@@ -13,6 +13,62 @@ from .base_exporter import BaseExporter
 from trxo.constants import DEFAULT_REALM
 
 
+class SamlExporter(BaseExporter):
+    def export_as_dict(
+        self,
+        realm: str = DEFAULT_REALM,
+        jwk_path=None,
+        client_id=None,
+        sa_id=None,
+        base_url=None,
+        project_name=None,
+        auth_mode=None,
+        onprem_username=None,
+        onprem_password=None,
+        onprem_realm="root",
+    ):
+        headers = {
+            "Accept-API-Version": "protocol=2.1,resource=1.0",
+            "Content-Type": "application/json",
+        }
+
+        api_endpoint = (
+            f"/am/json/realms/root/realms/{realm}/realm-config/saml2?_queryFilter=true"
+        )
+
+        captured = {}
+        original_save_response = self.save_response
+
+        def capture_save_response(payload, *args, **kwargs):
+            # 👇 SAML exporter sends the final structured dict directly
+            captured["data"] = payload
+            return None
+
+        self.save_response = capture_save_response
+
+        try:
+            self.export_data(
+                command_name="saml",
+                api_endpoint=api_endpoint,
+                headers=headers,
+                view=False,
+                jwk_path=jwk_path,
+                client_id=client_id,
+                sa_id=sa_id,
+                base_url=base_url,
+                project_name=project_name,
+                auth_mode=auth_mode,
+                onprem_username=onprem_username,
+                onprem_password=onprem_password,
+                onprem_realm=onprem_realm,
+                response_filter=process_saml_response(self, realm),
+            )
+        finally:
+            self.save_response = original_save_response
+
+        return captured.get("data") or {}
+
+
 def process_saml_response(exporter_instance: BaseExporter, realm: str):
     """
     Process SAML response to fetch complete data including hosted/remote
@@ -29,7 +85,7 @@ def process_saml_response(exporter_instance: BaseExporter, realm: str):
         Function that processes the initial API response
     """
 
-    def filter_function(response_data: Any) -> Dict[str, Any]:
+    def filter_function(response_data: Any, **kwargs) -> Dict[str, Any]:
         """
         Filter function to process SAML response and fetch complete data.
 
@@ -59,6 +115,7 @@ def process_saml_response(exporter_instance: BaseExporter, realm: str):
             f"/am/json/realms/root/realms/{realm}/realm-config/saml2"
             "?_queryFilter=true"
         )
+
         providers_url = exporter_instance._construct_api_url(
             api_base_url, providers_endpoint
         )
@@ -93,6 +150,7 @@ def process_saml_response(exporter_instance: BaseExporter, realm: str):
                         f"/am/json/realms/root/realms/{realm}"
                         f"/realm-config/saml2/{location}/{provider_id}"
                     )
+
                     provider_url = exporter_instance._construct_api_url(
                         api_base_url, provider_endpoint
                     )
@@ -106,8 +164,6 @@ def process_saml_response(exporter_instance: BaseExporter, realm: str):
                         # Step 3: Extract and fetch scripts referenced in the provider data
                         script_ids = extract_script_ids(provider_detail)
                         if script_ids:
-                            # info(f"Found {len(script_ids)} script reference(s)
-                            # in {entity_id or provider_id}")
                             fetch_scripts(
                                 exporter_instance,
                                 realm,
@@ -144,10 +200,8 @@ def process_saml_response(exporter_instance: BaseExporter, realm: str):
             for entity_id in entity_ids_list:
                 try:
                     # Use the JSP endpoint to export metadata for each entity
-                    metadata_endpoint = (
-                        f"/am/saml2/jsp/exportmetadata.jsp?entityid={entity_id}&"
-                        f"realm={realm}"
-                    )
+                    metadata_endpoint = f"/am/saml2/jsp/exportmetadata.jsp?entityid={entity_id}&realm={realm}"
+
                     metadata_url = exporter_instance._construct_api_url(
                         api_base_url, metadata_endpoint
                     )
@@ -353,9 +407,7 @@ def create_saml_export_command():
             "root", "--onprem-realm", help="On-Prem realm"
         ),
         am_base_url: str = typer.Option(
-
             None, "--am-base-url", help="On-Prem AM base URL"
-
         ),
         idm_base_url: str = typer.Option(
             None, "--idm-base-url", help="On-Prem IDM base URL"
@@ -401,7 +453,8 @@ def create_saml_export_command():
             onprem_realm=onprem_realm,
             idm_base_url=idm_base_url,
             idm_username=idm_username,
-            idm_password=idm_password, am_base_url=am_base_url,
+            idm_password=idm_password,
+            am_base_url=am_base_url,
             version=version,
             no_version=no_version,
             branch=branch,

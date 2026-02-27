@@ -96,7 +96,6 @@ class OAuthExporter(BaseExporter):
             "Content-Type": "application/json",
         }
         headers = {**headers, **self.build_auth_headers(token)}
-
         try:
             response = self.make_http_request(url, "GET", headers)
             data = response.json()

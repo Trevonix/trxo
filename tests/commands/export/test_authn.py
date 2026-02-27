@@ -35,7 +35,7 @@ def test_authn_export_calls_exporter(mocker):
 
     assert kwargs["command_name"] == "authn"
     assert kwargs["headers"]["Content-Type"] == "application/json"
-    assert kwargs["headers"]["Accept-API-Version"] == "resource=1.0"
+    assert kwargs["headers"]["Accept-API-Version"] == "protocol=2.0,resource=1.0"
     assert (
         "/am/json/realms/root/realms/alpha/realm-config/authentication"
         in kwargs["api_endpoint"]

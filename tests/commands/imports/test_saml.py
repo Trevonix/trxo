@@ -1,13 +1,12 @@
 import json
 import httpx
-import pytest
 
 from trxo.commands.imports.saml import SamlImporter, create_saml_import_command
 
 
 def test_saml_basic_methods():
     s = SamlImporter(realm="alpha")
-    assert s.get_required_fields() == ["_id"]
+    assert s.get_required_fields() == []
     assert s.get_item_type() == "saml"
     assert "realm-config/saml2" in s.get_api_endpoint("x", "http://a")
 

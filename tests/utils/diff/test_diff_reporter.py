@@ -1,4 +1,3 @@
-import pytest
 from pathlib import Path
 from trxo.utils.diff.diff_reporter import DiffReporter
 from trxo.utils.diff.diff_engine import DiffResult, ChangeType
@@ -14,7 +13,15 @@ class FakeItem:
         self.detailed_changes = detailed_changes or {}
 
 
-def make_diff_result(cmd="x", realm=None, added=None, modified=None, removed=None, unchanged=None, insights=None):
+def make_diff_result(
+        cmd="x",
+        realm=None,
+        added=None,
+        modified=None,
+        removed=None,
+        unchanged=None,
+        insights=None
+        ):
     return DiffResult(
         command_name=cmd,
         realm=realm,
@@ -44,7 +51,7 @@ def test_display_summary_with_changes_and_insights(mocker):
     dr = make_diff_result(added=added, insights=["hello"])
 
     mocker.patch.object(rep, "_display_key_insights")
-    mocker.patch.object(rep, "_display_changes_table")
+    mocker.patch.object(rep, "display_summary")
 
     rep.display_summary(dr)
 
@@ -67,9 +74,14 @@ def test_display_changes_table(mocker):
         FakeItem("2", "b", ChangeType.MODIFIED),
         FakeItem("3", "c", ChangeType.REMOVED),
     ]
-    dr = make_diff_result(added=[items[0]], modified=[items[1]], removed=[items[2]])
 
-    rep._display_changes_table(dr)
+    dr = make_diff_result(
+        added=[items[0]],
+        modified=[items[1]],
+        removed=[items[2]],
+    )
+
+    rep.display_summary(dr)
 
 
 def test_display_key_insights_non_oauth(mocker):

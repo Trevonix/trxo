@@ -10,6 +10,9 @@ from dataclasses import dataclass
 from enum import Enum
 from deepdiff import DeepDiff
 from trxo.utils.console import error
+from trxo.utils.console import info
+from trxo.commands.export.services import ServicesExporter
+from trxo.commands.export.saml import SamlExporter
 
 
 class ChangeType(Enum):
@@ -62,10 +65,26 @@ class DiffEngine:
         self.id_fields = ["_id", "id", "name"]
         self.ignore_fields = [
             "_rev",
+            "_type",
             "lastModified",
             "createdDate",
             "modifiedDate",
+            "userpassword",
+            "secretLabelIdentifier",
         ]
+
+    def _fetch_current_services(self, realm: Optional[str]):
+        info("Fetching current services via ServicesExporter for diff")
+        exporter = ServicesExporter()
+        return exporter.export_as_dict(
+            scope="realm",
+            realm=realm,
+        )
+
+    def _fetch_current_saml(self, realm: Optional[str]):
+        info("Fetching current saml via SamlExporter for diff")
+        exporter = SamlExporter()
+        return exporter.export_as_dict(realm=realm)
 
     def compare_data(
         self,
@@ -87,7 +106,20 @@ class DiffEngine:
             DiffResult containing detailed comparison
         """
         try:
-            print(f"\nComparing {command_name} data...")
+            info(f"\nComparing {command_name} data...")
+
+            # Auto-fetch current data if not provided
+            # Always fetch current data from server for services
+            if command_name == "services":
+                current_data = self._fetch_current_services(realm)
+
+            if command_name == "saml":
+                current_data = self._fetch_current_saml(realm)
+
+            if command_name == "authn":
+                info("Notice: For authn command, diff is performed on individual config sections"
+                     " rather than entire file to provide more actionable insights.")
+            # Auto-fetch current data if not provided
 
             # Extract data arrays from the response structure
             current_items = self._extract_items(current_data)
@@ -146,10 +178,9 @@ class DiffEngine:
 
             # Create overall diff using deepdiff
             raw_diff = DeepDiff(
-                current_data,
-                new_data,
+                current_items,
+                new_items,
                 ignore_order=True,
-                exclude_paths=self.ignore_fields,
                 verbose_level=2,
             )
 
@@ -186,39 +217,53 @@ class DiffEngine:
         if not data:
             return []
 
-        # Step 1: handle wrapping key `data`
-        if "data" in data:
+    # Unwrap top-level "data"
+        if isinstance(data, dict) and "data" in data:
             data = data["data"]
 
-        # Priority 1: If nested inside realm → extract the list
-        if isinstance(data, dict) and "realm" in data:
-            realm_data = data["realm"]
+            # SAML: only diff hosted + remote (ignore metadata, scripts)
+            if (
+                isinstance(data, dict)
+                and isinstance(data.get("hosted"), list)
+                and isinstance(data.get("remote"), list)
+            ):
+                return data.get("hosted", []) + data.get("remote", [])
 
-            # realm_data = {"fido": [...items...] }
-            if isinstance(realm_data, dict):
-                for key, value in realm_data.items():
-                    if isinstance(value, list):
-                        return value
+    #  Handle result wrapper
+        if isinstance(data, dict) and isinstance(data.get("result"), list):
+            return data["result"]
 
-        # Priority 1b: If nested inside objects/mappings → extract
+    #  OAuth: data.clients
+        if isinstance(data, dict) and isinstance(data.get("clients"), list):
+            return data["clients"]
+
+        # authn: split composite config into item-wise sections
+        if isinstance(data, dict) and "postauthprocess" in data:
+            items = []
+            for section_key, section_value in data.items():
+                # Skip metadata-like fields
+                if section_key in ("_id", "_type"):
+                    continue
+
+        # Each section becomes its own diff item
+                items.append({
+                    "_id": section_key,
+                    "value": section_value,
+                })
+            return items
+
+    # objects / mappings
         if isinstance(data, dict) and any(k in data for k in ("objects", "mappings")):
             objects_data = data.get("objects") or data.get("mappings")
-
             if isinstance(objects_data, list):
                 return objects_data
 
-        # Priority 2: If direct single object contains _id → return it
+    # Single object
         if isinstance(data, dict) and "_id" in data:
             return [data]
 
-        # Existing logic (fallback)
-        if isinstance(data, dict):
-            if "result" in data and isinstance(data["result"], list):
-                return data["result"]
-            else:
-                return [data]
-
-        elif isinstance(data, list):
+    # Already a list
+        if isinstance(data, list):
             return data
 
         return []
@@ -237,6 +282,12 @@ class DiffEngine:
         for field in self.id_fields:
             if field in item and item[field]:
                 return str(item[field])
+
+        type_info = item.get("_type")
+        if isinstance(type_info, dict):
+            service_id = type_info.get("_id")
+            if service_id:
+                return str(service_id)
         return None
 
     def _get_item_name(self, item: Dict[str, Any]) -> Optional[str]:
@@ -247,16 +298,61 @@ class DiffEngine:
                 return str(item[field])
         return None
 
+    def _normalize_inherited_fields(self, obj):
+        """
+        Normalize AM inherited/value wrapper objects into flat values
+        so DeepDiff does not report fake changes.
+        """
+        if isinstance(obj, dict):
+
+            # Full wrapper → unwrap value
+            if "inherited" in obj and "value" in obj and len(obj) <= 2:
+                return self._normalize_inherited_fields(obj["value"])
+
+            # Half wrapper (no value) → treat as None
+            if "inherited" in obj and "value" not in obj and len(obj) == 1:
+                return None
+
+            normalized = {}
+            for k, v in obj.items():
+                if k in self.ignore_fields:
+                    continue
+                if k == "script":
+                    normalized[k] = v
+                else:
+                    normalized[k] = self._normalize_inherited_fields(v)
+            return normalized
+
+        if isinstance(obj, list):
+            return [self._normalize_inherited_fields(i) for i in obj]
+
+        if obj == "null":
+            return None
+
+        return obj
+
+    def _strip_ignored_fields(self, obj):
+        if isinstance(obj, dict):
+            return {
+                k: self._strip_ignored_fields(v)
+                for k, v in obj.items()
+                if k not in self.ignore_fields
+            }
+        if isinstance(obj, list):
+            return [self._strip_ignored_fields(i) for i in obj]
+        return obj
+
     def _compare_items(
         self, current_item: Dict[str, Any], new_item: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Compare two items and return detailed differences"""
-        clean_current = {
-            k: v for k, v in current_item.items() if k not in self.ignore_fields
-        }
-        clean_new = {k: v for k, v in new_item.items() if k not in self.ignore_fields}
+        clean_current = self._strip_ignored_fields(current_item)
+        clean_new = self._strip_ignored_fields(new_item)
 
-        diff = DeepDiff(clean_current, clean_new, ignore_order=True, verbose_level=2)
+        clean_current = self._normalize_inherited_fields(clean_current)
+        clean_new = self._normalize_inherited_fields(clean_new)
+
+        diff = DeepDiff(clean_current, clean_new, ignore_order=False, verbose_level=2)
 
         has_changes = bool(diff)
         changes_count = 0

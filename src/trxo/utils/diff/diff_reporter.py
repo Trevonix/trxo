@@ -12,10 +12,9 @@ from typing import Dict, Any, List, Optional
 from pathlib import Path
 from datetime import datetime, timezone
 import difflib
-from rich.table import Table
 from rich.panel import Panel
 from trxo.utils.console import console, success, info, error
-from trxo.utils.diff.diff_engine import DiffResult, ChangeType
+from trxo.utils.diff.diff_engine import DiffResult
 
 
 class DiffReporter:
@@ -72,126 +71,6 @@ class DiffReporter:
 
         except Exception as e:
             error(f"Failed to display summary: {str(e)}")
-
-    def _display_overview(self, diff_result: DiffResult) -> None:
-        """Display overview statistics"""
-        # Create overview table
-        overview_table = Table(
-            title="📈 Overview", show_header=True, header_style="bold magenta"
-        )
-        overview_table.add_column("Metric", style="cyan", no_wrap=True)
-        overview_table.add_column("Current", style="blue", justify="right")
-        overview_table.add_column("New", style="green", justify="right")
-        overview_table.add_column("Changes", style="yellow", justify="right")
-
-        # Add rows
-        overview_table.add_row(
-            "Total Items",
-            str(diff_result.total_items_current),
-            str(diff_result.total_items_new),
-            str(
-                len(diff_result.added_items)
-                + len(diff_result.modified_items)
-                + len(diff_result.removed_items)
-            ),
-        )
-
-        overview_table.add_row(
-            "Added",
-            "-",
-            str(len(diff_result.added_items)),
-            (
-                f"[green]+{len(diff_result.added_items)}[/green]"
-                if diff_result.added_items
-                else "0"
-            ),
-        )
-
-        overview_table.add_row(
-            "Modified",
-            str(len(diff_result.modified_items) + len(diff_result.unchanged_items)),
-            str(len(diff_result.modified_items) + len(diff_result.unchanged_items)),
-            (
-                f"[yellow]~{len(diff_result.modified_items)}[/yellow]"
-                if diff_result.modified_items
-                else "0"
-            ),
-        )
-
-        overview_table.add_row(
-            "Removed",
-            str(len(diff_result.removed_items)),
-            "-",
-            (
-                f"[red]-{len(diff_result.removed_items)}[/red]"
-                if diff_result.removed_items
-                else "0"
-            ),
-        )
-
-        overview_table.add_row(
-            "Unchanged",
-            str(len(diff_result.unchanged_items)),
-            str(len(diff_result.unchanged_items)),
-            f"[dim]={len(diff_result.unchanged_items)}[/dim]",
-        )
-
-        self.console.print()
-        self.console.print(overview_table)
-
-    def _display_changes_table(self, diff_result: DiffResult) -> None:
-        """Display detailed changes table"""
-        # Collect all items with changes
-        changed_items = []
-        changed_items.extend(diff_result.added_items)
-        changed_items.extend(diff_result.modified_items)
-        changed_items.extend(diff_result.removed_items)
-
-        if not changed_items:
-            return
-
-        # Create changes table
-        changes_table = Table(
-            title="🔍 Detailed Changes", show_header=True, header_style="bold magenta"
-        )
-        changes_table.add_column("#", style="bold yellow", no_wrap=True, width=4)
-        changes_table.add_column("ID", style="cyan", no_wrap=True)
-        changes_table.add_column("Name", style="blue", no_wrap=False)
-        changes_table.add_column("Type", style="bold", no_wrap=True, width=10)
-        # changes_table.add_column("Changes", style="yellow", justify="right", width=8)
-        changes_table.add_column("Summary", style="white", no_wrap=False)
-
-        # Add rows for each changed item
-        for idx, item in enumerate(changed_items, 1):
-            # Style based on change type
-            if item.change_type == ChangeType.ADDED:
-                type_style = "[green]ADDED[/green]"
-                id_style = f"[green]{item.item_id}[/green]"
-                name_style = f"[green]{item.item_name or 'N/A'}[/green]"
-            elif item.change_type == ChangeType.MODIFIED:
-                type_style = "[yellow]MODIFIED[/yellow]"
-                id_style = f"[yellow]{item.item_id}[/yellow]"
-                name_style = f"[yellow]{item.item_name or 'N/A'}[/yellow]"
-            elif item.change_type == ChangeType.REMOVED:
-                type_style = "[red]REMOVED[/red]"
-                id_style = f"[red]{item.item_id}[/red]"
-                name_style = f"[red]{item.item_name or 'N/A'}[/red]"
-            else:
-                type_style = "[dim]UNCHANGED[/dim]"
-                id_style = f"[dim]{item.item_id}[/dim]"
-                name_style = f"[dim]{item.item_name or 'N/A'}[/dim]"
-
-            changes_table.add_row(
-                str(idx),
-                id_style,
-                name_style,
-                type_style,
-                # str(item.changes_count) if item.changes_count > 0 else "-",
-                item.summary,
-            )
-
-        self.console.print()
-        self.console.print(changes_table)
 
     def _display_key_insights(
         self, key_insights: List[str], diff_result: DiffResult
@@ -498,9 +377,9 @@ class DiffReporter:
                         per_item_blocks.append(block)
                 else:
                     per_item_blocks.append(
-                         f"<div class='section'><h3>"
-                         f"{_html.escape(item.item_name or item.item_id)}"
-                         f"</h3><p>{_html.escape(item.summary)}</p></div>"
+                        f"<div class='section'><h3>"
+                        f"{_html.escape(item.item_name or item.item_id)}"
+                        f"</h3><p>{_html.escape(item.summary)}</p></div>"
                     )
 
             per_item_html = "\n".join(per_item_blocks)
@@ -515,6 +394,10 @@ class DiffReporter:
         insights_html = self._generate_insights_html(
             diff_result.key_insights, diff_result
         )
+
+        title = (diff_result.command_name or "Unknown").title()
+        realm_suffix = f" - Realm: {diff_result.realm}" if diff_result.realm else ""
+        generated_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
         # Create HTML template
         html_template = f"""
@@ -630,7 +513,14 @@ class DiffReporter:
         .unified-diff .file-header {{ display: block; color: #333; font-weight: 700; }}
         .unified-diff .context {{ display: block; color: #444; }}
         /* HtmlDiff (side-by-side) styling */
-        .side-by-side-diff {{ overflow: auto; max-height: 700px; border: 1px solid #dfe6ef; border-radius: 6px; padding: 8px; background: #ffffff; }}
+        .side-by-side-diff {{
+            overflow: auto;
+            max-height: 700px;
+            border: 1px solid #dfe6ef;
+            border-radius: 6px;
+            padding: 8px;
+            background: #ffffff;
+        }}
         table.diff {{
             width: 100%;
             border-collapse: collapse;
@@ -665,12 +555,33 @@ class DiffReporter:
         td.diff_header {{ background: #f0f6ff; font-weight: 700; color: #06222a; }}
 
         /* Legend */
-        .diff-legend {{ display: flex; gap: 12px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }}
-        .legend-item {{ display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 6px; font-weight: 700; font-size: 0.95em; }}
+       .diff-legend {{
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }}
+        .legend-item {{
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.95em;
+        }}
+
         .legend-item.added {{ background: #ecfff1; color: #0b5d2e; border: 1px solid #d6f6df; }}
         .legend-item.removed {{ background: #ffecec; color: #6a1b1b; border: 1px solid #ffd6d6; }}
         .legend-item.changed {{ background: #fff8e6; color: #6b4b00; border: 1px solid #ffefc6; }}
-        .legend-bullet {{ font-weight: 900; padding: 2px 6px; border-radius: 4px; background: rgba(0,0,0,0.04); }}
+        .legend-bullet {{
+            font-weight: 900;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(0, 0, 0, 0.04);
+        }}
+
         .changes-table th,
         .changes-table td {{
             padding: 12px;
@@ -725,16 +636,11 @@ class DiffReporter:
 </head>
 <body>
     <div class="container">
-        '<div class="header">'
-        '<h1>🔍 Diff Report</h1>'
-        f'<p>{diff_result.command_name.title()}'
-        f'{f" - Realm: {diff_result.realm}" if diff_result.realm else ""}'
-        '</p>'
-        f'<p class="timestamp">Generated: '
-        f'{datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")}'
-        '</p>'
-    '</div>'
-
+        <div class="header">
+            <h1>🔍 Diff Report</h1>
+            <p>{title}{realm_suffix}</p>
+            <p class="timestamp">Generated: {generated_at}</p>
+        </div>
         <div class="content">
             <div class="section">
                 <h2>Summary</h2>
@@ -747,23 +653,7 @@ class DiffReporter:
 
             {per_item_html}
 
-           '<div class="section">'
-           '<h2>Textual Diff</h2>'
-           '<div class="diff-legend">'
-           '<div class="legend-item removed">'
-           '<span class="legend-bullet">-</span>Removed'
-           '</div>'
-           '<div class="legend-item added">'
-           '<span class="legend-bullet">+</span>Added'
-           '</div>'
-           '<div class="legend-item changed">'
-           '<span class="legend-bullet">~</span>Changed'
-           '</div>'
-           '</div>'
-           '<div class="diff-block">'
-           f'{side_by_side_html}'
-           '</div>'
-           '</div>'
+            <!-- Textual Diff section removed -->
             <!-- <div class="section">
                 <h2>Side-by-side JSON</h2>
                 <div class="diff-container">

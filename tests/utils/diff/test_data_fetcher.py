@@ -1,5 +1,4 @@
 import json
-import pytest
 from pathlib import Path
 from trxo.utils.diff.data_fetcher import DataFetcher, get_command_api_endpoint
 from trxo.constants import DEFAULT_REALM
@@ -36,7 +35,7 @@ def test_fetch_data_happy_path(mocker):
         api_endpoint="/am/json/x",
     )
 
-    assert result == captured
+    assert result == captured["data"]
 
 
 def test_fetch_data_failure_returns_none(mocker):
