@@ -226,7 +226,7 @@ class OAuthImporter(BaseImporter):
         payload = json.dumps(filtered_data)
 
         headers = {
-            "Accept-API-Version": "protocol=2.1,resource=1.0",
+            "Accept-API-Version": "protocol=2.0,resource=1.0",
             "Content-Type": "application/json",
         }
         headers = {**headers, **self.build_auth_headers(token)}

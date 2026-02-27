@@ -102,7 +102,7 @@ def create_authn_export_command():
 
         headers = {
             "Content-Type": "application/json",
-            "Accept-API-Version": "resource=1.0",
+            "Accept-API-Version": "protocol=2.0,resource=1.0",
         }
 
         exporter.export_data(

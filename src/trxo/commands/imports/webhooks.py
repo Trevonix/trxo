@@ -50,7 +50,7 @@ class WebhooksImporter(BaseImporter):
         url = self.get_api_endpoint(item_id, base_url)
         headers = {
             "Content-Type": "application/json",
-            "Accept-API-Version": "protocol=2.1,resource=1.0",
+            "Accept-API-Version": "protocol=1.0,resource=1.0",
         }
         headers = {**headers, **self.build_auth_headers(token)}
 
