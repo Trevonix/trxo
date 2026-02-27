@@ -177,7 +177,6 @@ class AuthManager:
         self.config_store.set_current_project(temp_project_name)
 
         try:
-            success("argument mode (onprem) initialized successfully")
             return temp_project_name
         except Exception as e:
             if self._original_project:

@@ -67,6 +67,9 @@ def create_batch_export_command():
         onprem_realm: str = typer.Option(
             "root", "--onprem-realm", help="On-Prem realm"
         ),
+        am_base_url: str = typer.Option(
+            None, "--am-base-url", help="On-Prem AM base URL"
+        ),
         idm_base_url: str = typer.Option(
             None, "--idm-base-url", help="On-Prem IDM base URL"
         ),
@@ -143,6 +146,10 @@ def create_batch_export_command():
                     "onprem_username": onprem_username,
                     "onprem_password": onprem_password,
                     "onprem_realm": onprem_realm,
+                    "am_base_url": am_base_url,
+                    "idm_base_url": idm_base_url,
+                    "idm_username": idm_username,
+                    "idm_password": idm_password,
                 }
 
                 # Get the command (handle sub-commands with dot notation)
