@@ -10,7 +10,7 @@ Future-ready with flexible realm selection.
 """
 
 import json
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import typer
 from trxo.utils.console import error, info, warning
 from .base_importer import BaseImporter
@@ -42,6 +42,24 @@ class ServicesImporter(BaseImporter):
             f"/am/json/realms/root/realms/{self.realm}/"
             f"realm-config/services/{item_id}",
         )
+
+    def _get_item_identifier(self, item: Dict[str, Any]) -> Optional[str]:
+        """
+        Override identifier logic for services.
+        Services use _type._id as real identifier.
+        """
+        if not isinstance(item, dict):
+            return None
+
+        # Services often have empty "_id"
+        type_info = item.get("_type", {})
+        service_id = type_info.get("_id")
+
+        if service_id:
+            return service_id
+
+        # Fallback to base logic
+        return super()._get_item_identifier(item)
 
     def _prepare_service_payload(self, item_data: Dict[str, Any]) -> str:
         """Prepare service payload by removing dynamic fields."""
@@ -85,7 +103,19 @@ class ServicesImporter(BaseImporter):
         headers = {**headers, **self.build_auth_headers(token)}
 
         try:
-            self.make_http_request(url, "PUT", headers, payload)
+            try:
+                self.make_http_request(url, "PUT", headers, payload)
+            except Exception as put_error:
+                # If realm scope and PUT failed, try create
+                if self.scope == "realm":
+                    try:
+                        create_url = f"{url}?_action=create"
+                        self.make_http_request(create_url, "POST", headers, payload)
+                        info(f"Created realm service ({self.realm}): {item_id}")
+                    except Exception as create_error:
+                        raise create_error
+                else:
+                    raise put_error
 
             if self.scope == "global":
                 info(f"Updated global service: {item_id}")
@@ -175,6 +205,30 @@ class ServicesImporter(BaseImporter):
             error(f"Failed to {action} service '{item_id}': {e}")
             return False
 
+    def delete_item(self, item_id: str, token: str, base_url: str) -> bool:
+        """
+        Delete a service (used during rollback when service was newly created)
+        """
+        url = self.get_api_endpoint(item_id, base_url)
+
+        headers = {
+            "Accept-API-Version": "resource=1.0",
+        }
+        headers = {**headers, **self.build_auth_headers(token)}
+
+        try:
+            self.make_http_request(url, "DELETE", headers)
+
+            if self.scope == "global":
+                info(f"✓ Deleted global service during rollback: {item_id}")
+            else:
+                info(f"✓ Deleted realm service during rollback: {item_id}")
+
+            return True
+        except Exception as e:
+            error(f"Failed to delete service '{item_id}' during rollback: {e}")
+            return False
+
 
 def create_services_import_command():
     """Create the services import command function"""
@@ -232,6 +286,11 @@ def create_services_import_command():
         branch: str = typer.Option(
             None, "--branch", help="Git branch to import from (Git mode only)"
         ),
+        rollback: bool = typer.Option(
+            False,
+            "--rollback",
+            help="Automatically rollback imported services on first failure"
+        ),
         cherry_pick: str = typer.Option(
             None,
             "--cherry-pick",
@@ -282,6 +341,7 @@ def create_services_import_command():
             force_import=force_import,
             branch=branch,
             diff=diff,
+            rollback=rollback,
             cherry_pick=cherry_pick,
         )
 

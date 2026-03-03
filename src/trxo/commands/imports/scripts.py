@@ -112,10 +112,8 @@ class ScriptImporter(BaseImporter):
                     payload_data["script"] = script_text
 
         # Construct URL with script ID
+        # Construct URL with script ID
         url = self.get_api_endpoint(item_id, base_url)
-
-        # Prepare payload with potentially encoded script
-        payload = json.dumps(payload_data)
 
         headers = {
             "Content-Type": "application/json",
@@ -123,31 +121,33 @@ class ScriptImporter(BaseImporter):
         }
         headers = {**headers, **self.build_auth_headers(token)}
 
+        payload = json.dumps(payload_data)
+
         try:
+            # First try updating (PUT)
             self.make_http_request(url, "PUT", headers, payload)
-            info(f"Successfully updated script: {item_name} (ID: {item_id})")
-            return True
 
         except Exception as e:
-            error(f"Error updating script '{item_name}': {str(e)}")
-            return False
+            error_message = str(e)
 
-    def delete_item(self, item_id: str, token: str, base_url: str) -> bool:
-        """Delete a single script via API"""
-        url = self.get_api_endpoint(item_id, base_url)
-
-        headers = {
-            "Accept-API-Version": "resource=1.0",
-        }
-        headers = {**headers, **self.build_auth_headers(token)}
-
-        try:
-            self.make_http_request(url, "DELETE", headers)
-            info(f"Successfully deleted script: {item_id}")
-            return True
-        except Exception as e:
-            error(f"Error deleting script '{item_id}': {str(e)}")
-            return False
+            # If script does not exist → create it
+            if "404" in error_message:
+                try:
+                    collection_url = self._construct_api_url(
+                        base_url,
+                        f"/am/json/realms/root/realms/{self.realm}/scripts?_action=create",
+                    )
+                    self.make_http_request(collection_url, "POST", headers, payload)
+                except Exception as create_error:
+                    error(
+                        f"Error creating script '{item_name}': {str(create_error)}"
+                    )
+                    return False
+            else:
+                error(f"Error updating script '{item_name}': {error_message}")
+                return False
+        info(f"Successfully processed script: {item_name} (ID: {item_id})")
+        return True
 
 
 def create_script_import_command():

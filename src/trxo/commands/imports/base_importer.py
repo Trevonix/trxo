@@ -192,8 +192,9 @@ class BaseImporter(BaseCommand):
             # Determine item identifier
             item_id = self._get_item_identifier(item)
 
-            action = "updated"
             baseline_item = None
+            action = "created"
+
             if rollback_manager and item_id:
                 baseline_item = rollback_manager.baseline_snapshot.get(str(item_id))
                 action = "updated" if baseline_item else "created"
@@ -201,6 +202,7 @@ class BaseImporter(BaseCommand):
             try:
                 if self.update_item(item, token, base_url):
                     self.successful_updates += 1
+
                     # Track for rollback
                     if rollback_manager and item_id:
                         rollback_manager.track_import(
@@ -484,10 +486,21 @@ class BaseImporter(BaseCommand):
         raise typer.Exit(1)
 
     def _get_item_identifier(self, item: Dict[str, Any]) -> Optional[str]:
-        """Get item identifier from item data"""
-        if isinstance(item, dict):
-            return item.get("_id") or item.get("id") or item.get("name")
-        return None
+        if not isinstance(item, dict):
+            return None
+
+        # Prefer actual instance ID first
+        if item.get("_id"):
+            return item.get("_id")
+
+        # Fallback to type ID (used for services without _id)
+        type_info = item.get("_type", {})
+        type_id = type_info.get("_id")
+
+        if type_id:
+            return type_id
+
+        return item.get("id") or item.get("name")
 
     def _perform_diff_analysis(
         self,

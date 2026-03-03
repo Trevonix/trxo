@@ -7,6 +7,7 @@ clients with script dependencies.
 
 import json
 from typing import List, Dict, Any, Optional
+from trxo.utils import rollback_manager
 import typer
 from trxo.utils.console import error, info, warning
 from .base_importer import BaseImporter
@@ -178,22 +179,45 @@ class OAuthImporter(BaseImporter):
         rollback_manager: Optional[object] = None,
         rollback_on_failure: bool = False,
     ) -> None:
-        """Override to process pending scripts first"""
+        """
+        Process script dependencies first,
+        but using BaseImporter lifecycle so rollback works.
+        """
 
-        # 1. Process pending scripts if any
+        # 1️⃣ Process pending scripts using their own BaseImporter lifecycle
         if self._pending_scripts:
-            self._import_pending_scripts(token, base_url)
+            info(f"Importing {len(self._pending_scripts)} script dependencies first...")
 
-        # 2. Process clients using base implementation
+            # Make sure script importer shares auth mode
+            self.script_importer.auth_mode = self.auth_mode
+
+            # 🔥 THIS is the fix:
+            # Use script importer's process_items instead of manual update_item
+            self.script_importer.process_items(
+                self._pending_scripts,
+                token,
+                base_url,
+                rollback_manager=None,
+                rollback_on_failure=None,
+            )
+
+            # Clear after processing
+            self._pending_scripts = []
+
+        # 2️⃣ Now process OAuth clients normally
         super().process_items(
-            items, token, base_url, rollback_manager, rollback_on_failure
+            items,
+            token,
+            base_url,
+            rollback_manager=rollback_manager,
+            rollback_on_failure=rollback_on_failure,
         )
 
     def _import_pending_scripts(self, token: str, base_url: str):
         """Import extracted script dependencies"""
         info(f"Importing {len(self._pending_scripts)} script dependencies first...")
 
-        self.script_importer.auth_mode = self.auth_mode
+        self.script_importer._rollback_manager = rollback_manager
 
         for script in self._pending_scripts:
             script_id = script.get("_id")
@@ -202,59 +226,78 @@ class OAuthImporter(BaseImporter):
                 continue
 
             try:
-                # Use script importer to update
-                if self.script_importer.update_item(script, token, base_url):
-                    info(f"Successfully imported script dependency: {script_id}")
-                else:
-                    warning(f"Failed to import script dependency: {script_id}")
+                # Use script importer's full lifecycle so rollback works
+                self.script_importer.process_items(
+                    [script],          # pass as list (correct here)
+                    token,
+                    base_url,
+                    rollback_manager=rollback_manager,
+                    rollback_on_failure=True,
+                )
+                info(f"Successfully imported script dependency: {script_id}")
+
             except Exception as e:
                 warning(f"Error importing script {script_id}: {str(e)}")
 
     def update_item(self, item_data: Dict[str, Any], token: str, base_url: str) -> bool:
-        """Update a single OAuth2 Client via API"""
         item_id = item_data.get("_id")
-
         if not item_id:
-            error(f"OAuth2 Client '{item_id}' missing _id field, skipping")
+            error("OAuth2 Client missing '_id'")
             return False
 
-        # Construct URL with OAuth2 Client ID
         url = self.get_api_endpoint(item_id, base_url)
-
-        # Prepare payload by excluding _id and _rev fields
-        filtered_data = {k: v for k, v in item_data.items() if k not in ["_id", "_rev"]}
-        payload = json.dumps(filtered_data)
 
         headers = {
             "Accept-API-Version": "protocol=2.0,resource=1.0",
             "Content-Type": "application/json",
+            **self.build_auth_headers(token),
         }
-        headers = {**headers, **self.build_auth_headers(token)}
+
+        # 🔥 Step 1 — Detect existence (ONLY for rollback logic)
+        exists = False
+        baseline_data = None
 
         try:
+            response = self.make_http_request(
+                url,
+                "GET",
+                {
+                    "Accept-API-Version": "resource=1.0",
+                    **self.build_auth_headers(token),
+                },
+            )
+            exists = True
+            baseline_data = response.json()
+        except Exception:
+            exists = False
+
+        # Remove _id for PUT body
+        filtered_data = {
+            k: v for k, v in item_data.items()
+            if k not in ["_id", "_rev"]
+        }
+
+        payload = json.dumps(filtered_data)
+
+        try:
+            # 🔥 Always PUT (your server supports upsert)
             self.make_http_request(url, "PUT", headers, payload)
-            info(f"Successfully updated OAuth2 Client: (ID: {item_id})")
+
+            # 🔥 Register for rollback
+            if hasattr(self, "_rollback_manager") and self._rollback_manager:
+                action = "update" if exists else "create"
+                self._rollback_manager.register(
+                    item_type=self.get_item_type(),
+                    item_id=item_id,
+                    action=action,
+                    baseline=baseline_data,
+                )
+
+            info(f"Successfully processed OAuth2 Client: {item_id}")
             return True
 
         except Exception as e:
-            error(f"Error updating OAuth2 Client '{item_id}': {str(e)}")
-            return False
-
-    def delete_item(self, item_id: str, token: str, base_url: str) -> bool:
-        """Delete a single OAuth2 Client via API"""
-        url = self.get_api_endpoint(item_id, base_url)
-
-        headers = {
-            "Accept-API-Version": "resource=1.0",
-        }
-        headers = {**headers, **self.build_auth_headers(token)}
-
-        try:
-            self.make_http_request(url, "DELETE", headers)
-            info(f"Successfully deleted OAuth2 Client: {item_id}")
-            return True
-        except Exception as e:
-            error(f"Error deleting OAuth2 Client '{item_id}': {str(e)}")
+            error(f"Failed to process OAuth2 Client '{item_id}': {e}")
             return False
 
 

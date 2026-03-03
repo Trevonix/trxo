@@ -75,34 +75,66 @@ class RollbackManager:
                 return False
 
             # Normalize to list of items if possible
+            # Normalize to list of items if possible
             items = []
-            if (
-                isinstance(data, dict)
-                and isinstance(data.get("data"), dict)
-                and isinstance(data["data"].get("result"), list)
-            ):
-                items = data["data"]["result"]
-            elif isinstance(data, dict) and isinstance(data.get("data"), list):
-                items = data["data"]
+
+            if isinstance(data, dict):
+                if "data" in data:
+                    if isinstance(data["data"], dict) and "result" in data["data"]:
+                        items = data["data"]["result"]
+                    elif isinstance(data["data"], list):
+                        items = data["data"]
+                elif "result" in data:
+                    items = data["result"]
             elif isinstance(data, list):
                 items = data
-            elif isinstance(data, dict):
-                # single config object -> use as dict keyed by id/name
-                items = [data.get("data") or data]
 
             # Build mapping of id -> item
-            mapping = {}
-            for itm in items:
-                # items may have _id or id or name
-                key = None
-                if isinstance(itm, dict):
-                    key = itm.get("_id") or itm.get("id") or itm.get("name")
-                if key:
-                    mapping[str(key)] = itm
+            # Build mapping directly from export data (already full config)
 
+            mapping = {}
+
+            for itm in items:
+                item_id = itm.get("_id")
+                if not item_id:
+                    continue
+
+                # If collection already returned full config → use it
+                if isinstance(itm, dict) and len(itm.keys()) > 2:
+                    mapping[str(item_id)] = itm
+                    continue
+
+                # Otherwise fetch full config by ID
+                try:
+                    url = self._build_api_url(item_id, base_url)
+
+                    headers = {
+                        "Accept-API-Version": "protocol=1.0,resource=1.0",
+                    }
+                    headers.update(self._build_auth_headers(token, url))
+
+                    import httpx
+                    with httpx.Client() as client:
+                        resp = client.get(url, headers=headers)
+
+                    if resp.status_code == 200:
+                        mapping[str(item_id)] = resp.json()
+                    else:
+                        warning(
+                            f"Could not fetch full config for "
+                            f"{item_id}: {resp.status_code}"
+                        )
+
+                except Exception as e:
+                    warning(f"Failed baseline fetch for {item_id}: {e}")
             self.baseline_snapshot = mapping
+            info("===== BASELINE SNAPSHOT (FULL CONFIG PER ID) =====")
+            for k, v in mapping.items():
+                info(f"\nID: {k}")
+                info(json.dumps(v, indent=2))
+            info("===== END BASELINE SNAPSHOT =====")
             # Keep raw data for full-config restores
-            self.raw_baseline_data = data
+            self.raw_baseline_data = mapping
 
             # Persist the snapshot to a branch for auditability if git_manager
             if git_manager:
@@ -120,7 +152,10 @@ class RollbackManager:
                     comp_dir.mkdir(parents=True, exist_ok=True)
                     filename = f"{(self.realm or 'root')}_{component}.json"
                     file_path = comp_dir / filename
-                    file_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+                    file_path.write_text(
+                            json.dumps(mapping, indent=2),
+                            encoding="utf-8"
+                        )
                     # Commit and push
                     rel = file_path.relative_to(repo_path)
                     commit_msg = (
@@ -177,7 +212,7 @@ class RollbackManager:
                 url = construct_api_url(base_url, api_endpoint)
                 headers = {
                     "Content-Type": "application/json",
-                    "Accept-API-Version": "protocol=2.1,resource=1.0",
+                    "Accept-API-Version": "protocol=1.0,resource=1.0",
                 }
                 headers = {**headers, **self._build_auth_headers(token, api_endpoint)}
                 import httpx
@@ -206,7 +241,7 @@ class RollbackManager:
         for record in reversed(self.imported_items):
             item_id = record.get("id")
             action = record.get("action")
-            baseline = record.get("baseline")
+            baseline = self.baseline_snapshot.get(str(item_id))
 
             try:
                 if action == "created":
@@ -245,7 +280,7 @@ class RollbackManager:
                     url = self._build_api_url(item_id, base_url)
                     headers = {
                         "Content-Type": "application/json",
-                        "Accept-API-Version": "resource=1.0",
+                        "Accept-API-Version": "protocol=1.0,resource=1.0",
                     }
                     headers = {**headers, **(self._build_auth_headers(token, url))}
                     import httpx
