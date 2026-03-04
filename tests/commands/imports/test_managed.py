@@ -1,6 +1,9 @@
 import json
 import pytest
-from trxo.commands.imports.managed import ManagedObjectsImporter, create_managed_import_command
+from trxo.commands.imports.managed import (
+    ManagedObjectsImporter,
+    create_managed_import_command,
+)
 
 
 def test_find_object_by_name_found():
@@ -67,7 +70,9 @@ def test_update_item_single_create_success(mocker):
 def test_update_item_single_update_with_patch(mocker):
     imp = ManagedObjectsImporter()
     mocker.patch("trxo.commands.imports.managed.info")
-    imp._get_current_managed_config = mocker.Mock(return_value={"objects": [{"name": "obj1", "x": 1}]})
+    imp._get_current_managed_config = mocker.Mock(
+        return_value={"objects": [{"name": "obj1", "x": 1}]}
+    )
     imp.make_http_request = mocker.Mock()
     imp._update_relationship_properties = mocker.Mock()
     imp._delete_orphaned_properties = mocker.Mock()
@@ -79,7 +84,9 @@ def test_update_item_single_update_with_patch(mocker):
 def test_update_item_single_no_changes(mocker):
     imp = ManagedObjectsImporter()
     mocker.patch("trxo.commands.imports.managed.info")
-    imp._get_current_managed_config = mocker.Mock(return_value={"objects": [{"name": "obj1"}]})
+    imp._get_current_managed_config = mocker.Mock(
+        return_value={"objects": [{"name": "obj1"}]}
+    )
     imp.make_http_request = mocker.Mock()
     imp._delete_orphaned_properties = mocker.Mock()
 
@@ -177,7 +184,9 @@ def test_create_managed_import_command_wires_importer(mocker, tmp_path):
     f.write_text(json.dumps({"data": []}))
 
     importer = mocker.Mock()
-    mocker.patch("trxo.commands.imports.managed.ManagedObjectsImporter", return_value=importer)
+    mocker.patch(
+        "trxo.commands.imports.managed.ManagedObjectsImporter", return_value=importer
+    )
 
     cmd = create_managed_import_command()
     cmd(file=str(f))

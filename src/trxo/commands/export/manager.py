@@ -28,7 +28,6 @@ from .services import create_services_export_command
 from .themes import create_themes_export_command
 from .webhooks import create_webhooks_export_command
 
-
 app = typer.Typer(help="Export configurations")
 
 # Register individual export commands (alphabetically)

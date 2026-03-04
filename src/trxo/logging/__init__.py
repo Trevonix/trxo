@@ -22,7 +22,7 @@ from .logger import (
     log_api_call,
     log_transaction,
     log_application_event,
-    log_authentication_event
+    log_authentication_event,
 )
 from .config import LogConfig
 from .utils import sanitize_data, get_log_directory
@@ -37,7 +37,7 @@ __all__ = [
     "LogLevel",
     "LogConfig",
     "sanitize_data",
-    "get_log_directory"
+    "get_log_directory",
 ]
 
 # Version info

@@ -15,7 +15,4 @@ def test_export_themes_with_realm(mocker):
     exporter.export_data.assert_called_once()
     kwargs = exporter.export_data.call_args.kwargs
 
-    assert (
-        kwargs["api_endpoint"]
-        == "/openidm/config/ui/themerealm?_fields=realm/alpha"
-    )
+    assert kwargs["api_endpoint"] == "/openidm/config/ui/themerealm?_fields=realm/alpha"

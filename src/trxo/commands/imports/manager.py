@@ -6,6 +6,7 @@ all import commands from the modular command files.
 """
 
 import typer
+
 # Import commands alphabetically
 from .agents import create_agents_import_command, create_agents_callback
 from .applications import create_applications_import_command
@@ -25,7 +26,6 @@ from .scripts import create_script_import_command
 from .services import create_services_import_command
 from .themes import create_themes_import_command
 from .webhooks import create_webhooks_import_command
-
 
 app = typer.Typer(help="Import configurations")
 
@@ -65,10 +65,16 @@ esv_app.callback(invoke_without_command=True)(create_esv_callback())
 
 # Register ESV commands (alphabetically)
 import_esv_variables, import_esv_secrets = create_esv_commands()
-esv_app.command("secrets", help="""Import Environment Secrets \n
-NOTE: The File should contain the base64 encoded value""")(import_esv_secrets)
-esv_app.command("variables", help="""Import Environment Variables \n
-NOTE: The File should contain the base64 encoded value""")(import_esv_variables)
+esv_app.command(
+    "secrets",
+    help="""Import Environment Secrets \n
+NOTE: The File should contain the base64 encoded value""",
+)(import_esv_secrets)
+esv_app.command(
+    "variables",
+    help="""Import Environment Variables \n
+NOTE: The File should contain the base64 encoded value""",
+)(import_esv_variables)
 
 # Register groups under import (alphabetically)
 app.add_typer(agents_app, name="agent", help="Import Agents")

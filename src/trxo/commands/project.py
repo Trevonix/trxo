@@ -20,8 +20,8 @@ def create_project(
         raise typer.Exit(1)
 
     project_config = {
-        "description": description or "PingOne Advanced Identity Cloud "
-        f"project: {name}"
+        "description": description
+        or "PingOne Advanced Identity Cloud " f"project: {name}"
     }
 
     config_store.save_project(name, project_config)

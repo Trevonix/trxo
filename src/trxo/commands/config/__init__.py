@@ -21,17 +21,21 @@ from .config_manager import app
 # Import commonly used functions for external access
 from .settings import get_credential_value, display_config
 from .validation import validate_authentication, validate_jwk_file, validate_git_setup
-from .auth_handler import setup_service_account_auth, setup_onprem_auth, normalize_base_url
+from .auth_handler import (
+    setup_service_account_auth,
+    setup_onprem_auth,
+    normalize_base_url,
+)
 
 # Define what gets exported when using "from config import *"
 __all__ = [
-    'app',  # Main typer application
-    'get_credential_value',
-    'display_config',
-    'validate_authentication',
-    'validate_jwk_file',
-    'validate_git_setup',
-    'setup_service_account_auth',
-    'setup_onprem_auth',
-    'normalize_base_url'
+    "app",  # Main typer application
+    "get_credential_value",
+    "display_config",
+    "validate_authentication",
+    "validate_jwk_file",
+    "validate_git_setup",
+    "setup_service_account_auth",
+    "setup_onprem_auth",
+    "normalize_base_url",
 ]

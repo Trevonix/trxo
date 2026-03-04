@@ -17,9 +17,11 @@ def create_privileges_export_command():
         realm: str = typer.Option(
             None,
             "--realm",
-            help=("Optional realm name (e.g., alpha, bravo). "
-                  "When provided, filters results to "
-                  "{realm}OrgPrivileges and privilegeAssignments only."),
+            help=(
+                "Optional realm name (e.g., alpha, bravo). "
+                "When provided, filters results to "
+                "{realm}OrgPrivileges and privilegeAssignments only."
+            ),
         ),
         view: bool = typer.Option(
             False,
@@ -74,9 +76,7 @@ def create_privileges_export_command():
             "root", "--onprem-realm", help="On-Prem realm"
         ),
         am_base_url: str = typer.Option(
-
             None, "--am-base-url", help="On-Prem AM base URL"
-
         ),
         idm_base_url: str = typer.Option(
             None, "--idm-base-url", help="On-Prem IDM base URL"
@@ -137,7 +137,8 @@ def create_privileges_export_command():
             onprem_realm=onprem_realm,
             idm_base_url=idm_base_url,
             idm_username=idm_username,
-            idm_password=idm_password, am_base_url=am_base_url,
+            idm_password=idm_password,
+            am_base_url=am_base_url,
             response_filter=response_filter,
             version=version,
             no_version=no_version,

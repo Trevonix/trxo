@@ -50,8 +50,7 @@ def test_export_services_scope_realm(mock_exporter):
 def test_export_services_invalid_scope(mocker):
     exporter = mocker.Mock()
     mocker.patch(
-        "trxo.commands.export.services.ServicesExporter",
-        return_value=exporter
+        "trxo.commands.export.services.ServicesExporter", return_value=exporter
     )
 
     export_services = create_services_export_command()

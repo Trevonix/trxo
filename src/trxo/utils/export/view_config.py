@@ -15,15 +15,20 @@ DEFAULT_VIEW_COLUMNS: Dict[str, List[str]] = {
     "journeys": ["_id", "name", "description", "enabled", "uiConfig"],
     "oauth": ["_id", "coreOAuth2ClientConfig", "advancedOAuth2ClientConfig"],
     "users": ["_id", "userName", "givenName", "sn", "mail"],
-    "agents_gateway": ["_id", "secretLabelIdentifier", "igTokenIntrospection", "status"],
+    "agents_gateway": [
+        "_id",
+        "secretLabelIdentifier",
+        "igTokenIntrospection",
+        "status",
+    ],
     "agents_java": [
-       "_id",
-       "ssoJ2EEAgentConfig",
-       "amServicesJ2EEAgent",
-       "applicationJ2EEAgentConfig",
-       "globalJ2EEAgentConfig",
-       "advancedJ2EEAgentConfig",
-       ],
+        "_id",
+        "ssoJ2EEAgentConfig",
+        "amServicesJ2EEAgent",
+        "applicationJ2EEAgentConfig",
+        "globalJ2EEAgentConfig",
+        "advancedJ2EEAgentConfig",
+    ],
     "agents_web": [
         "_id",
         "miscWebAgentConfig",
@@ -41,7 +46,12 @@ DEFAULT_VIEW_COLUMNS: Dict[str, List[str]] = {
     "policies": ["_id", "name", "active", "description"],
     "managed": ["name", "schema.title", "schema.icon"],
     "mappings": ["name", "displayName", "source", "target"],
-    "connectors": ["_id", "enabled", "connectorRef.displayName", "connectorRef.connectorName"],
+    "connectors": [
+        "_id",
+        "enabled",
+        "connectorRef.displayName",
+        "connectorRef.connectorName",
+    ],
     "esv_variables": ["_id", "valueBase64", "description"],
     "esv_secrets": [
         "_id",
@@ -50,7 +60,7 @@ DEFAULT_VIEW_COLUMNS: Dict[str, List[str]] = {
         "loaded",
         "activeVersion",
         "loadedVersion",
-        ],
+    ],
 }
 
 # Command-specific column descriptions for help text
@@ -60,62 +70,62 @@ COLUMN_DESCRIPTIONS: Dict[str, Dict[str, str]] = {
         "name": "Realm name",
         "active": "Whether realm is active",
         "parentPath": "Parent realm path",
-        "aliases": "Realm aliases"
+        "aliases": "Realm aliases",
     },
     "scripts": {
         "_id": "Script identifier",
         "name": "Script name",
         "script": "Script content (truncated)",
         "language": "Programming language",
-        "context": "Execution context"
+        "context": "Execution context",
     },
     "services": {
         "_id": "Service identifier",
         "name": "Service name",
-        "_type": "Service type information"
+        "_type": "Service type information",
     },
     "themes": {
         "_id": "Theme identifier",
         "isDefault": "Whether this is the default theme",
         "fontFamily": "Font family used",
         "backgroundColor": "Background color",
-        "logoEnabled": "Whether logo is enabled"
+        "logoEnabled": "Whether logo is enabled",
     },
     "oauth": {
         "_id": "OAuth client identifier",
         "clientId": "OAuth client ID",
         "clientType": "Type of OAuth client",
-        "status": "Client status"
+        "status": "Client status",
     },
     "endpoints": {
         "_id": "Endpoint identifier",
         "type": "Endpoint type (e.g., text/javascript)",
         "source": "Source code or configuration",
-        "file": "Associated file path"
+        "file": "Associated file path",
     },
     "policies": {
         "_id": "Policy identifier",
         "name": "Policy name",
         "active": "Whether policy is active",
-        "description": "Policy description"
+        "description": "Policy description",
     },
     "managed": {
         "name": "Managed object name",
         "schema.title": "Object title from schema",
-        "schema.icon": "Icon class from schema"
+        "schema.icon": "Icon class from schema",
     },
     "mappings": {
         "name": "Mapping name/identifier",
         "displayName": "Human-readable display name",
         "source": "Source system/object",
-        "target": "Target system/object"
+        "target": "Target system/object",
     },
     "connectors": {
         "_id": "Connector identifier",
         "enabled": "Whether connector is enabled",
         "connectorRef.displayName": "Connector display name",
-        "connectorRef.connectorName": "Connector class name"
-    }
+        "connectorRef.connectorName": "Connector class name",
+    },
 }
 
 
