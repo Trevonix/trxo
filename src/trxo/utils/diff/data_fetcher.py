@@ -78,7 +78,7 @@ class DataFetcher:
                 nonlocal captured_data
                 captured_data = data
                 # Return a dummy path since we're not actually saving
-                return Path("/tmp/dummy_path.json")
+                return Path("/tmp/dummy_path.json")  # nosec
 
             if command_name == "saml":
                 response_filter = process_saml_response(self.exporter, realm)
