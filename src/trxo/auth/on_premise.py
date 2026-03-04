@@ -6,7 +6,9 @@ by calling the JSON authentication endpoint. This token is NOT persisted.
 """
 
 from typing import Dict
+
 import httpx
+
 from trxo.logging import get_logger
 
 

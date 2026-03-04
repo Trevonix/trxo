@@ -1,4 +1,5 @@
 import pytest
+
 from trxo.utils.git.common import extract_branch_name_from_ref
 
 

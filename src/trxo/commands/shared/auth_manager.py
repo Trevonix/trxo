@@ -7,11 +7,13 @@ functionality used by both import and export commands.
 
 import uuid
 from typing import Optional
+
 import typer
-from trxo.utils.config_store import ConfigStore
-from trxo.auth.token_manager import TokenManager
-from trxo.utils.console import console, success, error, info, warning
+
 from trxo.auth.on_premise import OnPremAuth
+from trxo.auth.token_manager import TokenManager
+from trxo.utils.config_store import ConfigStore
+from trxo.utils.console import console, error, info, success, warning
 
 
 class AuthManager:
@@ -117,6 +119,7 @@ class AuthManager:
         # Store JWK content in keyring for argument mode too (best effort)
         try:
             import os
+
             import keyring
 
             jwk_path_expanded = os.path.expanduser(jwk_path)

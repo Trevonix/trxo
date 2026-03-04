@@ -2,9 +2,11 @@ import json
 import time
 import uuid
 from typing import Dict
+
+import httpx
 import jwt
 from jwcrypto import jwk
-import httpx
+
 from trxo.logging import get_logger
 
 

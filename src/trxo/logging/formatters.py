@@ -7,8 +7,10 @@ including API calls, authentication events, and general application logs.
 
 import logging
 from datetime import datetime
-from .utils import sanitize_data
+
 from trxo.constants import SENSITIVE_KEYS
+
+from .utils import sanitize_data
 
 
 class TRxOFormatter(logging.Formatter):

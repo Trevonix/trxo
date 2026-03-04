@@ -6,8 +6,7 @@ responses.
 """
 
 from typing import Any, Dict
-from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
-
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from trxo.constants import DEFAULT_PAGE_SIZE
 

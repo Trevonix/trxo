@@ -9,9 +9,12 @@ Import functionality for PingIDM connectors.
 
 import json
 import time
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 import typer
+
 from trxo.utils.console import error, info, warning
+
 from .base_importer import BaseImporter
 
 
@@ -133,8 +136,8 @@ class ConnectorsImporter(BaseImporter):
 
     def _load_connectors_file(self, file_path: str) -> Any:
         """Load connectors file with flexible format support"""
-        import os
         import json
+        import os
 
         # Convert to absolute path if relative
         if not os.path.isabs(file_path):

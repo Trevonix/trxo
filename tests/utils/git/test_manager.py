@@ -1,14 +1,15 @@
-import pytest
 from unittest.mock import MagicMock
 
+import pytest
+
+from trxo.constants import DEFAULT_EXPORT_BRANCH
 from trxo.utils.git.manager import (
     GitManager,
+    get_git_manager,
     setup_git_for_export,
     setup_git_for_import,
-    get_git_manager,
     validate_and_setup_git_repo,
 )
-from trxo.constants import DEFAULT_EXPORT_BRANCH
 
 
 def make_repo(branch="main"):

@@ -7,13 +7,14 @@ created items, PUT baseline for updated items) when an import
 run fails and the user requested automatic rollback.
 """
 
-from typing import Dict, Any, List, Optional
 import json
 from datetime import datetime
-from trxo.utils.console import info, error, warning
-from trxo.utils.git import GitManager
-from trxo.utils.diff.data_fetcher import DataFetcher, get_command_api_endpoint
+from typing import Any, Dict, List, Optional
+
 from trxo.constants import DEFAULT_REALM
+from trxo.utils.console import error, info, warning
+from trxo.utils.diff.data_fetcher import DataFetcher, get_command_api_endpoint
+from trxo.utils.git import GitManager
 
 
 class RollbackManager:

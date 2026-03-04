@@ -1,7 +1,7 @@
-import pytest
 from unittest.mock import MagicMock
 
 import httpx
+import pytest
 
 from trxo.utils.git.credentials import build_secure_url, validate_credentials
 

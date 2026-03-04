@@ -6,9 +6,11 @@ Handles loading data from local files and Git repositories.
 
 import json
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
 from trxo.utils.console import error, info, warning
 from trxo.utils.git import GitManager
+
 from .component_mapper import ComponentMapper
 
 

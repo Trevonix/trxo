@@ -6,6 +6,7 @@ Exports from /openidm/config/ui/themerealm endpoint.
 """
 
 import typer
+
 from .base_exporter import BaseExporter
 
 

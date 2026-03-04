@@ -1,9 +1,10 @@
 import pytest
+
 from trxo.commands.export.scripts import (
+    BaseExporter,
     create_scripts_export_command,
     decode_script_response,
 )
-from trxo.commands.export.scripts import BaseExporter
 from trxo.constants import DEFAULT_REALM
 
 

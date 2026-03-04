@@ -6,8 +6,10 @@ Exports from /am/json/realms/root/realms/alpha/policies?_queryFilter=true endpoi
 """
 
 import typer
-from .base_exporter import BaseExporter
+
 from trxo.constants import DEFAULT_REALM
+
+from .base_exporter import BaseExporter
 
 
 def create_policies_export_command():

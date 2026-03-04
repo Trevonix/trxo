@@ -1,11 +1,12 @@
 import base64
+
 import pytest
 
 from trxo.commands.export.saml import (
     create_saml_export_command,
-    process_saml_response,
     extract_script_ids,
     fetch_scripts,
+    process_saml_response,
 )
 
 

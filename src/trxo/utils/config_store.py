@@ -1,9 +1,10 @@
-import os
 import json
+import os
 import platform
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional
-from datetime import datetime
+
 import keyring
 
 SERVICE_NAME = "trxo_git_credentials"

@@ -2,8 +2,8 @@ import pytest
 import typer
 
 from trxo.commands.export.agents import (
-    create_agents_export_command,
     create_agents_callback,
+    create_agents_export_command,
 )
 
 

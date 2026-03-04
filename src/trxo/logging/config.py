@@ -7,10 +7,11 @@ log file configuration, and logging setup parameters.
 
 import os
 import platform
-from pathlib import Path
-from enum import Enum
-from typing import Optional
 from dataclasses import dataclass
+from enum import Enum
+from pathlib import Path
+from typing import Optional
+
 from trxo.constants import LOG_FILE_NAME, LOG_RETENTION_DAYS, SENSITIVE_KEYS
 
 

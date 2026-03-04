@@ -4,10 +4,12 @@ Deletion manager for sync/mirror operations.
 Handles identification and deletion of orphaned items during sync imports.
 """
 
-from typing import List, Dict, Any, Callable
-from trxo.utils.console import warning, info, error, success
-from trxo.utils.diff.diff_engine import DiffResult, DiffItem
+from typing import Any, Callable, Dict, List
+
 import typer
+
+from trxo.utils.console import error, info, success, warning
+from trxo.utils.diff.diff_engine import DiffItem, DiffResult
 
 
 class DeletionManager:

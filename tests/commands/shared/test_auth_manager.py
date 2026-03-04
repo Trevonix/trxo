@@ -1,5 +1,5 @@
-import typer
 import pytest
+import typer
 
 from trxo.commands.shared.auth_manager import AuthManager
 

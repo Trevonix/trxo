@@ -5,11 +5,14 @@ Import functionality for PingOne Advanced Identity Cloud agents.
 """
 
 import json
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 import typer
-from trxo.utils.console import error, info
-from .base_importer import BaseImporter
+
 from trxo.constants import DEFAULT_REALM
+from trxo.utils.console import error, info
+
+from .base_importer import BaseImporter
 
 # Base path template
 AGENTS_BASE = "/am/json/realms/root/realms/{realm}/realm-config/agents"
@@ -332,7 +335,7 @@ def create_agents_callback():
 
     def agents_callback(ctx: typer.Context):
         if ctx.invoked_subcommand is None:
-            from trxo.utils.console import console, warning, info
+            from trxo.utils.console import console, info, warning
 
             console.print()
             warning("No agents subcommand selected.")

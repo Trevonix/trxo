@@ -4,17 +4,20 @@ Configuration management commands.
 This module contains the main typer commands for configuration management.
 """
 
-import typer
 import json
 from typing import Optional
+
+import typer
+
+from trxo.logging import LogLevel, get_logger, setup_logging
 from trxo.utils.config_store import ConfigStore
-from trxo.utils.console import success, error, warning, info
-from .settings import get_credential_value, display_config
+from trxo.utils.console import error, info, success, warning
+
 from .auth_handler import (
-    setup_service_account_auth,
     setup_onprem_auth,
+    setup_service_account_auth,
 )
-from trxo.logging import LogLevel, setup_logging, get_logger
+from .settings import display_config, get_credential_value
 
 app = typer.Typer(help="Manage project configuration")
 config_store = ConfigStore()

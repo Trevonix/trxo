@@ -1,12 +1,13 @@
 import json
+
 import pytest
 import typer
 
 from trxo.commands.config.config_manager import (
+    get_log_level,
+    set_log_level,
     setup,
     show,
-    set_log_level,
-    get_log_level,
 )
 
 

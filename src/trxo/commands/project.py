@@ -1,7 +1,9 @@
-import typer
 from typing import Optional
+
+import typer
+
 from trxo.utils.config_store import ConfigStore
-from trxo.utils.console import console, success, error, info, create_table
+from trxo.utils.console import console, create_table, error, info, success
 
 app = typer.Typer(help="Manage projects")
 config_store = ConfigStore()

@@ -5,13 +5,14 @@ This module provides the main interface for diff functionality,
 coordinating data fetching, comparison, and reporting.
 """
 
-from typing import Dict, Any, Optional
 from pathlib import Path
-from trxo.utils.console import info, error
+from typing import Any, Dict, Optional
+
+from trxo.constants import DEFAULT_REALM
+from trxo.utils.console import error, info
 from trxo.utils.diff.data_fetcher import DataFetcher, get_command_api_endpoint
 from trxo.utils.diff.diff_engine import DiffEngine, DiffResult
 from trxo.utils.diff.diff_reporter import DiffReporter
-from trxo.constants import DEFAULT_REALM
 
 
 class DiffManager:

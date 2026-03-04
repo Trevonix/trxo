@@ -1,7 +1,9 @@
-import json
 import base64
+import json
+
 import pytest
 from click.exceptions import Exit
+
 from trxo.commands.imports.scripts import (
     ScriptImporter,
     create_script_import_command,

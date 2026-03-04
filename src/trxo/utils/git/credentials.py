@@ -3,6 +3,7 @@ Git credentials management and validation.
 """
 
 import httpx
+
 from trxo.logging import get_logger
 
 logger = get_logger("trxo.utils.git.credentials")
