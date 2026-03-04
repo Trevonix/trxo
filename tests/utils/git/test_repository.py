@@ -1,15 +1,15 @@
-import pytest
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import pytest
 from git import GitCommandError, InvalidGitRepositoryError
 
 from trxo.utils.git.repository import (
+    clone_or_init_repo,
+    get_or_create_repo,
     get_repo_base_path,
     get_repo_path,
     init_empty_repo,
-    clone_or_init_repo,
-    get_or_create_repo,
 )
 
 

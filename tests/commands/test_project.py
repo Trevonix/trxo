@@ -3,9 +3,9 @@ import typer
 
 from trxo.commands.project import (
     create_project,
-    switch,
-    list_projects,
     delete_project,
+    list_projects,
+    switch,
 )
 
 

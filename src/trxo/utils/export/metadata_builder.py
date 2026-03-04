@@ -56,7 +56,11 @@ class MetadataBuilder:
         Returns:
             Number of items
         """
-        if isinstance(data, dict) and "result" in data and isinstance(data["result"], list):
+        if (
+            isinstance(data, dict)
+            and "result" in data
+            and isinstance(data["result"], list)
+        ):
             return len(data["result"])
         elif isinstance(data, list):
             return len(data)
@@ -66,10 +70,7 @@ class MetadataBuilder:
 
     @staticmethod
     def build_metadata(
-        command_name: str,
-        api_endpoint: str,
-        data: Any,
-        version: Optional[str] = None
+        command_name: str, api_endpoint: str, data: Any, version: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Build metadata dictionary for export.
@@ -84,11 +85,9 @@ class MetadataBuilder:
             Metadata dictionary
         """
         # Normalize export type
-        export_type = (
-            command_name
-            .replace("services_realm_", "services")
-            .replace("services_global", "services")
-            )
+        export_type = command_name.replace("services_realm_", "services").replace(
+            "services_global", "services"
+        )
 
         # Detect realm
         realm = MetadataBuilder.detect_realm(api_endpoint, command_name)

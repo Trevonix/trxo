@@ -6,11 +6,14 @@ PingOne Advanced Identity Cloud OAuth2 clients with script dependencies.
 """
 
 import base64
-import typer
 from typing import Any, Dict, Set
-from trxo.utils.console import warning, error, info, success
-from .base_exporter import BaseExporter
+
+import typer
+
 from trxo.constants import DEFAULT_REALM, IGNORED_SCRIPT_IDS
+from trxo.utils.console import error, info, success, warning
+
+from .base_exporter import BaseExporter
 
 
 class OAuthExporter(BaseExporter):
@@ -169,9 +172,7 @@ def create_oauth_export_command():
             "root", "--onprem-realm", help="On-Prem realm"
         ),
         am_base_url: str = typer.Option(
-
             None, "--am-base-url", help="On-Prem AM base URL"
-
         ),
         idm_base_url: str = typer.Option(
             None, "--idm-base-url", help="On-Prem IDM base URL"
@@ -199,7 +200,8 @@ def create_oauth_export_command():
                 onprem_realm=onprem_realm,
                 idm_base_url=idm_base_url,
                 idm_username=idm_username,
-                idm_password=idm_password, am_base_url=am_base_url,
+                idm_password=idm_password,
+                am_base_url=am_base_url,
             )
 
             # First, get list of OAuth clients using query filter

@@ -1,6 +1,11 @@
 import json
+
 import pytest
-from trxo.commands.imports.privileges import PrivilegesImporter, create_privileges_import_command
+
+from trxo.commands.imports.privileges import (
+    PrivilegesImporter,
+    create_privileges_import_command,
+)
 
 
 def test_privileges_get_required_fields():

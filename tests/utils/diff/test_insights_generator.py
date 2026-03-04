@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 
 from trxo.utils.diff.insights_generator import InsightsGenerator
 

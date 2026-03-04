@@ -8,9 +8,12 @@ Import functionality for PingIDM sync mappings with smart upsert logic:
 """
 
 import json
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 import typer
+
 from trxo.utils.console import error, info
+
 from .base_importer import BaseImporter
 
 
@@ -174,8 +177,8 @@ class MappingsImporter(BaseImporter):
 
     def _load_mappings_file(self, file_path: str) -> Any:
         """Load mappings file with flexible format support"""
-        import os
         import json
+        import os
 
         # Convert to absolute path if relative
         if not os.path.isabs(file_path):

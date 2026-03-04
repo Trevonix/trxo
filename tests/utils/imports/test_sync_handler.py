@@ -1,5 +1,6 @@
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 
 from trxo.utils.imports.sync_handler import SyncHandler
 

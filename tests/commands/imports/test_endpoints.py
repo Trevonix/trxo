@@ -1,4 +1,5 @@
 import pytest
+
 from trxo.commands.imports.endpoints import (
     EndpointsImporter,
     create_endpoints_import_command,

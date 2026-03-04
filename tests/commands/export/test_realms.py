@@ -1,5 +1,4 @@
-from trxo.commands.export.realms import create_realms_export_command
-from trxo.commands.export.realms import BaseExporter
+from trxo.commands.export.realms import BaseExporter, create_realms_export_command
 
 
 def test_realms_export_happy_path(mocker):

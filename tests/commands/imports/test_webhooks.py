@@ -1,4 +1,5 @@
 import json
+
 import pytest
 
 from trxo.commands.imports.webhooks import (
@@ -20,9 +21,7 @@ def test_get_item_type():
 def test_get_api_endpoint():
     importer = WebhooksImporter(realm="alpha")
     url = importer.get_api_endpoint("w1", "http://x")
-    assert url.endswith(
-        "/am/json/realms/root/realms/alpha/realm-config/webhooks/w1"
-    )
+    assert url.endswith("/am/json/realms/root/realms/alpha/realm-config/webhooks/w1")
 
 
 def test_update_item_success_strips_rev(mocker):

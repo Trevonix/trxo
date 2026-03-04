@@ -36,7 +36,6 @@ class ComponentMapper:
         "webhooks": "webhooks",
         "privileges": "privileges",
         "realms": "realms",
-
         # Descriptive name mappings (from get_item_type())
         "authentication settings": "authn",
         "Applications": "applications",
@@ -71,7 +70,7 @@ class ComponentMapper:
         "Webhooks": "webhooks",
         "webhooks": "webhooks",
         "Privileges": "privileges",
-        "Realms": "realms"
+        "Realms": "realms",
     }
 
     # Item type to command name mapping for data fetcher
@@ -80,7 +79,6 @@ class ComponentMapper:
         "IdentityGatewayAgent agents": "agents_gateway",
         "J2EEAgent agents": "agents_java",
         "WebAgent agents": "agents_web",
-
         # Standard types
         "Applications": "applications",
         "authentication settings": "authn",
@@ -108,9 +106,16 @@ class ComponentMapper:
 
     # Root-level components (not realm-specific)
     ROOT_LEVEL_COMPONENTS = [
-        "custom endpoints", "email templates", "managed_objects", "sync mappings",
-        "IDM connectors", "Privileges", "Applications", "Environment_Secrets",
-        "Environment_Variables", "Realms"
+        "custom endpoints",
+        "email templates",
+        "managed_objects",
+        "sync mappings",
+        "IDM connectors",
+        "Privileges",
+        "Applications",
+        "Environment_Secrets",
+        "Environment_Variables",
+        "Realms",
     ]
 
     @staticmethod

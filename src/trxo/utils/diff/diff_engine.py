@@ -5,14 +5,15 @@ Efficient comparison of nested data structures using deepdiff
 for configurations.
 """
 
-from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any, Dict, List, Optional
+
 from deepdiff import DeepDiff
-from trxo.utils.console import error
-from trxo.utils.console import info
-from trxo.commands.export.services import ServicesExporter
+
 from trxo.commands.export.saml import SamlExporter
+from trxo.commands.export.services import ServicesExporter
+from trxo.utils.console import error, info
 
 
 class ChangeType(Enum):
@@ -117,8 +118,10 @@ class DiffEngine:
                 current_data = self._fetch_current_saml(realm)
 
             if command_name == "authn":
-                info("Notice: For authn command, diff is performed on individual config sections"
-                     " rather than entire file to provide more actionable insights.")
+                info(
+                    "Notice: For authn command, diff is performed on individual config sections"
+                    " rather than entire file to provide more actionable insights."
+                )
             # Auto-fetch current data if not provided
 
             # Extract data arrays from the response structure
@@ -217,7 +220,7 @@ class DiffEngine:
         if not data:
             return []
 
-    # Unwrap top-level "data"
+        # Unwrap top-level "data"
         if isinstance(data, dict) and "data" in data:
             data = data["data"]
 
@@ -229,11 +232,11 @@ class DiffEngine:
             ):
                 return data.get("hosted", []) + data.get("remote", [])
 
-    #  Handle result wrapper
+        #  Handle result wrapper
         if isinstance(data, dict) and isinstance(data.get("result"), list):
             return data["result"]
 
-    #  OAuth: data.clients
+        #  OAuth: data.clients
         if isinstance(data, dict) and isinstance(data.get("clients"), list):
             return data["clients"]
 
@@ -245,24 +248,26 @@ class DiffEngine:
                 if section_key in ("_id", "_type"):
                     continue
 
-        # Each section becomes its own diff item
-                items.append({
-                    "_id": section_key,
-                    "value": section_value,
-                })
+                # Each section becomes its own diff item
+                items.append(
+                    {
+                        "_id": section_key,
+                        "value": section_value,
+                    }
+                )
             return items
 
-    # objects / mappings
+        # objects / mappings
         if isinstance(data, dict) and any(k in data for k in ("objects", "mappings")):
             objects_data = data.get("objects") or data.get("mappings")
             if isinstance(objects_data, list):
                 return objects_data
 
-    # Single object
+        # Single object
         if isinstance(data, dict) and "_id" in data:
             return [data]
 
-    # Already a list
+        # Already a list
         if isinstance(data, list):
             return data
 

@@ -1,12 +1,13 @@
-import pytest
 from unittest.mock import MagicMock
 
+import pytest
+
 from trxo.utils.git.operations import (
-    get_diff,
-    is_working_tree_clean,
-    get_working_tree_status,
-    validate_clean_state_for_operation,
     commit_and_push,
+    get_diff,
+    get_working_tree_status,
+    is_working_tree_clean,
+    validate_clean_state_for_operation,
 )
 
 

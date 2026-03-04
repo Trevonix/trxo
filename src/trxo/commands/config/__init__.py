@@ -15,23 +15,28 @@ Usage:
     from trxo.commands.config.config_manager import app
 """
 
+from .auth_handler import (
+    normalize_base_url,
+    setup_onprem_auth,
+    setup_service_account_auth,
+)
+
 # Import the main typer app from config_manager.py
 from .config_manager import app
 
 # Import commonly used functions for external access
-from .settings import get_credential_value, display_config
-from .validation import validate_authentication, validate_jwk_file, validate_git_setup
-from .auth_handler import setup_service_account_auth, setup_onprem_auth, normalize_base_url
+from .settings import display_config, get_credential_value
+from .validation import validate_authentication, validate_git_setup, validate_jwk_file
 
 # Define what gets exported when using "from config import *"
 __all__ = [
-    'app',  # Main typer application
-    'get_credential_value',
-    'display_config',
-    'validate_authentication',
-    'validate_jwk_file',
-    'validate_git_setup',
-    'setup_service_account_auth',
-    'setup_onprem_auth',
-    'normalize_base_url'
+    "app",  # Main typer application
+    "get_credential_value",
+    "display_config",
+    "validate_authentication",
+    "validate_jwk_file",
+    "validate_git_setup",
+    "setup_service_account_auth",
+    "setup_onprem_auth",
+    "normalize_base_url",
 ]

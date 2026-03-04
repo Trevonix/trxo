@@ -1,12 +1,13 @@
 import json
+
 import pytest
 import typer
 
 from trxo.commands.config.validation import (
-    validate_authentication,
-    validate_jwk_file,
     store_jwk_in_keyring,
+    validate_authentication,
     validate_git_setup,
+    validate_jwk_file,
     validate_onprem_authentication,
 )
 

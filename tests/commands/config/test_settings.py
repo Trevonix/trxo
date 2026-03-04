@@ -1,7 +1,8 @@
 import pytest
+
 from trxo.commands.config.settings import (
-    get_credential_value,
     display_config,
+    get_credential_value,
     process_regions_value,
 )
 

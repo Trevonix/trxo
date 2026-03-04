@@ -4,7 +4,8 @@ Cherry-pick filter for import operations.
 Handles filtering items based on cherry-pick IDs.
 """
 
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 from trxo.utils.console import error, info
 
 
@@ -12,7 +13,9 @@ class CherryPickFilter:
     """Handles cherry-pick filtering for import operations"""
 
     @staticmethod
-    def apply_filter(items: List[Dict[str, Any]], cherry_pick_ids: str) -> List[Dict[str, Any]]:
+    def apply_filter(
+        items: List[Dict[str, Any]], cherry_pick_ids: str
+    ) -> List[Dict[str, Any]]:
         """
         Filter items to only include those with the specified IDs for cherry-pick import.
 
@@ -24,7 +27,7 @@ class CherryPickFilter:
             List containing only the matching items, or empty list if none found
         """
         # Parse comma-separated IDs
-        target_ids = [id.strip() for id in cherry_pick_ids.split(',') if id.strip()]
+        target_ids = [id.strip() for id in cherry_pick_ids.split(",") if id.strip()]
 
         if not target_ids:
             error("Cherry-pick: No valid IDs provided")
@@ -65,9 +68,13 @@ class CherryPickFilter:
         missing_ids = [id for id in target_ids if id not in found_ids]
         if missing_ids:
             if len(missing_ids) == 1:
-                error(f"Cherry-pick: Item with ID '{missing_ids[0]}' not found in export file")
+                error(
+                    f"Cherry-pick: Item with ID '{missing_ids[0]}' not found in export file"
+                )
             else:
-                error(f"Cherry-pick: Items with IDs {missing_ids} not found in export file")
+                error(
+                    f"Cherry-pick: Items with IDs {missing_ids} not found in export file"
+                )
 
         return filtered_items
 
@@ -83,7 +90,10 @@ class CherryPickFilter:
             True if valid, False otherwise
         """
         # Check if it looks like a filename or other option
-        if cherry_pick.endswith('.json') or cherry_pick.startswith('--') or \
-           cherry_pick in ['alpha', 'bravo', 'charlie']:
+        if (
+            cherry_pick.endswith(".json")
+            or cherry_pick.startswith("--")
+            or cherry_pick in ["alpha", "bravo", "charlie"]
+        ):
             return False
         return True

@@ -6,9 +6,9 @@ log management, and logging-related operations.
 """
 
 import re
-from typing import Any, Dict, List, Tuple
-from pathlib import Path
 from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any, Dict, List, Tuple
 
 
 def sanitize_data(data: Any, sensitive_keys: Tuple[str, ...]) -> Any:
@@ -32,7 +32,9 @@ def sanitize_data(data: Any, sensitive_keys: Tuple[str, ...]) -> Any:
         return data
 
 
-def sanitize_dict(data: Dict[str, Any], sensitive_keys: Tuple[str, ...]) -> Dict[str, Any]:
+def sanitize_dict(
+    data: Dict[str, Any], sensitive_keys: Tuple[str, ...]
+) -> Dict[str, Any]:
     """
     Sanitize sensitive values in a dictionary.
 
@@ -50,8 +52,7 @@ def sanitize_dict(data: Dict[str, Any], sensitive_keys: Tuple[str, ...]) -> Dict
 
         # Check if key matches any sensitive pattern
         is_sensitive = any(
-            sensitive_key.lower() in key_lower
-            for sensitive_key in sensitive_keys
+            sensitive_key.lower() in key_lower for sensitive_key in sensitive_keys
         )
 
         if is_sensitive:
@@ -100,11 +101,14 @@ def sanitize_string(data: str, sensitive_keys: Tuple[str, ...]) -> str:
     # Common patterns to sanitize in URLs and strings
     patterns = [
         # Bearer tokens
-        (r'Bearer\s+[A-Za-z0-9\-._~+/]+=*', 'Bearer ***'),
+        (r"Bearer\s+[A-Za-z0-9\-._~+/]+=*", "Bearer ***"),
         # URL parameters with sensitive names
-        (r'([?&](?:token|key|secret|password|jwt)=)[^&\s]+', r'\1***'),
+        (r"([?&](?:token|key|secret|password|jwt)=)[^&\s]+", r"\1***"),
         # JWT tokens (rough pattern)
-        (r'eyJ[A-Za-z0-9\-._~+/]+=*\.eyJ[A-Za-z0-9\-._~+/]+=*\.[A-Za-z0-9\-._~+/]+=*', '***JWT***'),
+        (
+            r"eyJ[A-Za-z0-9\-._~+/]+=*\.eyJ[A-Za-z0-9\-._~+/]+=*\.[A-Za-z0-9\-._~+/]+=*",
+            "***JWT***",
+        ),
     ]
 
     for pattern, replacement in patterns:
@@ -171,4 +175,5 @@ def get_log_directory() -> Path:
         Path: Log directory path
     """
     from .config import get_log_directory as _get_log_directory
+
     return _get_log_directory()

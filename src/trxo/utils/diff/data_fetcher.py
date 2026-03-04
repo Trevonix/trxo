@@ -6,13 +6,14 @@ by reusing the existing export functionality without saving files.
 """
 
 import json
-from typing import Dict, Any, Optional
 from pathlib import Path
-from trxo.utils.console import info, error, warning
+from typing import Any, Dict, Optional
+
 from trxo.commands.export.base_exporter import BaseExporter
+from trxo.commands.export.saml import process_saml_response
 from trxo.commands.export.scripts import decode_script_response
 from trxo.constants import DEFAULT_REALM
-from trxo.commands.export.saml import process_saml_response
+from trxo.utils.console import error, info, warning
 
 
 class DataFetcher:
@@ -77,7 +78,8 @@ class DataFetcher:
                 nonlocal captured_data
                 captured_data = data
                 # Return a dummy path since we're not actually saving
-                return Path("/tmp/dummy_path.json")
+                return Path("/tmp/dummy_path.json")  # nosec
+
             if command_name == "saml":
                 response_filter = process_saml_response(self.exporter, realm)
             # Temporarily replace save_response to capture data
@@ -208,8 +210,8 @@ class DataFetcher:
     ) -> Optional[Dict[str, Any]]:
         """Fetch data from Git repository"""
         try:
-            from trxo.utils.git import get_repo_base_path
             from trxo.utils.config_store import ConfigStore
+            from trxo.utils.git import get_repo_base_path
 
             config_store = ConfigStore()
 

@@ -27,9 +27,7 @@ def exporter(mocker):
         "trxo.commands.export.base_exporter.MetadataBuilder.build_metadata",
         return_value={"m": 1},
     )
-    mocker.patch(
-        "trxo.commands.export.base_exporter.ViewRenderer.display_table_view"
-    )
+    mocker.patch("trxo.commands.export.base_exporter.ViewRenderer.display_table_view")
     mocker.patch(
         "trxo.commands.export.base_exporter.PaginationHandler.is_paginated",
         return_value=False,

@@ -1,7 +1,7 @@
 import pytest
 import typer
 
-from trxo.commands.logs import show_logs, log_info
+from trxo.commands.logs import log_info, show_logs
 
 
 def test_show_logs_no_log_file(mocker):

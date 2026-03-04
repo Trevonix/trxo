@@ -1,4 +1,5 @@
 from typer.testing import CliRunner
+
 from trxo.commands.batch.manager import app
 
 runner = CliRunner()

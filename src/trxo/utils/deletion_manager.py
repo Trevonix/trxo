@@ -4,10 +4,12 @@ Deletion manager for sync/mirror operations.
 Handles identification and deletion of orphaned items during sync imports.
 """
 
-from typing import List, Dict, Any, Callable
-from trxo.utils.console import warning, info, error, success
-from trxo.utils.diff.diff_engine import DiffResult, DiffItem
+from typing import Any, Callable, Dict, List
+
 import typer
+
+from trxo.utils.console import error, info, success, warning
+from trxo.utils.diff.diff_engine import DiffItem, DiffResult
 
 
 class DeletionManager:
@@ -30,10 +32,7 @@ class DeletionManager:
         return diff_result.removed_items
 
     def confirm_deletions(
-        self,
-        items_to_delete: List[DiffItem],
-        item_type: str,
-        force: bool = False
+        self, items_to_delete: List[DiffItem], item_type: str, force: bool = False
     ) -> bool:
         """
         Show deletion preview and get user confirmation
@@ -64,8 +63,7 @@ class DeletionManager:
             return True
 
         confirm = typer.confirm(
-            "⚠️  Are you sure you want to DELETE these items?",
-            default=False
+            "⚠️  Are you sure you want to DELETE these items?", default=False
         )
         return confirm
 
@@ -74,7 +72,7 @@ class DeletionManager:
         items_to_delete: List[DiffItem],
         delete_func: Callable[[str, str, str], bool],
         token: str,
-        base_url: str
+        base_url: str,
     ) -> Dict[str, Any]:
         """
         Execute deletions using provided delete function
@@ -98,15 +96,11 @@ class DeletionManager:
                     self.deleted_items.append(item.item_id)
                     info(f"Deleted: {item.item_name or item.item_id}")
                 else:
-                    self.failed_deletions.append({
-                        "id": item.item_id,
-                        "error": "Delete function returned False"
-                    })
+                    self.failed_deletions.append(
+                        {"id": item.item_id, "error": "Delete function returned False"}
+                    )
             except Exception as e:
-                self.failed_deletions.append({
-                    "id": item.item_id,
-                    "error": str(e)
-                })
+                self.failed_deletions.append({"id": item.item_id, "error": str(e)})
                 error(f"Failed to delete {item.item_id}: {str(e)}")
 
         return self._create_summary()
@@ -117,7 +111,7 @@ class DeletionManager:
             "deleted_count": len(self.deleted_items),
             "failed_count": len(self.failed_deletions),
             "deleted_items": self.deleted_items,
-            "failed_deletions": self.failed_deletions
+            "failed_deletions": self.failed_deletions,
         }
 
     def print_summary(self, summary: Dict[str, Any]) -> None:

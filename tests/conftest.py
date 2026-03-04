@@ -5,11 +5,11 @@ This module provides:
 - Test configuration (logging, paths, markers)
 - Helper utilities for unit and integration tests
 """
+
 import sys
 from pathlib import Path
 
 import pytest
-
 
 # Add src/ to path so test modules can import trxo package
 project_root = Path(__file__).parent.parent

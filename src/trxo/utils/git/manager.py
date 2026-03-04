@@ -2,32 +2,32 @@
 Git manager (main entry point).
 """
 
-from typing import Optional
 from pathlib import Path
+from typing import Optional
+
 from git import Repo
 
-from trxo.utils.console import info, warning, error
-from trxo.logging import get_logger
 from trxo.constants import DEFAULT_EXPORT_BRANCH
-
-from trxo.utils.git.credentials import validate_credentials, build_secure_url
-from trxo.utils.git.repository import get_repo_path, get_or_create_repo
+from trxo.logging import get_logger
+from trxo.utils.console import error, info, warning
 from trxo.utils.git.branches import (
-    ensure_branch,
-    list_branches,
     branch_exists,
     check_branch_sync_status,
-    validate_branch_sync_for_operation,
+    ensure_branch,
     get_default_branch,
+    list_branches,
+    validate_branch_sync_for_operation,
 )
+from trxo.utils.git.common import extract_branch_name_from_ref
+from trxo.utils.git.credentials import build_secure_url, validate_credentials
 from trxo.utils.git.operations import (
     commit_and_push,
     get_diff,
-    is_working_tree_clean,
     get_working_tree_status,
+    is_working_tree_clean,
     validate_clean_state_for_operation,
 )
-from trxo.utils.git.common import extract_branch_name_from_ref
+from trxo.utils.git.repository import get_or_create_repo, get_repo_path
 
 logger = get_logger("trxo.utils.git.manager")
 

@@ -1,13 +1,14 @@
 import logging
+
 import pytest
 
 from trxo.logging import (
-    setup_logging,
     get_logger,
     log_api_call,
-    log_transaction,
     log_application_event,
     log_authentication_event,
+    log_transaction,
+    setup_logging,
 )
 
 

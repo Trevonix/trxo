@@ -5,9 +5,11 @@ Handles table rendering for different data structures.
 """
 
 import json
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
+
 from rich.table import Table
-from trxo.utils.console import console, info, error
+
+from trxo.utils.console import console, error, info
 
 
 class ViewRenderer:
@@ -25,7 +27,9 @@ class ViewRenderer:
             True if single config object
         """
         has_id_rev = "_id" in data and "_rev" in data
-        has_config_fields = any(key in data for key in ["security", "core", "general", "trees"])
+        has_config_fields = any(
+            key in data for key in ["security", "core", "general", "trees"]
+        )
 
         has_nested_arrays = any(
             isinstance(value, dict) and any(isinstance(v, list) for v in value.values())
@@ -36,9 +40,7 @@ class ViewRenderer:
 
     @staticmethod
     def create_table(
-        items: List[Dict[str, Any]],
-        title: str,
-        selected_columns: Optional[List[str]]
+        items: List[Dict[str, Any]], title: str, selected_columns: Optional[List[str]]
     ):
         """
         Create and display a table from list of dictionaries.
@@ -55,8 +57,10 @@ class ViewRenderer:
         # Get all available columns
         all_columns = list(items[0].keys())
 
-        info(f"Available Fields: {all_columns}\n"
-             f"To select specific fields, use --view-columns {all_columns[0]},{all_columns[1]}")
+        info(
+            f"Available Fields: {all_columns}\n"
+            f"To select specific fields, use --view-columns {all_columns[0]},{all_columns[1]}"
+        )
         print()
 
         # Use selected or all columns
@@ -64,7 +68,9 @@ class ViewRenderer:
         valid_columns = [col for col in columns_to_show if col in all_columns]
 
         if not valid_columns:
-            error(f"None of the specified columns exist. Available: {', '.join(all_columns)}")
+            error(
+                f"None of the specified columns exist. Available: {', '.join(all_columns)}"
+            )
             return
 
         # Create table
@@ -80,7 +86,9 @@ class ViewRenderer:
             for col in valid_columns:
                 value = item.get(col, "")
                 if isinstance(value, (dict, list)):
-                    str_val = str(value)[:50] + "..." if len(str(value)) > 50 else str(value)
+                    str_val = (
+                        str(value)[:50] + "..." if len(str(value)) > 50 else str(value)
+                    )
                     row_values.append(str_val)
                 else:
                     str_value = "" if value is None else str(value)
@@ -95,9 +103,7 @@ class ViewRenderer:
 
     @staticmethod
     def display_single_object(
-        data: Dict[str, Any],
-        title: str,
-        selected_columns: Optional[List[str]]
+        data: Dict[str, Any], title: str, selected_columns: Optional[List[str]]
     ):
         """
         Display a single configuration object as key-value pairs.
@@ -128,9 +134,7 @@ class ViewRenderer:
 
     @staticmethod
     def display_nested_structure(
-        data: Dict[str, Any],
-        command_name: str,
-        selected_columns: Optional[List[str]]
+        data: Dict[str, Any], command_name: str, selected_columns: Optional[List[str]]
     ):
         """
         Handle nested structures like themes.
@@ -145,33 +149,31 @@ class ViewRenderer:
         for key, value in data.items():
             if isinstance(value, dict):
                 for sub_key, sub_value in value.items():
-                    if isinstance(sub_value, list) and sub_value and isinstance(sub_value[0], dict):
+                    if (
+                        isinstance(sub_value, list)
+                        and sub_value
+                        and isinstance(sub_value[0], dict)
+                    ):
                         ViewRenderer.create_table(
                             sub_value,
                             f"{command_name.title()} - {key}.{sub_key}",
-                            selected_columns
+                            selected_columns,
                         )
                         displayed_tables += 1
             elif isinstance(value, list) and value and isinstance(value[0], dict):
                 ViewRenderer.create_table(
-                    value,
-                    f"{command_name.title()} - {key}",
-                    selected_columns
+                    value, f"{command_name.title()} - {key}", selected_columns
                 )
                 displayed_tables += 1
 
         if displayed_tables == 0:
             ViewRenderer.display_single_object(
-                data,
-                f"{command_name.title()} Configuration",
-                selected_columns
+                data, f"{command_name.title()} Configuration", selected_columns
             )
 
     @staticmethod
     def display_table_view(
-        result: Dict[str, Any],
-        command_name: str,
-        view_columns: Optional[str] = None
+        result: Dict[str, Any], command_name: str, view_columns: Optional[str] = None
     ):
         """
         Display data in tabular format.
@@ -196,24 +198,28 @@ class ViewRenderer:
         if isinstance(data, dict) and "result" in data:
             items = data["result"]
             if isinstance(items, list) and items:
-                ViewRenderer.create_table(items, f"{command_name.title()} Data", selected_columns)
+                ViewRenderer.create_table(
+                    items, f"{command_name.title()} Data", selected_columns
+                )
             else:
                 info("No items found in result array")
 
         elif isinstance(data, list):
             if data:
-                ViewRenderer.create_table(data, f"{command_name.title()} Data", selected_columns)
+                ViewRenderer.create_table(
+                    data, f"{command_name.title()} Data", selected_columns
+                )
             else:
                 info("No items found")
 
         elif isinstance(data, dict):
             if ViewRenderer.is_single_config_object(data):
                 ViewRenderer.display_single_object(
-                    data,
-                    f"{command_name.title()} Configuration",
-                    selected_columns
+                    data, f"{command_name.title()} Configuration", selected_columns
                 )
             else:
-                ViewRenderer.display_nested_structure(data, command_name, selected_columns)
+                ViewRenderer.display_nested_structure(
+                    data, command_name, selected_columns
+                )
         else:
             error(f"Unsupported data format: {type(data)}")

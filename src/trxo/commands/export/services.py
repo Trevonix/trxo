@@ -8,9 +8,11 @@ Fetches complete service configurations by individual service ID.
 """
 
 import typer
-from trxo.utils.console import warning
-from .base_exporter import BaseExporter
+
 from trxo.constants import DEFAULT_REALM
+from trxo.utils.console import warning
+
+from .base_exporter import BaseExporter
 
 
 def services_response_filter(data, *, exporter, scope, realm, headers):
@@ -100,9 +102,7 @@ class ServicesExporter(BaseExporter):
         if scope.lower() == "global":
             api_endpoint = "/am/json/global-config/services?_queryFilter=true"
         else:
-            api_endpoint = (
-                f"/am/json/realms/root/realms/{realm}/realm-config/services?_queryFilter=true"
-            )
+            api_endpoint = f"/am/json/realms/root/realms/{realm}/realm-config/services?_queryFilter=true"
 
         captured = {}
         original_save_response = self.save_response
@@ -243,9 +243,7 @@ def create_services_export_command():
         if scope.lower() == "global":
             api_endpoint = "/am/json/global-config/services?_queryFilter=true"
         else:
-            api_endpoint = (
-                f"/am/json/realms/root/realms/{realm}/realm-config/services?_queryFilter=true"
-            )
+            api_endpoint = f"/am/json/realms/root/realms/{realm}/realm-config/services?_queryFilter=true"
 
         exporter.export_data(
             command_name="services",

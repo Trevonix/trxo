@@ -1,6 +1,8 @@
-import pytest
-from trxo.auth.on_premise import OnPremAuth
 from unittest.mock import MagicMock
+
+import pytest
+
+from trxo.auth.on_premise import OnPremAuth
 
 
 @pytest.fixture

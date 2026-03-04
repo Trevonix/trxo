@@ -1,6 +1,7 @@
 import json
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 
 from trxo.auth.service_account import ServiceAccountAuth
 

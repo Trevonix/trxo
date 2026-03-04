@@ -1,6 +1,8 @@
 import base64
+
 import pytest
-from trxo.commands.export.oauth import create_oauth_export_command, OAuthExporter
+
+from trxo.commands.export.oauth import OAuthExporter, create_oauth_export_command
 from trxo.constants import DEFAULT_REALM, IGNORED_SCRIPT_IDS
 
 

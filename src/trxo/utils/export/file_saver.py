@@ -4,15 +4,17 @@ File saver for local storage with versioning support.
 Handles saving exported data to local files with automatic versioning.
 """
 
-import time
 import json
-import tempfile
 import shutil
-from pathlib import Path
-from typing import Dict, Any, Optional
+import tempfile
+import time
 from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, Optional
+
 from tqdm import tqdm
-from trxo.utils.console import info, error
+
+from trxo.utils.console import error, info
 
 
 class FileSaver:
@@ -20,10 +22,7 @@ class FileSaver:
 
     @staticmethod
     def build_versioned_filename(
-        command_name: str,
-        realm_prefix: Optional[str],
-        version_tag: str,
-        timestamp: str
+        command_name: str, realm_prefix: Optional[str], version_tag: str, timestamp: str
     ) -> str:
         """
         Build a versioned filename.
@@ -43,10 +42,7 @@ class FileSaver:
         return base_name
 
     @staticmethod
-    def determine_next_version(
-        output_dir: Optional[str],
-        versioning_id: str
-    ) -> int:
+    def determine_next_version(output_dir: Optional[str], versioning_id: str) -> int:
         """
         Determine next version number by scanning existing files.
 
@@ -61,19 +57,24 @@ class FileSaver:
 
         try:
             # Try using py-file-versioning first
-            from py_file_versioning import FileVersioning, FileVersioningConfig, CompressionType
+            from py_file_versioning import (
+                CompressionType,
+                FileVersioning,
+                FileVersioningConfig,
+            )
 
-            ledger_dir = (Path(output_dir) / ".trxo_versions"
-                          if output_dir
-                          else Path(".trxo_versions")
-                          )
+            ledger_dir = (
+                Path(output_dir) / ".trxo_versions"
+                if output_dir
+                else Path(".trxo_versions")
+            )
             ledger_dir.mkdir(parents=True, exist_ok=True)
 
             config = FileVersioningConfig(
                 versioned_path=str(ledger_dir),
                 compression=CompressionType.NONE,
                 max_count=5,
-                max_versions=5
+                max_versions=5,
             )
             fv = FileVersioning(config)
 
@@ -100,9 +101,9 @@ class FileSaver:
                         versions = []
                         for file_obj in existing_files:
                             try:
-                                parts = file_obj.stem.split('_')
+                                parts = file_obj.stem.split("_")
                                 for part in parts:
-                                    if part.startswith('v') and part[1:].isdigit():
+                                    if part.startswith("v") and part[1:].isdigit():
                                         versions.append(int(part[1:]))
                                         break
                             except (ValueError, IndexError):
@@ -117,9 +118,7 @@ class FileSaver:
 
     @staticmethod
     def save_with_progress(
-        data: Dict[str, Any],
-        file_path: Path,
-        filename: str
+        data: Dict[str, Any], file_path: Path, filename: str
     ) -> bool:
         """
         Save data to file with progress bar.

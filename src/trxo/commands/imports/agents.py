@@ -5,12 +5,14 @@ Import functionality for PingOne Advanced Identity Cloud agents.
 """
 
 import json
-from typing import List, Dict, Any
-import typer
-from trxo.utils.console import error, info
-from .base_importer import BaseImporter
-from trxo.constants import DEFAULT_REALM
+from typing import Any, Dict, List
 
+import typer
+
+from trxo.constants import DEFAULT_REALM
+from trxo.utils.console import error, info
+
+from .base_importer import BaseImporter
 
 # Base path template
 AGENTS_BASE = "/am/json/realms/root/realms/{realm}/realm-config/agents"
@@ -109,9 +111,7 @@ def create_agents_import_command():
             "root", "--onprem-realm", help="On-Prem realm"
         ),
         am_base_url: str = typer.Option(
-
             None, "--am-base-url", help="On-Prem AM base URL"
-
         ),
         idm_base_url: str = typer.Option(
             None, "--idm-base-url", help="On-Prem IDM base URL"
@@ -149,7 +149,8 @@ def create_agents_import_command():
             onprem_realm=onprem_realm,
             idm_base_url=idm_base_url,
             idm_username=idm_username,
-            idm_password=idm_password, am_base_url=am_base_url,
+            idm_password=idm_password,
+            am_base_url=am_base_url,
             force_import=force_import,
             branch=branch,
             cherry_pick=cherry_pick,
@@ -193,9 +194,7 @@ def create_agents_import_command():
             "root", "--onprem-realm", help="On-Prem realm"
         ),
         am_base_url: str = typer.Option(
-
             None, "--am-base-url", help="On-Prem AM base URL"
-
         ),
         idm_base_url: str = typer.Option(
             None, "--idm-base-url", help="On-Prem IDM base URL"
@@ -233,7 +232,8 @@ def create_agents_import_command():
             onprem_realm=onprem_realm,
             idm_base_url=idm_base_url,
             idm_username=idm_username,
-            idm_password=idm_password, am_base_url=am_base_url,
+            idm_password=idm_password,
+            am_base_url=am_base_url,
             force_import=force_import,
             branch=branch,
             cherry_pick=cherry_pick,
@@ -277,9 +277,7 @@ def create_agents_import_command():
             "root", "--onprem-realm", help="On-Prem realm"
         ),
         am_base_url: str = typer.Option(
-
             None, "--am-base-url", help="On-Prem AM base URL"
-
         ),
         idm_base_url: str = typer.Option(
             None, "--idm-base-url", help="On-Prem IDM base URL"
@@ -317,7 +315,8 @@ def create_agents_import_command():
             onprem_realm=onprem_realm,
             idm_base_url=idm_base_url,
             idm_username=idm_username,
-            idm_password=idm_password, am_base_url=am_base_url,
+            idm_password=idm_password,
+            am_base_url=am_base_url,
             force_import=force_import,
             branch=branch,
             diff=diff,
@@ -336,7 +335,7 @@ def create_agents_callback():
 
     def agents_callback(ctx: typer.Context):
         if ctx.invoked_subcommand is None:
-            from trxo.utils.console import console, warning, info
+            from trxo.utils.console import console, info, warning
 
             console.print()
             warning("No agents subcommand selected.")

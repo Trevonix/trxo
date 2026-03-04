@@ -1,8 +1,12 @@
 import json
+
 import pytest
 import typer
 
-from trxo.commands.imports.connectors import ConnectorsImporter, create_connectors_import_command
+from trxo.commands.imports.connectors import (
+    ConnectorsImporter,
+    create_connectors_import_command,
+)
 
 
 def test_get_required_fields():
@@ -17,7 +21,10 @@ def test_get_item_type():
 
 def test_get_api_endpoint():
     importer = ConnectorsImporter()
-    assert importer.get_api_endpoint("provisioner.test", "http://x") == "http://x/openidm/config/provisioner.test"
+    assert (
+        importer.get_api_endpoint("provisioner.test", "http://x")
+        == "http://x/openidm/config/provisioner.test"
+    )
 
 
 def test_update_item_missing_id(mocker):
@@ -153,6 +160,7 @@ def test_import_from_file_git_mode_delegates_to_base(mocker):
     importer.import_from_file(file_path=None)
 
     from trxo.commands.imports.connectors import BaseImporter
+
     BaseImporter.import_from_file.assert_called_once()
 
 
@@ -160,10 +168,14 @@ def test_import_from_file_local_success_array(mocker):
     importer = ConnectorsImporter()
     mocker.patch.object(importer, "_get_storage_mode", return_value="local")
     mocker.patch.object(importer, "initialize_auth", return_value=("t", "http://x"))
-    mocker.patch.object(importer, "_load_connectors_file", return_value=[
-        {"_id": "provisioner.openicf.connectorinfoprovider"},
-        {"_id": "provisioner.openicf.mysql"},
-    ])
+    mocker.patch.object(
+        importer,
+        "_load_connectors_file",
+        return_value=[
+            {"_id": "provisioner.openicf.connectorinfoprovider"},
+            {"_id": "provisioner.openicf.mysql"},
+        ],
+    )
     mocker.patch.object(importer, "update_item", return_value=True)
     mocker.patch("time.sleep")
 
@@ -183,14 +195,18 @@ def test_import_from_file_local_no_valid_connectors(mocker):
     importer = ConnectorsImporter()
     mocker.patch.object(importer, "_get_storage_mode", return_value="local")
     mocker.patch.object(importer, "initialize_auth", return_value=("t", "u"))
-    mocker.patch.object(importer, "_load_connectors_file", return_value=[{"_id": "bad.id"}])
+    mocker.patch.object(
+        importer, "_load_connectors_file", return_value=[{"_id": "bad.id"}]
+    )
 
     importer.import_from_file(file_path="x.json")
 
 
 def test_create_connectors_import_command_wires_options(mocker):
     importer = mocker.Mock()
-    mocker.patch("trxo.commands.imports.connectors.ConnectorsImporter", return_value=importer)
+    mocker.patch(
+        "trxo.commands.imports.connectors.ConnectorsImporter", return_value=importer
+    )
 
     cmd = create_connectors_import_command()
     cmd(file="f.json", max_retries=9, skip_delays=True, wait_time=2)

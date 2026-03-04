@@ -4,9 +4,11 @@ Git repository management (cloning, initialization, path resolution).
 
 import shutil
 from pathlib import Path
-from git import Repo, GitCommandError, InvalidGitRepositoryError
-from trxo.utils.console import info
+
+from git import GitCommandError, InvalidGitRepositoryError, Repo
+
 from trxo.logging import get_logger
+from trxo.utils.console import info
 
 logger = get_logger("trxo.utils.git.repository")
 

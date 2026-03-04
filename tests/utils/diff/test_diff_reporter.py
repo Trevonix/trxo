@@ -1,6 +1,7 @@
 from pathlib import Path
+
+from trxo.utils.diff.diff_engine import ChangeType, DiffResult
 from trxo.utils.diff.diff_reporter import DiffReporter
-from trxo.utils.diff.diff_engine import DiffResult, ChangeType
 
 
 class FakeItem:
@@ -14,14 +15,14 @@ class FakeItem:
 
 
 def make_diff_result(
-        cmd="x",
-        realm=None,
-        added=None,
-        modified=None,
-        removed=None,
-        unchanged=None,
-        insights=None
-        ):
+    cmd="x",
+    realm=None,
+    added=None,
+    modified=None,
+    removed=None,
+    unchanged=None,
+    insights=None,
+):
     return DiffResult(
         command_name=cmd,
         realm=realm,
