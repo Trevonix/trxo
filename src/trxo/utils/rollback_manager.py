@@ -286,7 +286,8 @@ class RollbackManager:
                     import httpx
 
                     with httpx.Client() as client:
-                        payload = json.dumps(baseline)
+                        restore_data = {k: v for k, v in baseline.items() if k not in {"_id", "_rev"}}
+                        payload = json.dumps(restore_data)
                         resp = client.put(url, headers=headers, data=payload)
                         if resp.status_code in (200, 201):
                             info(f"Rolled back (restored): {item_id}")

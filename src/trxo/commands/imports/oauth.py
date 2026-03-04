@@ -7,7 +7,6 @@ clients with script dependencies.
 
 import json
 from typing import List, Dict, Any, Optional
-from trxo.utils import rollback_manager
 import typer
 from trxo.utils.console import error, info, warning
 from .base_importer import BaseImporter
@@ -17,8 +16,7 @@ from .scripts import ScriptImporter
 
 
 class OAuthImporter(BaseImporter):
-    """Enhanced importer for PingOne Advanced Identity Cloud OAuth2
-    Clients with script dependencies"""
+    """Enhanced importer for PingOne Advanced Identity Cloud OAuth2 Clients with script dependencies"""
 
     def __init__(self, realm: str = DEFAULT_REALM):
         super().__init__()
@@ -36,42 +34,35 @@ class OAuthImporter(BaseImporter):
     def get_api_endpoint(self, item_id: str, base_url: str) -> str:
         return self._construct_api_url(
             base_url,
-            f"/am/json/realms/root/realms/{self.realm}/"
-            f"realm-config/agents/OAuth2Client/{item_id}",
+            f"/am/json/realms/root/realms/{self.realm}/realm-config/agents/OAuth2Client/{item_id}",
         )
 
     def _parse_oauth_data(self, data: Any) -> List[Dict[str, Any]]:
         """Helper to parse OAuth data structure from file content"""
         clients = []
 
-        # Check for new structure with 'data'
         if isinstance(data, dict) and "data" in data:
             data_section = data["data"]
-            if (
-                isinstance(data_section, dict)
-                and "clients" in data_section
-                and "scripts" in data_section
-            ):
+
+            if isinstance(data_section, dict) and "clients" in data_section and "scripts" in data_section:
                 info("Detected OAuth export format (standard) with clients and scripts")
                 self._oauth_export_data = data_section
 
-                # Add scripts to pending
                 new_scripts = data_section.get("scripts", [])
                 if new_scripts:
                     self._pending_scripts.extend(new_scripts)
 
                 clients = data_section.get("clients", [])
+
             elif isinstance(data_section, list):
-                # Standard list format
                 clients = data_section
+
             elif isinstance(data_section, dict) and "result" in data_section:
-                # Standard result wrapper
                 clients = data_section.get("result", [])
+
             else:
-                # Single item?
                 clients = [data_section]
 
-        # Check for legacy structure
         elif isinstance(data, dict) and "clients" in data and "scripts" in data:
             info("Detected OAuth export format (legacy) with clients and scripts")
             self._oauth_export_data = data
@@ -83,7 +74,6 @@ class OAuthImporter(BaseImporter):
             clients = data.get("clients", [])
 
         else:
-            # Fallback to standard loading
             if isinstance(data, list):
                 clients = data
             else:
@@ -94,17 +84,13 @@ class OAuthImporter(BaseImporter):
     def _import_from_git(
         self, realm: Optional[str], force_import: bool, branch: Optional[str] = None
     ) -> List[Dict[str, Any]]:
-        """Override to handle OAuth structure from Git files"""
-        item_type = self.get_item_type()
 
-        # Determine effective realm
+        item_type = self.get_item_type()
         effective_realm = self._determine_effective_realm(realm, item_type, branch)
 
-        # Setup Git manager
         git_manager = self._setup_git_manager(branch)
         repo_path = Path(git_manager.local_path)
 
-        # Discover files
         discovered_files = self.file_loader.discover_git_files(
             repo_path, item_type, effective_realm
         )
@@ -122,7 +108,6 @@ class OAuthImporter(BaseImporter):
                 with open(file_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
 
-                # Parse
                 parsed_clients = self._parse_oauth_data(data)
                 all_clients.extend(parsed_clients)
 
@@ -135,7 +120,7 @@ class OAuthImporter(BaseImporter):
     def _import_from_local(
         self, file_path: str, force_import: bool
     ) -> List[Dict[str, Any]]:
-        """Override to handle OAuth structure manually"""
+
         import os
 
         if not os.path.exists(file_path):
@@ -150,19 +135,11 @@ class OAuthImporter(BaseImporter):
 
             clients = self._parse_oauth_data(data)
 
-            # Trigger hash validation
-            # For OAuth structs, we use _oauth_export_data
-            # (handled in validate_import_hash override)
-            # For list of clients, we validate the list
             self._validate_items(clients)
 
             if not self.validate_import_hash(data, force_import):
-                from trxo.utils.console import error
-
                 error("Import validation failed: Hash mismatch with exported data")
-                import sys
-
-                sys.exit(1)
+                raise typer.Exit(1)
 
             return clients
 
@@ -179,32 +156,24 @@ class OAuthImporter(BaseImporter):
         rollback_manager: Optional[object] = None,
         rollback_on_failure: bool = False,
     ) -> None:
-        """
-        Process script dependencies first,
-        but using BaseImporter lifecycle so rollback works.
-        """
 
-        # 1️⃣ Process pending scripts using their own BaseImporter lifecycle
+        # Process scripts first (scripts intentionally not rolled back)
         if self._pending_scripts:
             info(f"Importing {len(self._pending_scripts)} script dependencies first...")
 
-            # Make sure script importer shares auth mode
             self.script_importer.auth_mode = self.auth_mode
 
-            # 🔥 THIS is the fix:
-            # Use script importer's process_items instead of manual update_item
             self.script_importer.process_items(
                 self._pending_scripts,
                 token,
                 base_url,
                 rollback_manager=None,
-                rollback_on_failure=None,
+                rollback_on_failure=False,
             )
 
-            # Clear after processing
             self._pending_scripts = []
 
-        # 2️⃣ Now process OAuth clients normally
+        # Process OAuth clients normally with rollback
         super().process_items(
             items,
             token,
@@ -213,34 +182,10 @@ class OAuthImporter(BaseImporter):
             rollback_on_failure=rollback_on_failure,
         )
 
-    def _import_pending_scripts(self, token: str, base_url: str):
-        """Import extracted script dependencies"""
-        info(f"Importing {len(self._pending_scripts)} script dependencies first...")
-
-        self.script_importer._rollback_manager = rollback_manager
-
-        for script in self._pending_scripts:
-            script_id = script.get("_id")
-            if not script_id:
-                warning("Script missing _id field, skipping")
-                continue
-
-            try:
-                # Use script importer's full lifecycle so rollback works
-                self.script_importer.process_items(
-                    [script],          # pass as list (correct here)
-                    token,
-                    base_url,
-                    rollback_manager=rollback_manager,
-                    rollback_on_failure=True,
-                )
-                info(f"Successfully imported script dependency: {script_id}")
-
-            except Exception as e:
-                warning(f"Error importing script {script_id}: {str(e)}")
-
     def update_item(self, item_data: Dict[str, Any], token: str, base_url: str) -> bool:
+
         item_id = item_data.get("_id")
+
         if not item_id:
             error("OAuth2 Client missing '_id'")
             return False
@@ -253,52 +198,24 @@ class OAuthImporter(BaseImporter):
             **self.build_auth_headers(token),
         }
 
-        # 🔥 Step 1 — Detect existence (ONLY for rollback logic)
-        exists = False
-        baseline_data = None
-
-        try:
-            response = self.make_http_request(
-                url,
-                "GET",
-                {
-                    "Accept-API-Version": "resource=1.0",
-                    **self.build_auth_headers(token),
-                },
-            )
-            exists = True
-            baseline_data = response.json()
-        except Exception:
-            exists = False
-
-        # Remove _id for PUT body
         filtered_data = {
-            k: v for k, v in item_data.items()
-            if k not in ["_id", "_rev"]
+            k: v for k, v in item_data.items() if k not in {"_id", "_rev"}
         }
 
-        payload = json.dumps(filtered_data)
+        payload = json.dumps(filtered_data, indent=2)
 
         try:
-            # 🔥 Always PUT (your server supports upsert)
-            self.make_http_request(url, "PUT", headers, payload)
+            response = self.make_http_request(url, "PUT", headers, payload)
 
-            # 🔥 Register for rollback
-            if hasattr(self, "_rollback_manager") and self._rollback_manager:
-                action = "update" if exists else "create"
-                self._rollback_manager.register(
-                    item_type=self.get_item_type(),
-                    item_id=item_id,
-                    action=action,
-                    baseline=baseline_data,
-                )
+            if hasattr(response, "status_code") and response.status_code >= 400:
+                raise Exception(f"Failed to process OAuth2 Client '{item_id}': {response.status_code}")
 
             info(f"Successfully processed OAuth2 Client: {item_id}")
             return True
 
         except Exception as e:
             error(f"Failed to process OAuth2 Client '{item_id}': {e}")
-            return False
+            raise
 
 
 def create_oauth_import_command():
