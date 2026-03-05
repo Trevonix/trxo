@@ -94,40 +94,47 @@ class RollbackManager:
 
             mapping = {}
 
-            for itm in items:
-                item_id = itm.get("_id")
-                if not item_id:
-                    continue
+            # Handle single-document configuration endpoints like authn
+            if self.command_name == "authn":
+                if isinstance(data, dict) and "data" in data:
+                    mapping["authn_settings"] = data["data"]
+                    self.raw_baseline_data = data["data"]
+                else:
+                    mapping["authn_settings"] = data
+                    self.raw_baseline_data = data
 
-                # If collection already returned full config → use it
-                if isinstance(itm, dict) and len(itm.keys()) > 2:
-                    mapping[str(item_id)] = itm
-                    continue
+            else:
+                for itm in items:
+                    item_id = itm.get("_id")
+                    if not item_id:
+                        continue
 
-                # Otherwise fetch full config by ID
-                try:
-                    url = self._build_api_url(item_id, base_url)
+                    # If collection already returned full config → use it
+                    if isinstance(itm, dict) and len(itm.keys()) > 2:
+                        mapping[str(item_id)] = itm
+                        continue
 
-                    headers = {
-                        "Accept-API-Version": "protocol=1.0,resource=1.0",
-                    }
-                    headers.update(self._build_auth_headers(token, url))
+                    # Otherwise fetch full config by ID
+                    try:
+                        url = self._build_api_url(item_id, base_url)
 
-                    import httpx
+                        headers = {
+                            "Accept-API-Version": "protocol=1.0,resource=1.0",
+                        }
+                        headers.update(self._build_auth_headers(token, url))
 
-                    with httpx.Client() as client:
-                        resp = client.get(url, headers=headers)
+                        import httpx
 
-                    if resp.status_code == 200:
-                        mapping[str(item_id)] = resp.json()
-                    else:
-                        warning(
-                            f"Could not fetch full config for "
-                            f"{item_id}: {resp.status_code}"
-                        )
+                        with httpx.Client() as client:
+                            resp = client.get(url, headers=headers)
 
-                except Exception as e:
-                    warning(f"Failed baseline fetch for {item_id}: {e}")
+                        if resp.status_code == 200:
+                            mapping[str(item_id)] = resp.json()
+                        else:
+                            warning(f"Could not fetch full config for {item_id}: {resp.status_code}")
+
+                    except Exception as e:
+                        warning(f"Failed baseline fetch for {item_id}: {e}")
             self.baseline_snapshot = mapping
             info("===== BASELINE SNAPSHOT (FULL CONFIG PER ID) =====")
             for k, v in mapping.items():
@@ -237,6 +244,59 @@ class RollbackManager:
                 report["errors"].append({"error": str(e)})
                 return report
 
+        # If nothing was tracked but a baseline exists, restore full configuration
+        # (handles single-document endpoints like authn, services, etc.)
+        if not self.imported_items and getattr(self, "raw_baseline_data", None):
+            try:
+                info("No tracked items found - restoring full baseline configuration...")
+
+                api_endpoint, _ = get_command_api_endpoint(self.command_name, self.realm)
+
+                from trxo.utils.url import construct_api_url
+                url = construct_api_url(base_url, api_endpoint)
+
+                headers = {
+                    "Content-Type": "application/json",
+                    "Accept-API-Version": "protocol=2.0,resource=1.0",
+                }
+
+                headers = {**headers, **self._build_auth_headers(token, api_endpoint)}
+
+                import httpx
+
+                with httpx.Client() as client:
+
+                    baseline_data = self.raw_baseline_data
+
+                    # unwrap mapping like {"authn_settings": {...}}
+                    if isinstance(baseline_data, dict) and len(baseline_data) == 1:
+                        baseline_data = list(baseline_data.values())[0]
+
+                    # remove export-only attributes
+                    if isinstance(baseline_data, dict):
+                        baseline_data = {
+                            k: v for k, v in baseline_data.items()
+                            if k not in {"_id", "_rev", "_type"}
+                        }
+
+                    payload = json.dumps(baseline_data)
+
+                    resp = client.put(url, headers=headers, data=payload)
+
+                if resp.status_code in (200, 201):
+                    info("Full configuration restored from baseline")
+                    report["rolled_back"].append({"action": "restored_full_config"})
+                else:
+                    warning(f"Failed to restore baseline: {resp.status_code}")
+                    report["errors"].append({"error": resp.text})
+
+                return report
+
+            except Exception as e:
+                warning(f"Rollback restore failed: {e}")
+                report["errors"].append({"error": str(e)})
+                return report
+    
         # Process in reverse order
         for record in reversed(self.imported_items):
             item_id = record.get("id")

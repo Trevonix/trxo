@@ -24,6 +24,9 @@ class AuthnImporter(BaseImporter):
     def get_item_type(self) -> str:
         return "authn"
 
+    def get_item_id(self, item: Dict[str, Any]) -> str:
+        return "authn_settings"
+
     def get_api_endpoint(self, item_id: str, base_url: str) -> str:
         return self._construct_api_url(
             base_url,

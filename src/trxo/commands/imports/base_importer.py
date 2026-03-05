@@ -495,11 +495,15 @@ class BaseImporter(BaseCommand):
         if not isinstance(item, dict):
             return None
 
-        # Prefer actual instance ID first
+        # Allow importer to define its own identifier
+        if hasattr(self, "get_item_id"):
+            custom_id = self.get_item_id(item)
+            if custom_id:
+                return custom_id
+
         if item.get("_id"):
             return item.get("_id")
 
-        # Fallback to type ID (used for services without _id)
         type_info = item.get("_type", {})
         type_id = type_info.get("_id")
 
