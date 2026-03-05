@@ -72,8 +72,27 @@ def create_webhooks_import_command():
     """Create the webhooks import command function"""
 
     def import_webhooks(
+        realm: str = typer.Option(
+            DEFAULT_REALM,
+            "--realm",
+            help=f"Target realm name (default: {DEFAULT_REALM})",
+        ),
+        cherry_pick: str = typer.Option(
+            None,
+            "--cherry-pick",
+            help="Cherry-pick specific webhooks by name (comma-separated)",
+        ),
+        diff: bool = typer.Option(
+            False, "--diff", help="Show differences before import"
+        ),
         file: str = typer.Option(
             None, "--file", help="Path to JSON file containing webhooks"
+        ),
+        force_import: bool = typer.Option(
+            False, "--force-import", "-f", help="Skip hash validation and force import"
+        ),
+        branch: str = typer.Option(
+            None, "--branch", help="Git branch to import from (Git mode only)"
         ),
         jwk_path: str = typer.Option(
             None, "--jwk-path", help="Path to JWK private key file"
@@ -113,20 +132,6 @@ def create_webhooks_import_command():
         idm_password: str = typer.Option(
             None, "--idm-password", help="On-Prem IDM password", hide_input=True
         ),
-        force_import: bool = typer.Option(
-            False, "--force-import", "-f", help="Skip hash validation and force import"
-        ),
-        diff: bool = typer.Option(
-            False, "--diff", help="Show differences before import"
-        ),
-        branch: str = typer.Option(
-            None, "--branch", help="Git branch to import from (Git mode only)"
-        ),
-        realm: str = typer.Option(
-            DEFAULT_REALM,
-            "--realm",
-            help=f"Target realm name (default: {DEFAULT_REALM})",
-        ),
     ):
         """Import webhooks from JSON file to specified realm"""
         importer = WebhooksImporter(realm=realm)
@@ -148,6 +153,7 @@ def create_webhooks_import_command():
             force_import=force_import,
             branch=branch,
             diff=diff,
+            cherry_pick=cherry_pick,
         )
 
     return import_webhooks
