@@ -313,7 +313,7 @@ def get_command_api_endpoint(
             f"/am/json/realms/root/realms/{realm}/realm-config/authentication",
             None,
         ),
-        "themes": (f"/openidm/config/ui/themerealm?_fields=realm/{realm}", None),
+        "themes": ("/openidm/config/ui/themerealm", None),
         "oauth": (
             f"/am/json/realms/root/realms/{realm}"
             "/realm-config/agents/OAuth2Client?_queryFilter=true",

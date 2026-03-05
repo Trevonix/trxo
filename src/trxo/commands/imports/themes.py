@@ -112,6 +112,38 @@ class ThemesImporter(BaseImporter):
 
         return ops
 
+    def _apply_cherry_pick_filter(
+        self, items: List[Dict[str, Any]], cherry_pick: str
+    ) -> List[Dict[str, Any]]:
+        """Filter the ui/themerealm payload by realm for cherry-picking"""
+        if not self.cherry_pick_filter.validate_cherry_pick_argument(cherry_pick):
+            error(f"Invalid cherry-pick realm ID: '{cherry_pick}'.")
+            return []
+
+        target_realms = [r.strip() for r in cherry_pick.split(",") if r.strip()]
+        if not target_realms:
+            return []
+
+        filtered_items = []
+        for item in items:
+            if "realm" in item:
+                filtered_realm = {}
+                for r in target_realms:
+                    if r in item["realm"]:
+                        filtered_realm[r] = item["realm"][r]
+                        info(f"Cherry-pick: Found themes for realm '{r}'")
+                    else:
+                        error(
+                            f"Cherry-pick: Theme realm '{r}' not found in logical export"
+                        )
+                if filtered_realm:
+                    # Maintain the structure {"realm": {...}}
+                    filtered_items.append({"realm": filtered_realm})
+            else:
+                filtered_items.append(item)
+
+        return filtered_items
+
     def update_item(self, item_data: Dict[str, Any], token: str, base_url: str) -> bool:
         """Compute and apply safe PATCH operations for ui/themerealm"""
         # Accept both wrapped export format { data: {...} } and raw object
@@ -144,6 +176,11 @@ def create_themes_import_command():
     """Create the themes import command function"""
 
     def import_themes(
+        cherry_pick: str = typer.Option(
+            None,
+            "--cherry-pick",
+            help="Cherry-pick specific theme realms by name (comma-separated)",
+        ),
         file: str = typer.Option(
             None,
             "--file",
@@ -225,6 +262,7 @@ def create_themes_import_command():
             force_import=force_import,
             branch=branch,
             diff=diff,
+            cherry_pick=cherry_pick,
         )
 
     return import_themes
