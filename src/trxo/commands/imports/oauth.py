@@ -44,7 +44,11 @@ class OAuthImporter(BaseImporter):
         if isinstance(data, dict) and "data" in data:
             data_section = data["data"]
 
-            if isinstance(data_section, dict) and "clients" in data_section and "scripts" in data_section:
+            if (
+                isinstance(data_section, dict)
+                and "clients" in data_section
+                and "scripts" in data_section
+            ):
                 info("Detected OAuth export format (standard) with clients and scripts")
                 self._oauth_export_data = data_section
 
@@ -198,9 +202,7 @@ class OAuthImporter(BaseImporter):
             **self.build_auth_headers(token),
         }
 
-        filtered_data = {
-            k: v for k, v in item_data.items() if k not in {"_id", "_rev"}
-        }
+        filtered_data = {k: v for k, v in item_data.items() if k not in {"_id", "_rev"}}
 
         payload = json.dumps(filtered_data, indent=2)
 
@@ -208,7 +210,9 @@ class OAuthImporter(BaseImporter):
             response = self.make_http_request(url, "PUT", headers, payload)
 
             if hasattr(response, "status_code") and response.status_code >= 400:
-                raise Exception(f"Failed to process OAuth2 Client '{item_id}': {response.status_code}")
+                raise Exception(
+                    f"Failed to process OAuth2 Client '{item_id}': {response.status_code}"
+                )
 
             info(f"Successfully processed OAuth2 Client: {item_id}")
             return True
@@ -287,9 +291,7 @@ def create_oauth_import_command():
             "root", "--onprem-realm", help="On-Prem realm"
         ),
         am_base_url: str = typer.Option(
-
             None, "--am-base-url", help="On-Prem AM base URL"
-
         ),
         idm_base_url: str = typer.Option(
             None, "--idm-base-url", help="On-Prem IDM base URL"
@@ -316,7 +318,8 @@ def create_oauth_import_command():
             onprem_realm=onprem_realm,
             idm_base_url=idm_base_url,
             idm_username=idm_username,
-            idm_password=idm_password, am_base_url=am_base_url,
+            idm_password=idm_password,
+            am_base_url=am_base_url,
             force_import=force_import,
             branch=branch,
             diff=diff,

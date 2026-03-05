@@ -195,7 +195,11 @@ class BaseImporter(BaseCommand):
             baseline_item = None
             action = "created"
 
-            if rollback_manager and item_id and str(item_id) in rollback_manager.baseline_snapshot:
+            if (
+                rollback_manager
+                and item_id
+                and str(item_id) in rollback_manager.baseline_snapshot
+            ):
                 baseline_item = rollback_manager.baseline_snapshot.get(str(item_id))
                 action = "updated"
             else:

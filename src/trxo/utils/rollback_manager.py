@@ -114,6 +114,7 @@ class RollbackManager:
                     headers.update(self._build_auth_headers(token, url))
 
                     import httpx
+
                     with httpx.Client() as client:
                         resp = client.get(url, headers=headers)
 
@@ -153,9 +154,8 @@ class RollbackManager:
                     filename = f"{(self.realm or 'root')}_{component}.json"
                     file_path = comp_dir / filename
                     file_path.write_text(
-                            json.dumps(mapping, indent=2),
-                            encoding="utf-8"
-                        )
+                        json.dumps(mapping, indent=2), encoding="utf-8"
+                    )
                     # Commit and push
                     rel = file_path.relative_to(repo_path)
                     commit_msg = (
@@ -286,7 +286,11 @@ class RollbackManager:
                     import httpx
 
                     with httpx.Client() as client:
-                        restore_data = {k: v for k, v in baseline.items() if k not in {"_id", "_rev"}}
+                        restore_data = {
+                            k: v
+                            for k, v in baseline.items()
+                            if k not in {"_id", "_rev"}
+                        }
                         payload = json.dumps(restore_data)
                         resp = client.put(url, headers=headers, data=payload)
                         if resp.status_code in (200, 201):

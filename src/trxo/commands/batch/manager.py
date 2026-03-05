@@ -13,7 +13,7 @@ from .config_generator import create_config_generator_command
 app = typer.Typer(
     name="batch",
     help="Batch operations for multiple configurations",
-    no_args_is_help=True
+    no_args_is_help=True,
 )
 
 # Register batch commands

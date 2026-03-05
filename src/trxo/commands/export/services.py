@@ -100,9 +100,7 @@ class ServicesExporter(BaseExporter):
         if scope.lower() == "global":
             api_endpoint = "/am/json/global-config/services?_queryFilter=true"
         else:
-            api_endpoint = (
-                f"/am/json/realms/root/realms/{realm}/realm-config/services?_queryFilter=true"
-            )
+            api_endpoint = f"/am/json/realms/root/realms/{realm}/realm-config/services?_queryFilter=true"
 
         captured = {}
         original_save_response = self.save_response
@@ -243,9 +241,7 @@ def create_services_export_command():
         if scope.lower() == "global":
             api_endpoint = "/am/json/global-config/services?_queryFilter=true"
         else:
-            api_endpoint = (
-                f"/am/json/realms/root/realms/{realm}/realm-config/services?_queryFilter=true"
-            )
+            api_endpoint = f"/am/json/realms/root/realms/{realm}/realm-config/services?_queryFilter=true"
 
         exporter.export_data(
             command_name="services",

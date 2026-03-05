@@ -25,9 +25,7 @@ def test_mappings_api_endpoint():
 
 def test_find_mapping_by_name_found():
     importer = MappingsImporter()
-    idx, mapping = importer._find_mapping_by_name(
-        [{"name": "a"}, {"name": "b"}], "b"
-    )
+    idx, mapping = importer._find_mapping_by_name([{"name": "a"}, {"name": "b"}], "b")
     assert idx == 1
     assert mapping["name"] == "b"
 
@@ -97,9 +95,7 @@ def test_update_item_existing_with_patch(mocker):
 def test_update_item_create_new(mocker):
     importer = MappingsImporter()
     importer.make_http_request = mocker.Mock()
-    importer._get_current_sync_config = mocker.Mock(
-        return_value={"mappings": []}
-    )
+    importer._get_current_sync_config = mocker.Mock(return_value={"mappings": []})
     mocker.patch("trxo.commands.imports.mappings.info")
 
     assert importer.update_item({"name": "a"}, "t", "http://x") is True

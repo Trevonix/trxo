@@ -22,7 +22,7 @@ class AuthnImporter(BaseImporter):
         return []
 
     def get_item_type(self) -> str:
-        return "authentication settings"
+        return "authn"
 
     def get_api_endpoint(self, item_id: str, base_url: str) -> str:
         return self._construct_api_url(
@@ -32,21 +32,31 @@ class AuthnImporter(BaseImporter):
 
     def update_item(self, item_data: Dict[str, Any], token: str, base_url: str) -> bool:
         """PUT whole settings document after removing _rev"""
-        # Build payload without _rev
+
         filtered = {k: v for k, v in item_data.items() if k != "_rev"}
         payload = json.dumps(filtered)
 
         url = self.get_api_endpoint("", base_url)
+
         headers = {
             "Content-Type": "application/json",
-            "Accept-API-Version": "resource=1.0",
+            "Accept-API-Version": "protocol=2.0,resource=1.0",
         }
+
         headers = {**headers, **self.build_auth_headers(token)}
 
         try:
-            self.make_http_request(url, "PUT", headers, payload)
+            response = self.make_http_request(url, "PUT", headers, payload)
+
+            if hasattr(response, "status_code") and response.status_code >= 400:
+                error(
+                    f"Failed to update authentication settings: {response.status_code}"
+                )
+                return False
+
             info("Updated authentication settings")
             return True
+
         except Exception as e:
             error(f"Failed to update authentication settings: {e}")
             return False
@@ -95,6 +105,11 @@ def create_authn_import_command():
             "--auth-mode",
             help="Auth mode override: service-account|onprem",
         ),
+        rollback: bool = typer.Option(
+            False,
+            "--rollback",
+            help="Automatically rollback imported items on first failure",
+        ),
         onprem_username: str = typer.Option(
             None, "--onprem-username", help="On-Prem username"
         ),
@@ -105,9 +120,7 @@ def create_authn_import_command():
             "root", "--onprem-realm", help="On-Prem realm"
         ),
         am_base_url: str = typer.Option(
-
             None, "--am-base-url", help="On-Prem AM base URL"
-
         ),
         idm_base_url: str = typer.Option(
             None, "--idm-base-url", help="On-Prem IDM base URL"
@@ -129,12 +142,14 @@ def create_authn_import_command():
             base_url=base_url,
             project_name=project_name,
             auth_mode=auth_mode,
+            rollback=rollback,
             onprem_username=onprem_username,
             onprem_password=onprem_password,
             onprem_realm=onprem_realm,
             idm_base_url=idm_base_url,
             idm_username=idm_username,
-            idm_password=idm_password, am_base_url=am_base_url,
+            idm_password=idm_password,
+            am_base_url=am_base_url,
             force_import=force_import,
             branch=branch,
             diff=diff,

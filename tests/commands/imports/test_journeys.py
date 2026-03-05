@@ -20,7 +20,9 @@ def test_journey_item_type():
 def test_journey_api_endpoint():
     importer = JourneyImporter(realm="alpha")
     url = importer.get_api_endpoint("j1", "http://x")
-    assert url.endswith("/am/json/realms/root/realms/alpha/realm-config/authentication/authenticationtrees/trees/j1")
+    assert url.endswith(
+        "/am/json/realms/root/realms/alpha/realm-config/authentication/authenticationtrees/trees/j1"
+    )
 
 
 def test_journey_update_success(mocker):

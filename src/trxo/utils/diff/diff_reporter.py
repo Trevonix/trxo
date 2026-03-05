@@ -849,13 +849,13 @@ class DiffReporter:
         line_html = (
             '<div class="insight-bullet">'
             '<strong style="color:#0284c7">✓ '
-            f'{_html.escape(field)}'
-            '</strong> updated in: '
+            f"{_html.escape(field)}"
+            "</strong> updated in: "
             '<span style="color:#0f766e">'
-            f'{_html.escape(ids_formatted)}'
-            '</span>'
-            '</div>'
-            )
+            f"{_html.escape(ids_formatted)}"
+            "</span>"
+            "</div>"
+        )
 
         items_html.append(line_html)
 

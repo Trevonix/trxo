@@ -548,7 +548,9 @@ def create_saml_import_command():
             "--file",
             help="Path to JSON file containing SAML data (local mode only)",
         ),
-        jwk_path: str = typer.Option(None, "--jwk-path", help="Path to JWK private key file"),
+        jwk_path: str = typer.Option(
+            None, "--jwk-path", help="Path to JWK private key file"
+        ),
         sa_id: str = typer.Option(None, "--sa-id", help="Service Account ID"),
         base_url: str = typer.Option(
             None,

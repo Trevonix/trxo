@@ -13,7 +13,6 @@ from typing import Optional, Dict, Any
 from .config import LogConfig, LogLevel, get_log_file_path
 from .formatters import TRxOFormatter, APICallFormatter, MultiplexFormatter
 
-
 # Global logger registry
 _loggers: Dict[str, logging.Logger] = {}
 _logging_configured = False

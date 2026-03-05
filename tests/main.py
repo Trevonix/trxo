@@ -7,6 +7,7 @@ Run with:
 This will invoke pytest programmatically so you can run tests consistently
 across environments or from an IDE that prefers a single entrypoint.
 """
+
 import sys
 
 import pytest
