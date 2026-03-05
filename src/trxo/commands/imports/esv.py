@@ -199,6 +199,11 @@ def create_esv_commands():
     """Create ESV import command functions"""
 
     def import_esv_variables(
+        cherry_pick: str = typer.Option(
+            None,
+            "--cherry-pick",
+            help="Cherry-pick specific variables by id (comma-separated)",
+        ),
         file: str = typer.Option(
             None,
             "--file",
@@ -276,9 +281,15 @@ def create_esv_commands():
             branch=branch,
             diff=diff,
             rollback=rollback,
+            cherry_pick=cherry_pick,
         )
 
     def import_esv_secrets(
+        cherry_pick: str = typer.Option(
+            None,
+            "--cherry-pick",
+            help="Cherry-pick specific secrets by id (comma-separated)",
+        ),
         file: str = typer.Option(
             None, "--file", help="Path to JSON file containing Environment Secrets data"
         ),
@@ -354,6 +365,7 @@ def create_esv_commands():
             branch=branch,
             diff=diff,
             rollback=rollback,
+            cherry_pick=cherry_pick,
         )
 
     return import_esv_variables, import_esv_secrets
