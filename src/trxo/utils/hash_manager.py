@@ -311,6 +311,7 @@ def get_command_name_from_item_type(item_type: str) -> str:
         "email templates": "email_templates",
         "custom endpoints": "endpoints",
         "connectors": "connectors",
+        "IDM connectors": "connectors",
         "applications": "applications",
         "Privileges": "privileges",
         "webhooks": "webhooks",
