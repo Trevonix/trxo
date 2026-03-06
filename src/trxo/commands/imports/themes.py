@@ -1,11 +1,19 @@
 """
 Themes import command.
 
-Safe import for Ping AIC ui/themerealm configuration using PATCH.
+Safe import for Ping AIC ui/themerealm configuration.
+
+Fix summary:
+- Uses PUT (full document replacement) instead of field-level PATCH ops
+- Merges incoming themes by _id into the current server state
+- Handles both "create" (new theme _id) and "update" (existing theme _id) cases
+- Adds missing If-Match header with current _rev to avoid 409 conflicts
+- Correctly handles the realm->array-of-theme-objects structure
+- Removes unreliable deep JSON-PATCH field traversal
 """
 
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import typer
 
@@ -16,164 +24,266 @@ from .base_importer import BaseImporter
 
 
 class ThemesImporter(BaseImporter):
-    """Safe PATCH importer for Ping AIC ui/themerealm"""
+    """
+    Importer for Ping AIC ui/themerealm.
+
+    Strategy:
+      1. GET the current full themerealm document (including _rev).
+      2. For each incoming realm, merge themes by _id:
+           - If a theme _id already exists in that realm → replace it entirely.
+           - If a theme _id is new → append it.
+      3. PUT the fully merged document back, using If-Match: <_rev> so the
+         server can detect mid-flight conflicts.
+
+    This avoids the fragile field-level PATCH path approach which is
+    unreliable against the AIC openidm/config endpoint.
+    """
 
     def __init__(self):
         super().__init__()
         self.product = "idm"
 
     def get_required_fields(self) -> List[str]:
-        # No strict requirements - supports partial realm updates
         return []
 
     def get_item_type(self) -> str:
         return "themes (ui/themerealm)"
 
     def get_api_endpoint(self, item_id: str, base_url: str) -> str:
-        # Single resource endpoint
         return f"{base_url}/openidm/config/ui/themerealm"
 
     def _fetch_current(self, token: str, base_url: str) -> Dict[str, Any]:
+        """
+        GET the current ui/themerealm document.
+        Returns the full dict (including _rev) or {} on failure.
+        """
         url = self.get_api_endpoint("", base_url)
-        headers = {"Accept-API-Version": "protocol=2.1,resource=1.0"}
-        headers = {**headers, **self.build_auth_headers(token)}
-        resp = self.make_http_request(url, "GET", headers)
+        headers = {
+            "Accept-API-Version": "protocol=2.1,resource=1.0",
+            **self.build_auth_headers(token),
+        }
         try:
+            resp = self.make_http_request(url, "GET", headers)
             return resp.json()
-        except Exception:
+        except Exception as e:
+            error(f"Failed to GET ui/themerealm: {e}")
             return {}
 
-    def _build_patch_ops(
-        self, current: Dict[str, Any], incoming: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
-        ops: List[Dict[str, Any]] = []
-        current_realms = (current or {}).get("realm", {}) or {}
-        incoming_realms = (incoming or {}).get("realm", {}) or {}
+    def _merge_themes(
+        self,
+        current: Dict[str, Any],
+        incoming: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """
+        Merge incoming realm themes into the current document.
 
-        # For each realm in the incoming file
-        for realm_name, realm_arr in incoming_realms.items():
-            # If the entire realm is missing in current -> add the array
+        The themerealm document structure is:
+          {
+            "_id": "ui/themerealm",
+            "_rev": "<etag>",
+            "realm": {
+              "alpha": [
+                { "_id": "<uuid>", "name": "...", ... },
+                ...
+              ],
+              "bravo": [ ... ]
+            }
+          }
+
+        For each realm in `incoming["realm"]`:
+          - Iterate over each theme object (which must have an "_id").
+          - If that "_id" already exists in the current realm list → replace it.
+          - Otherwise → append it (new theme creation).
+
+        Fields at the document root (like "_id", "_rev") are preserved from
+        the current server response and never overwritten from the import file.
+        """
+        # Start from current; we'll mutate a deep copy
+        merged = json.loads(json.dumps(current))  # simple deep copy
+
+        current_realms: Dict[str, List] = merged.get("realm", {}) or {}
+        incoming_realms: Dict[str, List] = (incoming or {}).get("realm", {}) or {}
+
+        if not incoming_realms:
+            info("No realm data found in incoming themes file; nothing to merge.")
+            return merged
+
+        for realm_name, incoming_themes in incoming_realms.items():
+            if not isinstance(incoming_themes, list):
+                error(
+                    f"Skipping realm '{realm_name}': expected a list of theme objects, "
+                    f"got {type(incoming_themes).__name__}."
+                )
+                continue
+
+            # Ensure the realm key exists in the merged document
             if realm_name not in current_realms:
-                ops.append(
-                    {
-                        "operation": "add",
-                        "field": f"/realm/{realm_name}",
-                        "value": realm_arr,
-                    }
-                )
-                continue
+                current_realms[realm_name] = []
+                info(f"Realm '{realm_name}' is new; it will be created.")
 
-            # Ensure array structure
-            curr_arr = current_realms.get(realm_name) or []
-            if not isinstance(curr_arr, list) or not curr_arr:
-                # Replace the whole realm array
-                ops.append(
-                    {
-                        "operation": "replace",
-                        "field": f"/realm/{realm_name}",
-                        "value": realm_arr,
-                    }
-                )
-                continue
+            curr_list: List[Dict] = current_realms[realm_name]
 
-            # Compare first object fields (index 0) per the example structure
-            curr_obj = curr_arr[0] if isinstance(curr_arr[0], dict) else {}
-            in_obj = (
-                realm_arr[0]
-                if (
-                    isinstance(realm_arr, list)
-                    and realm_arr
-                    and isinstance(realm_arr[0], dict)
-                )
-                else {}
-            )
+            # Build an index of existing themes by _id for O(1) lookup
+            curr_index: Dict[str, int] = {
+                t.get("_id"): idx
+                for idx, t in enumerate(curr_list)
+                if isinstance(t, dict) and t.get("_id")
+            }
 
-            # Add or replace each incoming field
-            for key, in_val in in_obj.items():
-                if key in curr_obj:
-                    if curr_obj.get(key) != in_val:
-                        ops.append(
-                            {
-                                "operation": "replace",
-                                "field": f"/realm/{realm_name}/0/{key}",
-                                "value": in_val,
-                            }
-                        )
+            for in_theme in incoming_themes:
+                if not isinstance(in_theme, dict):
+                    error(
+                        f"Skipping non-dict entry in realm '{realm_name}': {in_theme!r}"
+                    )
+                    continue
+
+                theme_id: Optional[str] = in_theme.get("_id")
+
+                if not theme_id:
+                    # Theme has no _id — append as a brand-new theme.
+                    # AIC will assign an _id on creation if it's missing,
+                    # but warn the user since this may produce duplicates.
+                    error(
+                        f"Theme in realm '{realm_name}' has no '_id' field. "
+                        f"Appending anyway — this may create duplicates on "
+                        f"repeated imports."
+                    )
+                    curr_list.append(in_theme)
+                    continue
+
+                if theme_id in curr_index:
+                    # Replace the existing theme entirely (preserving position)
+                    idx = curr_index[theme_id]
+                    curr_list[idx] = in_theme
+                    info(
+                        f"Realm '{realm_name}': updating existing theme "
+                        f"'{in_theme.get('name', theme_id)}' (_id={theme_id})"
+                    )
                 else:
-                    ops.append(
-                        {
-                            "operation": "add",
-                            "field": f"/realm/{realm_name}/0/{key}",
-                            "value": in_val,
-                        }
+                    # New theme — append
+                    curr_list.append(in_theme)
+                    info(
+                        f"Realm '{realm_name}': creating new theme "
+                        f"'{in_theme.get('name', theme_id)}' (_id={theme_id})"
                     )
 
-            # Do not remove any existing keys; only add/replace
+            current_realms[realm_name] = curr_list
 
-        return ops
+        merged["realm"] = current_realms
+        return merged
 
     def _apply_cherry_pick_filter(
         self, items: List[Dict[str, Any]], cherry_pick: str
     ) -> List[Dict[str, Any]]:
-        """Filter the ui/themerealm payload by realm for cherry-picking"""
+        """Filter the ui/themerealm payload by theme _id or name for cherry-picking."""
         if not self.cherry_pick_filter.validate_cherry_pick_argument(cherry_pick):
-            error(f"Invalid cherry-pick realm ID: '{cherry_pick}'.")
+            error(f"Invalid cherry-pick argument: '{cherry_pick}'.")
             return []
 
-        target_realms = [r.strip() for r in cherry_pick.split(",") if r.strip()]
-        if not target_realms:
+        target_identifiers = [t.strip() for t in cherry_pick.split(",") if t.strip()]
+        if not target_identifiers:
             return []
 
         filtered_items = []
         for item in items:
-            if "realm" in item:
-                filtered_realm = {}
-                for r in target_realms:
-                    if r in item["realm"]:
-                        filtered_realm[r] = item["realm"][r]
-                        info(f"Cherry-pick: Found themes for realm '{r}'")
-                    else:
-                        error(
-                            f"Cherry-pick: Theme realm '{r}' not found in logical export"
-                        )
-                if filtered_realm:
-                    # Maintain the structure {"realm": {...}}
-                    filtered_items.append({"realm": filtered_realm})
-            else:
+            if "realm" not in item:
                 filtered_items.append(item)
+                continue
+
+            filtered_realm: Dict[str, Any] = {}
+            found_identifiers = set()
+
+            for realm_name, themes in item["realm"].items():
+                if not isinstance(themes, list):
+                    continue
+
+                filtered_themes = []
+                for theme in themes:
+                    if not isinstance(theme, dict):
+                        continue
+
+                    theme_id = theme.get("_id")
+                    theme_name = theme.get("name")
+
+                    for target in target_identifiers:
+                        if target in (theme_id, theme_name):
+                            filtered_themes.append(theme)
+                            found_identifiers.add(target)
+                            info(
+                                f"Cherry-pick: found theme '{theme_name or 'Unknown'}' (_id='{theme_id or 'Unknown'}') in realm '{realm_name}'"
+                            )
+                            break
+
+                if filtered_themes:
+                    filtered_realm[realm_name] = filtered_themes
+
+            for target in target_identifiers:
+                if target not in found_identifiers:
+                    error(f"Cherry-pick: realm '{target}' not found in export file")
+
+            if filtered_realm:
+                filtered_item = item.copy()
+                filtered_item["realm"] = filtered_realm
+                filtered_items.append(filtered_item)
 
         return filtered_items
 
     def update_item(self, item_data: Dict[str, Any], token: str, base_url: str) -> bool:
-        """Compute and apply safe PATCH operations for ui/themerealm"""
-        # Accept both wrapped export format { data: {...} } and raw object
-        incoming = item_data
-        # Build operations against current server state
+        """
+        Merge and PUT the full ui/themerealm document.
+
+        Steps:
+          1. GET current document (captures _rev for If-Match).
+          2. Merge incoming themes by _id into current document.
+          3. PUT merged document back with If-Match header.
+        """
+        # --- Step 1: GET current state ---
         current = self._fetch_current(token, base_url)
-        ops = self._build_patch_ops(current, incoming)
+        rev: Optional[str] = current.get("_rev")
 
-        if not ops:
-            info("No changes detected for ui/themerealm; skipping PATCH")
-            return True
+        # --- Step 2: Merge ---
+        merged = self._merge_themes(current, item_data)
 
+        # Remove _rev from the body before PUT (server manages it)
+        body = {k: v for k, v in merged.items() if k != "_rev"}
+
+        # --- Step 3: PUT ---
         url = self.get_api_endpoint("", base_url)
         headers = {
             "Content-Type": "application/json",
             "Accept-API-Version": "protocol=2.1,resource=1.0",
+            **self.build_auth_headers(token),
         }
-        headers = {**headers, **self.build_auth_headers(token)}
+
+        # Include If-Match to prevent clobbering concurrent changes.
+        # Use "*" if we couldn't read a _rev (e.g. document didn't exist yet).
+        if rev:
+            headers["If-Match"] = rev
+        else:
+            # Document may not exist yet; omit If-Match so the PUT acts as
+            # an upsert.  Some AIC versions require If-None-Match: * for
+            # creation, but ui/themerealm always pre-exists in a tenant.
+            info(
+                "Could not determine current _rev for ui/themerealm; "
+                "proceeding without If-Match (upsert mode)."
+            )
 
         try:
-            self.make_http_request(url, "PATCH", headers, json.dumps(ops))
-            info(f"Patched ui/themerealm with {len(ops)} operation(s)")
+            self.make_http_request(url, "PUT", headers, json.dumps(body))
+            # Count how many themes we touched for a useful log line
+            n_realms = len((item_data or {}).get("realm", {}))
+            info(
+                f"Successfully PUT ui/themerealm "
+                f"({n_realms} realm(s) updated/created)"
+            )
             return True
         except Exception as e:
-            error(f"Failed to patch ui/themerealm: {e}")
+            error(f"Failed to PUT ui/themerealm: {e}")
             return False
 
 
 def create_themes_import_command():
-    """Create the themes import command function"""
+    """Create the themes import command function."""
 
     def import_themes(
         cherry_pick: str = typer.Option(

@@ -43,87 +43,103 @@ def test_fetch_current_json_error(mocker):
     assert result == {}
 
 
-def test_build_patch_ops_add_realm():
+def test_merge_themes_add_realm():
     importer = ThemesImporter()
 
     current = {"realm": {}}
-    incoming = {"realm": {"alpha": [{"a": 1}]}}
+    incoming = {"realm": {"alpha": [{"_id": "1", "name": "theme1"}]}}
 
-    ops = importer._build_patch_ops(current, incoming)
+    merged = importer._merge_themes(current, incoming)
 
-    assert ops == [
+    assert merged == {"realm": {"alpha": [{"_id": "1", "name": "theme1"}]}}
+
+
+def test_merge_themes_replace_theme():
+    importer = ThemesImporter()
+
+    current = {"realm": {"alpha": [{"_id": "1", "name": "old_theme"}]}}
+    incoming = {"realm": {"alpha": [{"_id": "1", "name": "new_theme"}]}}
+
+    merged = importer._merge_themes(current, incoming)
+
+    assert merged == {"realm": {"alpha": [{"_id": "1", "name": "new_theme"}]}}
+
+
+def test_merge_themes_add_new_theme_to_existing_realm():
+    importer = ThemesImporter()
+
+    current = {"realm": {"alpha": [{"_id": "1", "name": "theme1"}]}}
+    incoming = {"realm": {"alpha": [{"_id": "2", "name": "theme2"}]}}
+
+    merged = importer._merge_themes(current, incoming)
+
+    assert merged == {
+        "realm": {
+            "alpha": [{"_id": "1", "name": "theme1"}, {"_id": "2", "name": "theme2"}]
+        }
+    }
+
+
+def test_apply_cherry_pick_filter():
+    importer = ThemesImporter()
+
+    # Mock the cherry_pick_filter validator which is called inside _apply_cherry_pick_filter
+    importer.cherry_pick_filter.validate_cherry_pick_argument = lambda x: True
+
+    items = [
         {
-            "operation": "add",
-            "field": "/realm/alpha",
-            "value": [{"a": 1}],
+            "realm": {
+                "alpha": [
+                    {"_id": "1", "name": "theme1"},
+                    {"_id": "2", "name": "theme2"},
+                ],
+                "bravo": [{"_id": "3", "name": "theme3"}],
+            }
         }
     ]
 
+    filtered = importer._apply_cherry_pick_filter(items, "theme1, 3")
 
-def test_build_patch_ops_replace_whole_array():
+    assert len(filtered) == 1
+    assert "alpha" in filtered[0]["realm"]
+    assert len(filtered[0]["realm"]["alpha"]) == 1
+    assert filtered[0]["realm"]["alpha"][0]["_id"] == "1"
+
+    assert "bravo" in filtered[0]["realm"]
+    assert len(filtered[0]["realm"]["bravo"]) == 1
+    assert filtered[0]["realm"]["bravo"][0]["_id"] == "3"
+
+
+def test_update_item_put_success(mocker):
     importer = ThemesImporter()
 
-    current = {"realm": {"alpha": []}}
-    incoming = {"realm": {"alpha": [{"a": 1}]}}
-
-    ops = importer._build_patch_ops(current, incoming)
-
-    assert ops == [
-        {
-            "operation": "replace",
-            "field": "/realm/alpha",
-            "value": [{"a": 1}],
-        }
-    ]
-
-
-def test_build_patch_ops_add_and_replace_fields():
-    importer = ThemesImporter()
-
-    current = {"realm": {"alpha": [{"x": 1}]}}
-    incoming = {"realm": {"alpha": [{"x": 2, "y": 3}]}}
-
-    ops = importer._build_patch_ops(current, incoming)
-
-    assert {"operation": "replace", "field": "/realm/alpha/0/x", "value": 2} in ops
-    assert {"operation": "add", "field": "/realm/alpha/0/y", "value": 3} in ops
-    assert len(ops) == 2
-
-
-def test_update_item_no_changes(mocker):
-    importer = ThemesImporter()
-
-    importer._fetch_current = mocker.Mock(return_value={"realm": {"a": [{"x": 1}]}})
-    mocker.patch("trxo.commands.imports.themes.info")
-
-    result = importer.update_item({"realm": {"a": [{"x": 1}]}}, "t", "http://x")
-
-    assert result is True
-
-
-def test_update_item_patch_success(mocker):
-    importer = ThemesImporter()
-
-    importer._fetch_current = mocker.Mock(return_value={"realm": {}})
+    importer._fetch_current = mocker.Mock(
+        return_value={"_rev": "some-rev", "realm": {}}
+    )
     importer.make_http_request = mocker.Mock()
     mocker.patch("trxo.commands.imports.themes.info")
 
-    incoming = {"realm": {"alpha": [{"a": 1}]}}
+    incoming = {"realm": {"alpha": [{"_id": "1", "name": "theme1"}]}}
 
     result = importer.update_item(incoming, "t", "http://x")
 
     assert result is True
     importer.make_http_request.assert_called_once()
 
+    # ensure it was called with PUT and If-Match
+    args, kwargs = importer.make_http_request.call_args
+    assert args[1] == "PUT"
+    assert args[2].get("If-Match") == "some-rev"
 
-def test_update_item_patch_failure(mocker):
+
+def test_update_item_put_failure(mocker):
     importer = ThemesImporter()
 
     importer._fetch_current = mocker.Mock(return_value={"realm": {}})
     importer.make_http_request = mocker.Mock(side_effect=Exception("boom"))
     mocker.patch("trxo.commands.imports.themes.error")
 
-    incoming = {"realm": {"alpha": [{"a": 1}]}}
+    incoming = {"realm": {"alpha": [{"_id": "1", "name": "theme1"}]}}
 
     result = importer.update_item(incoming, "t", "http://x")
 
