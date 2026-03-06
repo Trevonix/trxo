@@ -189,7 +189,6 @@ class BaseImporter(BaseCommand):
         self.failed_updates = 0
 
         for item in items:
-            # Determine item identifier
             item_id = self._get_item_identifier(item)
 
             baseline_item = None
@@ -202,37 +201,42 @@ class BaseImporter(BaseCommand):
             ):
                 baseline_item = rollback_manager.baseline_snapshot.get(str(item_id))
                 action = "updated"
-            else:
-                action = "created"
 
             try:
                 if self.update_item(item, token, base_url):
                     self.successful_updates += 1
 
-                    # Track for rollback
-                    if rollback_manager and item_id:
+                    # Use entityId for SAML items if present
+                    track_id = self._get_item_identifier(item)
+
+                    if rollback_manager and track_id:
                         rollback_manager.track_import(
-                            str(item_id), action, baseline_item
+                            str(track_id), action, baseline_item
                         )
                 else:
                     self.failed_updates += 1
-                    # On failure, if rollback requested, execute rollback ONCE and exit
+
+                    # On failure trigger rollback if requested
                     if rollback_on_failure and rollback_manager:
                         self._execute_rollback_and_exit(
                             rollback_manager, token, base_url, item_id
                         )
+
             except typer.Exit:
-                # Re-raise Exit exceptions without catching them
                 raise
+
             except Exception as e:
                 self.failed_updates += 1
+
                 if rollback_on_failure and rollback_manager:
                     info(
                         f"Exception during import of "
                         f"{item_id or '<unknown>'}: {e} - executing rollback"
                     )
+
                     report = rollback_manager.execute_rollback(token, base_url)
                     self._print_rollback_report(report)
+
                     raise typer.Exit(1)
 
     # ==================== Private Helper Methods ====================

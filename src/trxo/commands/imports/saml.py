@@ -14,6 +14,7 @@ from urllib.parse import quote
 from trxo.utils.console import error, info, warning, success
 from .base_importer import BaseImporter
 from trxo.constants import DEFAULT_REALM
+from trxo.utils.rollback_manager import RollbackManager
 
 
 class SamlImporter(BaseImporter):
@@ -184,6 +185,9 @@ class SamlImporter(BaseImporter):
                     success_count += 1
                 else:
                     error_count += 1
+                    if hasattr(self, "rollback_manager") and self.rollback_manager:
+                        error("Failure detected. Stopping import for rollback.")
+                        return False
 
         # Step 4: Upsert remote entities
         if remote_entities:
@@ -352,6 +356,8 @@ class SamlImporter(BaseImporter):
         try:
             self.make_http_request(url, "PUT", headers, json.dumps(payload_data))
             info(f"✓ Imported script: {script_name}")
+            if hasattr(self, "rollback_manager") and self.rollback_manager:
+                self.rollback_manager.track_import(script_id, "created")
             return True
         except Exception as e:
             error(f"Failed to import script '{script_name}': {str(e)}")
@@ -461,6 +467,8 @@ class SamlImporter(BaseImporter):
         try:
             self.make_http_request(url, "POST", headers, json.dumps(payload))
             info(f"✓ Imported metadata for: {entity_id}")
+            if hasattr(self, "rollback_manager") and self.rollback_manager:
+                self.rollback_manager.track_import(entity_id + "_metadata", "created")
             return True
         except Exception as e:
             error(f"Failed to import metadata for '{entity_id}': {str(e)}")
@@ -495,39 +503,65 @@ class SamlImporter(BaseImporter):
         headers = {**headers, **self.build_auth_headers(token)}
 
         try:
+            # Capture baseline for rollback (if available)
+            baseline = None
+            if hasattr(self, "rollback_manager") and self.rollback_manager:
+                baseline = self.rollback_manager.baseline_snapshot.get(str(entity_id))
+
             # Special handling for hosted entities
             if location == "hosted":
-                # Use httpx directly to avoid automatic 404 logging
                 with httpx.Client(timeout=30.0) as client:
                     response = client.put(
                         url, headers=headers, data=json.dumps(payload_data)
                     )
 
                     if response.status_code == 404:
-                        # Entity doesn't exist, Create it
+                        # Entity doesn't exist → Create
                         post_hosted_url = self._construct_api_url(
                             base_url,
                             f"/am/json/realms/root/realms/{self.realm}/"
                             "realm-config/saml2/hosted?_action=create",
                         )
-                        # Use make_http_request for creation
+
                         self.make_http_request(
                             post_hosted_url,
                             "POST",
                             headers,
                             json.dumps(payload_data),
                         )
+
                         info(f"✓ Created hosted entity: {entity_name}")
+
+                        if hasattr(self, "rollback_manager") and self.rollback_manager:
+                            self.rollback_manager.track_import(entity_id, "created")
+
                         return True
 
-                    # If not 404, check for other errors
+                    # Existing entity → Update
                     response.raise_for_status()
                     info(f"✓ Updated hosted entity: {entity_name}")
+
+                    if hasattr(self, "rollback_manager") and self.rollback_manager:
+                        self.rollback_manager.track_import(
+                            entity_id,
+                            "updated",
+                            baseline,
+                        )
+
                     return True
+
             else:
-                # For remote entities, use standard PUT upsert
+                # Remote entity → PUT upsert
                 self.make_http_request(url, "PUT", headers, json.dumps(payload_data))
                 info(f"✓ Imported {location} entity: {entity_name}")
+
+                if hasattr(self, "rollback_manager") and self.rollback_manager:
+                    self.rollback_manager.track_import(
+                        entity_id,
+                        "updated",
+                        baseline,
+                    )
+
                 return True
 
         except Exception as e:
@@ -548,9 +582,7 @@ def create_saml_import_command():
             "--file",
             help="Path to JSON file containing SAML data (local mode only)",
         ),
-        jwk_path: str = typer.Option(
-            None, "--jwk-path", help="Path to JWK private key file"
-        ),
+        jwk_path: str = typer.Option(None, "--jwk-path", help="Path to JWK private key file"),
         sa_id: str = typer.Option(None, "--sa-id", help="Service Account ID"),
         base_url: str = typer.Option(
             None,
@@ -585,6 +617,11 @@ def create_saml_import_command():
             None,
             "--cherry-pick",
             help="Import only specific entities by entityId (comma-separated)",
+        ),
+        rollback: bool = typer.Option(
+            False,
+            "--rollback",
+            help="Automatically rollback imported items on first failure",
         ),
         realm: str = typer.Option(
             DEFAULT_REALM,
@@ -634,6 +671,10 @@ def create_saml_import_command():
 
             # Load data from file (local or git)
             storage_mode = importer._get_storage_mode()
+            rollback_manager = None
+            if rollback:
+                rollback_manager = RollbackManager("saml", realm)
+                importer.rollback_manager = rollback_manager
 
             if storage_mode == "git":
                 git_manager = importer._setup_git_manager(branch)
@@ -657,8 +698,20 @@ def create_saml_import_command():
                 with open(file, "r") as f:
                     export_data = json.load(f)
 
+            # Initialize rollback baseline
+            if rollback_manager:
+                rollback_manager.create_baseline_snapshot(
+                    token,
+                    api_base_url,
+                    git_manager if storage_mode == "git" else None,
+                    auth_mode=auth_mode,
+                    idm_username=idm_username,
+                    idm_password=idm_password,
+                )
+
             # Extract data section
             data = export_data.get("data", export_data)
+
             # Perform hash validation (local mode only)
             if storage_mode == "local" and not importer.validate_import_hash(
                 export_data, force_import
@@ -675,10 +728,20 @@ def create_saml_import_command():
 
             if success:
                 from trxo.utils.console import success as console_success
-
                 console_success("SAML import completed successfully!")
             else:
                 error("SAML import completed with errors")
+
+                if rollback_manager:
+                    warning("Import failed. Starting rollback...")
+
+                    report = rollback_manager.execute_rollback(
+                        token,
+                        api_base_url,
+                    )
+
+                    importer._print_rollback_report(report)
+
                 raise typer.Exit(1)
 
         except Exception as e:

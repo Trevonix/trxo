@@ -10,6 +10,7 @@ run fails and the user requested automatic rollback.
 from typing import Dict, Any, List, Optional
 import json
 from datetime import datetime
+from xmlrpc import client
 from trxo.utils.console import info, error, warning
 from trxo.utils.git import GitManager
 from trxo.utils.diff.data_fetcher import DataFetcher, get_command_api_endpoint
@@ -26,7 +27,8 @@ class RollbackManager:
         self.imported_items: List[Dict[str, Any]] = []
         self.git_branch: Optional[str] = None
         self.git_manager: Optional[GitManager] = None
-
+        self.raw_baseline_data: Dict[str, Any] = {}
+        self.auth_headers: Dict[str, str] = {}
         # Auth context for rollback
         self.auth_mode: str = "service-account"
         self._idm_username: Optional[str] = None
@@ -53,7 +55,7 @@ class RollbackManager:
             self.auth_mode = auth_params.get("auth_mode", "service-account")
             self._idm_username = auth_params.get("idm_username")
             self._idm_password = auth_params.get("idm_password")
-
+            self.auth_headers = self._build_auth_headers(token, base_url)
             # Get API endpoint for this command
             api_endpoint, _ = get_command_api_endpoint(self.command_name, self.realm)
             if not api_endpoint:
@@ -75,20 +77,35 @@ class RollbackManager:
                 return False
 
             # Normalize to list of items if possible
-            # Normalize to list of items if possible
+           # Normalize fetched data into a list of items
             items = []
 
-            if isinstance(data, dict):
-                if "data" in data:
-                    if isinstance(data["data"], dict) and "result" in data["data"]:
-                        items = data["data"]["result"]
-                    elif isinstance(data["data"], list):
-                        items = data["data"]
-                elif "result" in data:
-                    items = data["result"]
-            elif isinstance(data, list):
-                items = data
+            def flatten_items(obj):
+                """Recursively extract list items from export structures."""
+                if isinstance(obj, list):
+                    return obj
 
+                if isinstance(obj, dict):
+                    # Standard APIs returning result arrays
+                    if "result" in obj and isinstance(obj["result"], list):
+                        return obj["result"]
+
+                    # Export wrapper pattern
+                    if "data" in obj:
+                        return flatten_items(obj["data"])
+
+                    # Handle nested component exports (e.g. saml hosted/remote)
+                    collected = []
+                    for value in obj.values():
+                        if isinstance(value, list):
+                            collected.extend(value)
+
+                    if collected:
+                        return collected
+
+                return []
+
+            items = flatten_items(data)
             # Build mapping of id -> item
             # Build mapping directly from export data (already full config)
 
@@ -105,13 +122,25 @@ class RollbackManager:
 
             else:
                 for itm in items:
-                    item_id = itm.get("_id")
+
+                    # Support multiple identifier types across components
+                    item_id = (
+                        itm.get("_id")
+                        or itm.get("id")
+                        or itm.get("entityId")
+                        or itm.get("name")
+                    )
+
                     if not item_id:
                         continue
 
                     # If collection already returned full config → use it
                     if isinstance(itm, dict) and len(itm.keys()) > 2:
                         mapping[str(item_id)] = itm
+
+                        entity_id = itm.get("entityId")
+                        if entity_id:
+                            mapping[str(entity_id)] = itm
                         continue
 
                     # Otherwise fetch full config by ID
@@ -119,9 +148,11 @@ class RollbackManager:
                         url = self._build_api_url(item_id, base_url)
 
                         headers = {
-                            "Accept-API-Version": "protocol=1.0,resource=1.0",
+                            "Content-Type": "application/json",
+                            "Accept-API-Version": "protocol=2.0,resource=1.0",
                         }
-                        headers.update(self._build_auth_headers(token, url))
+
+                        headers = {**headers, **self._build_auth_headers(token, url)}
 
                         import httpx
 
@@ -135,14 +166,44 @@ class RollbackManager:
 
                     except Exception as e:
                         warning(f"Failed baseline fetch for {item_id}: {e}")
+            # Keep raw data for full-config restores
+            # Store baseline snapshot for rollback usage
+            # Save baseline snapshot used for rollback
+            # Store baseline snapshot used for rollback
             self.baseline_snapshot = mapping
+
+            # If export structure has "data", flatten it for rollback usage
+            if isinstance(self.raw_baseline_data, dict) and "data" in self.raw_baseline_data:
+                flattened = {}
+
+                data_section = self.raw_baseline_data["data"]
+
+                if isinstance(data_section, dict):
+                    for section in data_section.values():
+                        if isinstance(section, list):
+                            for item in section:
+                                item_id = (
+                                    item.get("_id")
+                                    or item.get("id")
+                                    or item.get("entityId")
+                                    or item.get("name")
+                                )
+                                if item_id:
+                                    flattened[str(item_id)] = item
+
+                if flattened:
+                    self.baseline_snapshot.update(flattened)
+            elif self.command_name == "authn":
+                self.raw_baseline_data = mapping.get("authn_settings", mapping)
+
+            else:
+                self.raw_baseline_data = mapping
             info("===== BASELINE SNAPSHOT (FULL CONFIG PER ID) =====")
             for k, v in mapping.items():
                 info(f"\nID: {k}")
                 info(json.dumps(v, indent=2))
             info("===== END BASELINE SNAPSHOT =====")
             # Keep raw data for full-config restores
-            self.raw_baseline_data = mapping
 
             # Persist the snapshot to a branch for auditability if git_manager
             if git_manager:
@@ -160,8 +221,14 @@ class RollbackManager:
                     comp_dir.mkdir(parents=True, exist_ok=True)
                     filename = f"{(self.realm or 'root')}_{component}.json"
                     file_path = comp_dir / filename
+                    if self.command_name == "saml":
+                        baseline_file_data = self.raw_baseline_data
+                    else:
+                        baseline_file_data = {"data": mapping}
+
                     file_path.write_text(
-                        json.dumps(mapping, indent=2), encoding="utf-8"
+                        json.dumps(baseline_file_data, indent=2),
+                        encoding="utf-8"
                     )
                     # Commit and push
                     rel = file_path.relative_to(repo_path)
@@ -205,47 +272,7 @@ class RollbackManager:
         report = {"rolled_back": [], "errors": []}
         info("Initiating rollback of imported items...")
 
-        # Special-case: managed objects are a single config object
-        if self.command_name == "managed":
-            try:
-                info("Restoring full managed objects configuration from baseline...")
-                api_endpoint, _ = get_command_api_endpoint(
-                    self.command_name, self.realm
-                )
-                if not api_endpoint:
-                    raise RuntimeError("Unknown API endpoint for managed restore")
-                from trxo.utils.url import construct_api_url
-
-                url = construct_api_url(base_url, api_endpoint)
-                headers = {
-                    "Content-Type": "application/json",
-                    "Accept-API-Version": "protocol=1.0,resource=1.0",
-                }
-                headers = {**headers, **self._build_auth_headers(token, api_endpoint)}
-                import httpx
-
-                with httpx.Client() as client:
-                    payload = json.dumps(getattr(self, "raw_baseline_data", {}))
-                    resp = client.put(url, headers=headers, data=payload)
-                    if resp.status_code in (200, 201):
-                        info("Managed objects restored from baseline")
-                        report["rolled_back"].append(
-                            {"action": "restored_managed_config"}
-                        )
-                    else:
-                        warning(
-                            f"Failed to restore managed baseline: "
-                            f"{resp.status_code}"
-                        )
-                        report["errors"].append({"error": resp.text})
-                return report
-            except Exception as e:
-                warning(f"Managed restore failed: {e}")
-                report["errors"].append({"error": str(e)})
-                return report
-
-        # If nothing was tracked but a baseline exists, restore full configuration
-        # (handles single-document endpoints like authn, services, etc.)
+        # If nothing was tracked but baseline exists → restore full configuration
         if not self.imported_items and getattr(self, "raw_baseline_data", None):
             try:
                 info("No tracked items found - restoring full baseline configuration...")
@@ -260,7 +287,7 @@ class RollbackManager:
                     "Accept-API-Version": "protocol=2.0,resource=1.0",
                 }
 
-                headers = {**headers, **self._build_auth_headers(token, api_endpoint)}
+                headers = {**headers, **self._build_auth_headers(token, url)}
 
                 import httpx
 
@@ -268,20 +295,23 @@ class RollbackManager:
 
                     baseline_data = self.raw_baseline_data
 
-                    # unwrap mapping like {"authn_settings": {...}}
                     if isinstance(baseline_data, dict) and len(baseline_data) == 1:
                         baseline_data = list(baseline_data.values())[0]
 
-                    # remove export-only attributes
                     if isinstance(baseline_data, dict):
                         baseline_data = {
                             k: v for k, v in baseline_data.items()
                             if k not in {"_id", "_rev", "_type"}
                         }
-
                     payload = json.dumps(baseline_data)
 
                     resp = client.put(url, headers=headers, data=payload)
+                info(f"Rollback response status: {resp.status_code}")
+
+                try:
+                    info(f"Rollback response body: {resp.text}")
+                except Exception:
+                    pass
 
                 if resp.status_code in (200, 201):
                     info("Full configuration restored from baseline")
@@ -296,74 +326,100 @@ class RollbackManager:
                 warning(f"Rollback restore failed: {e}")
                 report["errors"].append({"error": str(e)})
                 return report
-    
-        # Process in reverse order
+
+        # Process tracked items in reverse order
         for record in reversed(self.imported_items):
+
             item_id = record.get("id")
             action = record.get("action")
+
             baseline = self.baseline_snapshot.get(str(item_id))
 
+            if baseline:
+                info("Baseline item found for restore")
+            else:
+                warning(f"No baseline found for {item_id}")
+
             try:
+
+                # ---------------------------
+                # DELETE newly created item
+                # ---------------------------
                 if action == "created":
-                    # Delete the newly created item
+
                     url = self._build_api_url(item_id, base_url)
+                    info(f"Rollback restore URL: {url}")
+
                     headers = {
                         "Content-Type": "application/json",
-                        "Accept-API-Version": "resource=1.0",
+                        "Accept-API-Version": "protocol=2.0,resource=1.0",
                     }
-                    # detect product for headers
-                    headers = {**headers, **(self._build_auth_headers(token, url))}
-                    # Perform delete using httpx directly
+
+                    headers = {**headers, **self._build_auth_headers(token, url)}
+
                     import httpx
 
                     with httpx.Client() as client:
                         resp = client.delete(url, headers=headers)
-                        if resp.status_code in (200, 204):
-                            info(f"Rolled back (deleted): {item_id}")
-                            report["rolled_back"].append(
-                                {"id": item_id, "action": "deleted"}
-                            )
-                        else:
-                            warning(
-                                f"Failed to delete {item_id} during rollback: "
-                                f"{resp.status_code}"
-                            )
-                            report["errors"].append({"id": item_id, "error": resp.text})
 
+                    if resp.status_code in (200, 204):
+                        info(f"Rolled back (deleted): {item_id}")
+                        report["rolled_back"].append({"id": item_id, "action": "deleted"})
+                    else:
+                        warning(
+                            f"Failed to delete {item_id} during rollback: {resp.status_code}"
+                        )
+                        report["errors"].append({"id": item_id, "error": resp.text})
+
+                # ---------------------------
+                # RESTORE updated item
+                # ---------------------------
                 elif action == "updated":
-                    # Restore baseline via PUT
+
                     if not baseline:
                         warning(f"No baseline found for {item_id}; skipping restore")
                         report["errors"].append({"id": item_id, "error": "no_baseline"})
                         continue
 
                     url = self._build_api_url(item_id, base_url)
+                    info(f"Rollback restore URL: {url}")
+
                     headers = {
                         "Content-Type": "application/json",
-                        "Accept-API-Version": "protocol=1.0,resource=1.0",
+                        "Accept-API-Version": "protocol=2.0,resource=1.0",
                     }
-                    headers = {**headers, **(self._build_auth_headers(token, url))}
+
+                    headers = {**headers, **self._build_auth_headers(token, url)}
+
+                    restore_data = {
+                        k: v
+                        for k, v in baseline.items()
+                        if k not in {"_rev", "_type"}
+                    }
+                    payload = json.dumps(restore_data)
+
                     import httpx
 
                     with httpx.Client() as client:
-                        restore_data = {
-                            k: v
-                            for k, v in baseline.items()
-                            if k not in {"_id", "_rev"}
-                        }
-                        payload = json.dumps(restore_data)
-                        resp = client.put(url, headers=headers, data=payload)
-                        if resp.status_code in (200, 201):
-                            info(f"Rolled back (restored): {item_id}")
-                            report["rolled_back"].append(
-                                {"id": item_id, "action": "restored"}
-                            )
+
+                        # Special restore logic for SAML
+                        if self.command_name == "saml":
+
+                            # Restore entity configuration directly
+                            resp = client.put(url, headers=headers, data=payload)
+
                         else:
-                            warning(
-                                f"Failed to restore {item_id} during rollback: "
-                                f"{resp.status_code}"
-                            )
-                            report["errors"].append({"id": item_id, "error": resp.text})
+
+                            resp = client.put(url, headers=headers, data=payload)
+
+                    if resp.status_code in (200, 201):
+                        info(f"Rolled back (restored): {item_id}")
+                        report["rolled_back"].append({"id": item_id, "action": "restored"})
+                    else:
+                        warning(
+                            f"Failed to restore {item_id} during rollback: {resp.status_code}"
+                        )
+                        report["errors"].append({"id": item_id, "error": resp.text})
 
                 else:
                     warning(f"Unknown action '{action}' for {item_id}; skipping")
@@ -379,39 +435,44 @@ class RollbackManager:
         """Helper to construct API endpoint for a given item identifier."""
         try:
             api_endpoint, _ = get_command_api_endpoint(self.command_name, self.realm)
+
             if not api_endpoint:
                 raise RuntimeError("Unknown command API endpoint")
 
-            # If endpoint contains a placeholder like .../{item_id}, append
+            from trxo.utils.url import construct_api_url
+
+            # Special handling for SAML entities
+            if self.command_name == "saml":
+
+                api_endpoint = f"/am/json/realms/root/realms/{self.realm}/realm-config/saml2/hosted/{item_id}"
+
+                return construct_api_url(base_url, api_endpoint)
+
+            # Generic handling for other components
             if api_endpoint.endswith("?_queryFilter=true"):
-                # Many endpoints are list endpoints; attempt to append /{id}
+                # Many endpoints are list endpoints; append /{id}
                 api_endpoint = api_endpoint.replace("?_queryFilter=true", f"/{item_id}")
             elif api_endpoint.endswith("/"):
                 api_endpoint = f"{api_endpoint}{item_id}"
             else:
                 api_endpoint = f"{api_endpoint}/{item_id}"
 
-            from trxo.utils.url import construct_api_url
-
             return construct_api_url(base_url, api_endpoint)
+
         except Exception:
             from trxo.utils.url import construct_api_url
-
             return construct_api_url(base_url, f"/{item_id}")
 
     def _build_auth_headers(self, token: str, url: str) -> Dict[str, str]:
-        """Return headers for given token, aware of product and auth mode."""
-        if self.auth_mode == "onprem":
-            if "/openidm/" in url:
-                if self._idm_username and self._idm_password:
-                    return {
-                        "X-OpenIDM-Username": self._idm_username,
-                        "X-OpenIDM-Password": self._idm_password,
-                    }
-                else:
-                    return {}  # Fallback
-            else:
-                return {"Cookie": f"iPlanetDirectoryPro={token}"}
 
-        # Best-effort: prefer Bearer token
-        return {"Authorization": f"Bearer {token}"}
+        # IDM endpoints
+        if "/openidm/" in url:
+            if self._idm_username and self._idm_password:
+                return {
+                    "X-OpenIDM-Username": self._idm_username,
+                    "X-OpenIDM-Password": self._idm_password,
+                }
+            return {}
+
+        # AM endpoints ALWAYS require session cookie
+        return {"Cookie": f"iPlanetDirectoryPro={token}"}
