@@ -139,7 +139,7 @@ hide:
         <div style="padding: 8px 0;">
           <div class="sib-form-block" style="font-size:16px; text-align:left; font-family:Helvetica, sans-serif; color:#3C4858; background-color:transparent; text-align:left">
             <div class="sib-text-form-block">
-              <p>Please enter your Details.</p>
+              <p>Please enter your details.</p>
             </div>
           </div>
         </div>
@@ -149,13 +149,13 @@ hide:
               <div class="form__label-row ">
                 <label class="entry__label" style="font-weight: 700; text-align:left; font-size:16px; text-align:left; font-weight:700; font-family:Helvetica, sans-serif; color:#3c4858;" for="FIRSTNAME" data-required="*">Enter your First Name</label>
                 <div class="entry__field">
-                  <input class="input " maxlength="200" type="text" id="FIRSTNAME" name="FIRSTNAME" autocomplete="off" placeholder="FIRSTNAME" data-required="true" required />
+                  <input class="input " maxlength="200" type="text" id="FIRSTNAME" name="FIRSTNAME" autocomplete="off" placeholder="first name" data-required="true" required />
                 </div>
               </div>
               <label class="entry__error entry__error--primary" style="font-size:16px; text-align:left; font-family:Helvetica, sans-serif; color:#661d1d; background-color:#ffeded; border-radius:3px; border-color:#ff4949;">
               </label>
               <label class="entry__specification" style="font-size:12px; text-align:left; font-family:Helvetica, sans-serif; color:#8390A4; text-align:left">
-                Please add your First name
+                Please add your first name
               </label>
             </div>
           </div>
@@ -166,13 +166,13 @@ hide:
               <div class="form__label-row ">
                 <label class="entry__label" style="font-weight: 700; text-align:left; font-size:16px; text-align:left; font-weight:700; font-family:Helvetica, sans-serif; color:#3c4858;" for="LASTNAME" data-required="*">Enter your Last Name</label>
                 <div class="entry__field">
-                  <input class="input " maxlength="200" type="text" id="LASTNAME" name="LASTNAME" autocomplete="off" placeholder="LASTNAME" data-required="true" required />
+                  <input class="input " maxlength="200" type="text" id="LASTNAME" name="LASTNAME" autocomplete="off" placeholder="last name" data-required="true" required />
                 </div>
               </div>
               <label class="entry__error entry__error--primary" style="font-size:16px; text-align:left; font-family:Helvetica, sans-serif; color:#661d1d; background-color:#ffeded; border-radius:3px; border-color:#ff4949;">
               </label>
               <label class="entry__specification" style="font-size:12px; text-align:left; font-family:Helvetica, sans-serif; color:#8390A4; text-align:left">
-                Please add your Last name
+                Please add your last name
               </label>
             </div>
           </div>
@@ -184,7 +184,7 @@ hide:
                 <label class="entry__label" 
                   style="font-weight:700; font-size:16px; font-family:Helvetica, sans-serif; color:#3c4858;" 
                   for="EMAIL" data-required="*">
-                  Enter your EMAIL
+                  Enter your Email
                 </label>
          
                 <div class="entry__field">
@@ -205,7 +205,7 @@ hide:
          
               <label class="entry__specification"
                 style="font-size:12px; font-family:Helvetica, sans-serif; color:#8390A4;">
-                Use your work/business email address (personal email domains are blocked)
+                Use your work/business email address (personal email domains are not allowed).
               </label>
             </div>
           </div>
