@@ -715,6 +715,11 @@ def create_managed_import_command():
     """Create the managed objects import command function"""
 
     def import_managed(
+        cherry_pick: str = typer.Option(
+            None,
+            "--cherry-pick",
+            help="Cherry-pick specific managed objects by name (comma-separated)",
+        ),
         file: str = typer.Option(
             None, "--file", help="Path to JSON file containing managed objects"
         ),
@@ -793,6 +798,7 @@ def create_managed_import_command():
             branch=branch,
             diff=diff,
             rollback=rollback,
+            cherry_pick=cherry_pick,
         )
 
     return import_managed

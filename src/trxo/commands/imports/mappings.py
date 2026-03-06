@@ -229,6 +229,7 @@ class MappingsImporter(BaseImporter):
         force_import: bool = False,
         branch: str = None,
         diff: bool = False,
+        cherry_pick: str = None,
         **kwargs,
     ) -> None:
         """Override to handle both single mappings and arrays of mappings"""
@@ -256,6 +257,7 @@ class MappingsImporter(BaseImporter):
                 force_import=force_import,
                 branch=branch,
                 diff=diff,
+                cherry_pick=cherry_pick,
                 **kwargs,
             )
             return
@@ -280,6 +282,7 @@ class MappingsImporter(BaseImporter):
                 force_import=force_import,
                 branch=branch,
                 diff=diff,
+                cherry_pick=cherry_pick,
                 **kwargs,
             )
             return
@@ -306,17 +309,16 @@ class MappingsImporter(BaseImporter):
             data = self._load_mappings_file(file_path)
 
             # Handle different input formats
+            info_msg = ""
             if isinstance(data, dict):
                 if "mappings" in data:
                     # Full sync config with mappings array
                     mappings_to_process = data["mappings"]
-                    info(
-                        f"Processing {len(mappings_to_process)} sync mappings from full config"
-                    )
+                    info_msg = "from full config"
                 elif "name" in data:
                     # Single mapping
                     mappings_to_process = [data]
-                    info("Processing single sync mapping")
+                    info_msg = "single sync mapping"
                 else:
                     error(
                         "Invalid sync mappings format. Expected object with "
@@ -332,18 +334,26 @@ class MappingsImporter(BaseImporter):
                 ):
                     # Single export item containing full config
                     mappings_to_process = data[0]["mappings"]
-                    info(
-                        f"Processing {len(mappings_to_process)} sync mappings from exported config"
-                    )
+                    info_msg = "from exported config"
                 else:
                     # Array of mappings
                     mappings_to_process = data
-                    info(
-                        f"Processing {len(mappings_to_process)} sync mappings from array"
-                    )
+                    info_msg = "from array"
             else:
                 error("Invalid file format. Expected object or array of sync mappings")
                 return
+
+            if cherry_pick:
+                mappings_to_process = self.cherry_pick_filter.apply_filter(
+                    mappings_to_process, cherry_pick
+                )
+                if not mappings_to_process:
+                    return
+
+            if info_msg == "single sync mapping":
+                info("Processing single sync mapping")
+            else:
+                info(f"Processing {len(mappings_to_process)} sync mappings {info_msg}")
 
             # Process each mapping
             success_count = 0
@@ -363,6 +373,11 @@ def create_mappings_import_command():
     """Create the mappings import command function"""
 
     def import_mappings(
+        cherry_pick: str = typer.Option(
+            None,
+            "--cherry-pick",
+            help="Cherry-pick specific sync mappings by name (comma-separated)",
+        ),
         file: str = typer.Option(
             None, "--file", help="Path to JSON file containing sync mappings"
         ),
@@ -435,6 +450,7 @@ def create_mappings_import_command():
             force_import=force_import,
             branch=branch,
             diff=diff,
+            cherry_pick=cherry_pick,
         )
 
     return import_mappings
