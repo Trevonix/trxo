@@ -30,6 +30,21 @@ from trxo.utils.console import error, info, success, warning
 from .base_importer import BaseImporter
 
 
+# Lazy-imported to avoid circular-dependency at module load time
+# (saml.py and themes.py both pull in base_importer which pulls in journeys
+# through the CLI registry).  We import inside methods that need them.
+def _saml_importer(realm: str):
+    from .saml import SamlImporter  # noqa: PLC0415
+
+    return SamlImporter(realm=realm)
+
+
+def _themes_importer():
+    from .themes import ThemesImporter  # noqa: PLC0415
+
+    return ThemesImporter()
+
+
 # ---------------------------------------------------------------------------
 # JourneyImporter
 # ---------------------------------------------------------------------------
@@ -253,9 +268,12 @@ class JourneyImporter(BaseImporter):
 
         1.  Scripts
         2.  Email templates
-        3.  Inner nodes (page-node children first)
-        4.  Root nodes
-        5.  Journeys (trees)
+        3.  SAML2 entities (metadata first, then hosted/remote upsert)
+        4.  SAML2 circles of trust
+        5.  Inner nodes (page-node children first)
+        6.  Root nodes
+        7.  Themes (merged into the living themerealm document)
+        8.  Journeys (trees)
 
         Args:
             data: Enriched export payload (the ``data`` section, not the
@@ -304,7 +322,28 @@ class JourneyImporter(BaseImporter):
                 if not self._import_email_template(name, tmpl_cfg, token, base_url):
                     error_count += 1
 
-        # -- 3. Inner nodes ---------------------------------------------------
+        # -- 3. SAML2 entities ------------------------------------------------
+        saml2_entities: Dict[str, Any] = data.get("saml2Entities", {})
+        if saml2_entities:
+            info(f"Importing {len(saml2_entities)} SAML2 entity(ies)")
+            saml_imp = _saml_importer(self.realm)
+            # Share our auth state so build_auth_headers / make_http_request work
+            saml_imp.token = token
+            for entity_id, entity_entry in saml2_entities.items():
+                if not self._import_saml_entity(
+                    entity_id, entity_entry, saml_imp, token, base_url
+                ):
+                    error_count += 1
+
+        # -- 4. Circles of trust ----------------------------------------------
+        cots: Dict[str, Any] = data.get("saml2CirclesOfTrust", {})
+        if cots:
+            info(f"Importing {len(cots)} circle(s) of trust")
+            for cot_id, cot_cfg in cots.items():
+                if not self._import_circle_of_trust(cot_id, cot_cfg, token, base_url):
+                    error_count += 1
+
+        # -- 5. Inner nodes ---------------------------------------------------
         inner_nodes: Dict[str, Any] = data.get("innerNodes", {})
         if inner_nodes:
             info(f"Importing {len(inner_nodes)} inner node(s)")
@@ -312,7 +351,7 @@ class JourneyImporter(BaseImporter):
                 if not self._import_node(node_id, node_cfg, token, base_url):
                     error_count += 1
 
-        # -- 4. Root nodes ----------------------------------------------------
+        # -- 6. Root nodes ----------------------------------------------------
         nodes: Dict[str, Any] = data.get("nodes", {})
         if nodes:
             info(f"Importing {len(nodes)} root node(s)")
@@ -320,7 +359,14 @@ class JourneyImporter(BaseImporter):
                 if not self._import_node(node_id, node_cfg, token, base_url):
                     error_count += 1
 
-        # -- 5. Journeys (trees) ----------------------------------------------
+        # -- 7. Themes --------------------------------------------------------
+        themes: Dict[str, Any] = data.get("themes", {})
+        if themes:
+            info(f"Importing {len(themes)} theme(s)")
+            if not self._import_themes(themes, token, base_url):
+                error_count += 1
+
+        # -- 8. Journeys (trees) ----------------------------------------------
         trees: Dict[str, Any] = data.get("trees", {})
         if selected_tree_ids:
             trees = {k: v for k, v in trees.items() if k in selected_tree_ids}
@@ -340,7 +386,10 @@ class JourneyImporter(BaseImporter):
                 f"{len(nodes)} root node(s), "
                 f"{len(inner_nodes)} inner node(s), "
                 f"{len(scripts)} script(s), "
-                f"{len(email_templates)} email template(s)"
+                f"{len(email_templates)} email template(s), "
+                f"{len(saml2_entities)} SAML2 entity(ies), "
+                f"{len(cots)} circle(s) of trust, "
+                f"{len(themes)} theme(s)"
             )
         else:
             warning(f"Journey import completed with {error_count} error(s)")
@@ -506,6 +555,98 @@ class JourneyImporter(BaseImporter):
         except Exception as exc:
             error(f"Failed to import node '{node_id}' [{node_type}]: {exc}")
             return False
+
+    def _import_saml_entity(
+        self,
+        entity_id: str,
+        entity_entry: Dict[str, Any],
+        saml_imp: Any,
+        token: str,
+        base_url: str,
+    ) -> bool:
+        """
+        Import one SAML2 entity from the enriched export format.
+
+        The entry format is:
+          { "hosted|remote": <provider_detail>, "metadata": "<xml>" }
+
+        For remote entities the metadata XML is posted first (importEntity
+        action), then the provider config is upserted.  For hosted entities
+        only the provider config upsert is needed.
+        """
+        ok = True
+        metadata_xml: str = entity_entry.get("metadata", "")
+
+        for location in ("hosted", "remote"):
+            provider_cfg = entity_entry.get(location)
+            if not provider_cfg:
+                continue
+
+            # Remote entities: POST metadata first so the entity exists,
+            # then upsert the config.
+            if location == "remote" and metadata_xml:
+                if not saml_imp._post_metadata(
+                    entity_id, metadata_xml, token, base_url
+                ):
+                    self.logger.debug(
+                        f"Metadata POST failed for '{entity_id}'; "
+                        "will still attempt provider config upsert"
+                    )
+                    ok = False
+
+            if not saml_imp._upsert_entity(provider_cfg, location, token, base_url):
+                ok = False
+
+        return ok
+
+    def _import_circle_of_trust(
+        self, cot_id: str, cot_cfg: Dict[str, Any], token: str, base_url: str
+    ) -> bool:
+        """Import one SAML2 circle of trust via PUT."""
+        url = self._construct_api_url(
+            base_url,
+            f"/am/json/realms/root/realms/{self.realm}"
+            f"/realm-config/federation/circlesoftrust/{quote(cot_id)}",
+        )
+        payload_data = {k: v for k, v in cot_cfg.items() if k != "_rev"}
+        headers = {
+            "Content-Type": "application/json",
+            "Accept-API-Version": "protocol=2.1,resource=1.0",
+        }
+        headers = {**headers, **self.build_auth_headers(token)}
+        try:
+            self.make_http_request(url, "PUT", headers, json.dumps(payload_data))
+            self.logger.debug(f"Imported circle of trust: {cot_id}")
+            return True
+        except Exception as exc:
+            error(f"Failed to import circle of trust '{cot_id}': {exc}")
+            return False
+
+    def _import_themes(self, themes: Dict[str, Any], token: str, base_url: str) -> bool:
+        """
+        Merge exported themes into the live themerealm document.
+
+        Delegates to ThemesImporter.update_item which does:
+          GET current themerealm → merge by _id → PUT back with If-Match.
+
+        The ``themes`` dict from the enriched export is keyed by themeId.
+        We convert it to the themerealm ``realm`` structure the ThemesImporter
+        expects: ``{"realm": {realm: [theme1, theme2, ...]}}``.
+        """
+        themes_imp = _themes_importer()
+        # Wire auth so ThemesImporter can call make_http_request
+        themes_imp.token = token
+
+        # IDM base (strip /am if present — same logic used for email templates)
+        idm_base = getattr(self, "_idm_base_url", None) or base_url
+        idm_base = idm_base.rstrip("/")
+        if idm_base.endswith("/am"):
+            idm_base = idm_base[:-3]
+
+        theme_list = list(themes.values())
+        payload = {"realm": {self.realm: theme_list}}
+
+        return themes_imp.update_item(payload, token, idm_base)
 
 
 # ---------------------------------------------------------------------------
