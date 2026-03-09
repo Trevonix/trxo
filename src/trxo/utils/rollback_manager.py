@@ -10,7 +10,6 @@ run fails and the user requested automatic rollback.
 import json
 from datetime import datetime
 from typing import Any, Dict, List, Optional
-from xmlrpc import client
 
 from trxo.constants import DEFAULT_REALM
 from trxo.utils.console import error, info, warning
