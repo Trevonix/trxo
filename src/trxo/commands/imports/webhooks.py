@@ -27,7 +27,7 @@ class WebhooksImporter(BaseImporter):
 
     def get_item_type(self) -> str:
         return "webhooks"
-    
+
     def get_item_id(self, item: Dict[str, Any]) -> str:
         return item.get("_id")
 

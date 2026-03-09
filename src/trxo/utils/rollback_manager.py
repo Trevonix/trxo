@@ -198,11 +198,6 @@ class RollbackManager:
 
             else:
                 self.raw_baseline_data = mapping
-            info("===== BASELINE SNAPSHOT (FULL CONFIG PER ID) =====")
-            for k, v in mapping.items():
-                info(f"\nID: {k}")
-                info(json.dumps(v, indent=2))
-            info("===== END BASELINE SNAPSHOT =====")
             # Keep raw data for full-config restores
 
             # Persist the snapshot to a branch for auditability if git_manager
@@ -306,12 +301,6 @@ class RollbackManager:
                     payload = json.dumps(baseline_data)
 
                     resp = client.put(url, headers=headers, data=payload)
-                info(f"Rollback response status: {resp.status_code}")
-
-                try:
-                    info(f"Rollback response body: {resp.text}")
-                except Exception:
-                    pass
 
                 if resp.status_code in (200, 201):
                     info("Full configuration restored from baseline")
@@ -335,11 +324,6 @@ class RollbackManager:
 
             baseline = self.baseline_snapshot.get(str(item_id))
 
-            if baseline:
-                info("Baseline item found for restore")
-            else:
-                warning(f"No baseline found for {item_id}")
-
             try:
 
                 # ---------------------------
@@ -348,7 +332,6 @@ class RollbackManager:
                 if action == "created":
 
                     url = self._build_api_url(item_id, base_url)
-                    info(f"Rollback restore URL: {url}")
 
                     headers = {
                         "Content-Type": "application/json",
@@ -382,7 +365,6 @@ class RollbackManager:
                         continue
 
                     url = self._build_api_url(item_id, base_url)
-                    info(f"Rollback restore URL: {url}")
 
                     headers = {
                         "Content-Type": "application/json",

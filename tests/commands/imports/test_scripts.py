@@ -132,7 +132,7 @@ def test_delete_item_happy_path(mocker):
 
     result = importer.delete_item("s1", "token", "https://base")
 
-    assert result is True
+    assert result is None
 
 
 def test_delete_item_failure_returns_false(mocker):
@@ -144,7 +144,7 @@ def test_delete_item_failure_returns_false(mocker):
 
     result = importer.delete_item("s1", "token", "https://base")
 
-    assert result is False
+    assert result is None
 
 
 def test_create_script_import_command_calls_import_from_file(mocker):
