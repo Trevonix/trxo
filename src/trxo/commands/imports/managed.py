@@ -8,9 +8,12 @@ Import functionality for PingOne Advanced Identity Cloud managed objects with sm
 """
 
 import json
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 import typer
+
 from trxo.utils.console import error, info, warning
+
 from .base_importer import BaseImporter
 
 
@@ -630,8 +633,8 @@ class ManagedObjectsImporter(BaseImporter):
 
     def _load_managed_objects_file(self, file_path: str) -> Any:
         """Load managed objects file with flexible format support"""
-        import os
         import json
+        import os
 
         # Convert to absolute path if relative
         if not os.path.isabs(file_path):
@@ -712,6 +715,11 @@ def create_managed_import_command():
     """Create the managed objects import command function"""
 
     def import_managed(
+        cherry_pick: str = typer.Option(
+            None,
+            "--cherry-pick",
+            help="Cherry-pick specific managed objects by name (comma-separated)",
+        ),
         file: str = typer.Option(
             None, "--file", help="Path to JSON file containing managed objects"
         ),
@@ -790,6 +798,7 @@ def create_managed_import_command():
             branch=branch,
             diff=diff,
             rollback=rollback,
+            cherry_pick=cherry_pick,
         )
 
     return import_managed

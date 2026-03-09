@@ -1,9 +1,10 @@
 import pytest
 import typer
+
 from trxo.commands.config.auth_handler import (
     normalize_base_url,
-    setup_service_account_auth,
     setup_onprem_auth,
+    setup_service_account_auth,
 )
 
 

@@ -7,21 +7,24 @@ common functionality like file loading, API calls, and progress tracking.
 Refactored to use focused utility modules for better maintainability.
 """
 
-import typer
-from typing import Optional, List, Dict, Any
 from abc import abstractmethod
-from trxo.utils.console import success, error, info, warning
+from typing import Any, Dict, List, Optional
+
+import typer
+
+from trxo.constants import DEFAULT_REALM
+from trxo.utils.console import error, info, success, warning
+from trxo.utils.git import GitManager, setup_git_for_import
 from trxo.utils.hash_manager import (
     HashManager,
     get_command_name_from_item_type,
 )
-from trxo.utils.git import setup_git_for_import, GitManager
-from ..shared.base_command import BaseCommand
+from trxo.utils.imports.cherry_pick_filter import CherryPickFilter
 from trxo.utils.imports.component_mapper import ComponentMapper
 from trxo.utils.imports.file_loader import FileLoader
-from trxo.utils.imports.cherry_pick_filter import CherryPickFilter
 from trxo.utils.imports.sync_handler import SyncHandler
-from trxo.constants import DEFAULT_REALM
+
+from ..shared.base_command import BaseCommand
 
 
 class BaseImporter(BaseCommand):
@@ -284,8 +287,8 @@ class BaseImporter(BaseCommand):
         try:
             # Read raw file content first so hash validation can use
             # the original exported structure (avoids normalization differences)
-            import os
             import json
+            import os
 
             if not os.path.isabs(file_path):
                 file_path_abs = os.path.abspath(file_path)

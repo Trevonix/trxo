@@ -1,5 +1,6 @@
 import pytest
 import typer
+
 from trxo.commands.imports.email_templates import (
     EmailTemplatesImporter,
     create_email_templates_import_command,

@@ -1,9 +1,8 @@
+from unittest.mock import Mock
+
 import pytest
 
 from trxo.commands.export.services import create_services_export_command
-
-
-from unittest.mock import Mock
 
 
 def create_mock_response(json_data=None):

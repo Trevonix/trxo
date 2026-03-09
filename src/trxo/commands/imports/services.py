@@ -10,11 +10,14 @@ Future-ready with flexible realm selection.
 """
 
 import json
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
 import typer
-from trxo.utils.console import error, info, warning
-from .base_importer import BaseImporter
+
 from trxo.constants import DEFAULT_REALM
+from trxo.utils.console import error, info, warning
+
+from .base_importer import BaseImporter
 
 
 class ServicesImporter(BaseImporter):

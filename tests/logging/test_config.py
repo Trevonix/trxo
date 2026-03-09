@@ -4,8 +4,8 @@ from pathlib import Path
 import pytest
 
 from trxo.logging.config import (
-    LogLevel,
     LogConfig,
+    LogLevel,
     get_log_directory,
     get_log_file_path,
 )

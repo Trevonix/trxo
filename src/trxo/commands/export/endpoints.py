@@ -6,6 +6,7 @@ Filters /openidm/config?_queryFilter=true to only include items with _id contain
 """
 
 import typer
+
 from .base_exporter import BaseExporter
 
 

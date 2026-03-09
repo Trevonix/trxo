@@ -8,11 +8,14 @@ Endpoint: /am/json/realms/root/realms/{realm}/realm-config/webhooks/{_id}
 """
 
 import json
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 import typer
-from trxo.utils.console import error, info
-from .base_importer import BaseImporter
+
 from trxo.constants import DEFAULT_REALM
+from trxo.utils.console import error, info
+
+from .base_importer import BaseImporter
 
 
 class WebhooksImporter(BaseImporter):
@@ -68,8 +71,7 @@ class WebhooksImporter(BaseImporter):
 
         except Exception as e:
             error(
-                f"Failed to upsert webhook '{item_id}' in realm "
-                f"'{self.realm}': {e}"
+                f"Failed to upsert webhook '{item_id}' in realm " f"'{self.realm}': {e}"
             )
             return False
 
@@ -78,8 +80,27 @@ def create_webhooks_import_command():
     """Create the webhooks import command function"""
 
     def import_webhooks(
+        realm: str = typer.Option(
+            DEFAULT_REALM,
+            "--realm",
+            help=f"Target realm name (default: {DEFAULT_REALM})",
+        ),
+        cherry_pick: str = typer.Option(
+            None,
+            "--cherry-pick",
+            help="Cherry-pick specific webhooks by name (comma-separated)",
+        ),
+        diff: bool = typer.Option(
+            False, "--diff", help="Show differences before import"
+        ),
         file: str = typer.Option(
             None, "--file", help="Path to JSON file containing webhooks"
+        ),
+        force_import: bool = typer.Option(
+            False, "--force-import", "-f", help="Skip hash validation and force import"
+        ),
+        branch: str = typer.Option(
+            None, "--branch", help="Git branch to import from (Git mode only)"
         ),
         jwk_path: str = typer.Option(
             None, "--jwk-path", help="Path to JWK private key file"
@@ -118,20 +139,6 @@ def create_webhooks_import_command():
         ),
         idm_password: str = typer.Option(
             None, "--idm-password", help="On-Prem IDM password", hide_input=True
-        ),
-        force_import: bool = typer.Option(
-            False, "--force-import", "-f", help="Skip hash validation and force import"
-        ),
-        diff: bool = typer.Option(
-            False, "--diff", help="Show differences before import"
-        ),
-        branch: str = typer.Option(
-            None, "--branch", help="Git branch to import from (Git mode only)"
-        ),
-        realm: str = typer.Option(
-            DEFAULT_REALM,
-            "--realm",
-            help=f"Target realm name (default: {DEFAULT_REALM})",
         ),
         rollback: bool = typer.Option(
             False,

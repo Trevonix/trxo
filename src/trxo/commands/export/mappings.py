@@ -6,6 +6,7 @@ Exports from /openidm/config/sync endpoint.
 """
 
 import typer
+
 from .base_exporter import BaseExporter
 
 

@@ -6,8 +6,10 @@ _queryFilter=true
 """
 
 import typer
-from .base_exporter import BaseExporter
+
 from trxo.constants import DEFAULT_REALM
+
+from .base_exporter import BaseExporter
 
 
 def create_webhooks_export_command():

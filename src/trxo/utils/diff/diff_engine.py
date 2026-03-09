@@ -5,14 +5,15 @@ Efficient comparison of nested data structures using deepdiff
 for configurations.
 """
 
-from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any, Dict, List, Optional
+
 from deepdiff import DeepDiff
-from trxo.utils.console import error
-from trxo.utils.console import info
-from trxo.commands.export.services import ServicesExporter
+
 from trxo.commands.export.saml import SamlExporter
+from trxo.commands.export.services import ServicesExporter
+from trxo.utils.console import error, info
 
 
 class ChangeType(Enum):

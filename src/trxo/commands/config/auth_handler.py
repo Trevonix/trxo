@@ -5,21 +5,24 @@ This module handles the setup of different authentication modes
 including service account and on-premises authentication.
 """
 
-import os
 import getpass
+import os
 from typing import Dict, Optional
 from urllib.parse import urlparse
+
 import typer
+
 from trxo.auth.service_account import ServiceAccountAuth
-from trxo.utils.console import error, success, info
+from trxo.utils.console import error, info, success
+
 from .settings import get_credential_value, process_regions_value
 from .validation import (
-    validate_jwk_file,
     store_jwk_in_keyring,
     validate_authentication,
     validate_git_setup,
-    validate_onprem_authentication,
     validate_idm_authentication,
+    validate_jwk_file,
+    validate_onprem_authentication,
 )
 
 # Token endpoint to get access token

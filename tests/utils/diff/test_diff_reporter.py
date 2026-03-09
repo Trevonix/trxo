@@ -1,6 +1,7 @@
 from pathlib import Path
+
+from trxo.utils.diff.diff_engine import ChangeType, DiffResult
 from trxo.utils.diff.diff_reporter import DiffReporter
-from trxo.utils.diff.diff_engine import DiffResult, ChangeType
 
 
 class FakeItem:

@@ -5,9 +5,11 @@ Handles table rendering for different data structures.
 """
 
 import json
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
+
 from rich.table import Table
-from trxo.utils.console import console, info, error
+
+from trxo.utils.console import console, error, info
 
 
 class ViewRenderer:

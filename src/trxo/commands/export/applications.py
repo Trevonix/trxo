@@ -8,8 +8,10 @@ only include items with _id containing "application/".
 """
 
 import typer
-from .base_exporter import BaseExporter
+
 from trxo.constants import DEFAULT_REALM
+
+from .base_exporter import BaseExporter
 
 
 def create_applications_export_command():

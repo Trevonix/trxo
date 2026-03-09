@@ -5,12 +5,13 @@ This module provides centralized hash management for export/import operations,
 ensuring data integrity through checksum verification.
 """
 
-import json
 import hashlib
+import json
 from datetime import datetime, timezone
-from typing import Dict, Any, List, Optional
-from trxo.utils.console import success, error, warning
+from typing import Any, Dict, List, Optional
+
 from trxo.constants import DEFAULT_REALM
+from trxo.utils.console import error, success, warning
 
 
 class HashManager:
@@ -310,6 +311,7 @@ def get_command_name_from_item_type(item_type: str) -> str:
         "email templates": "email_templates",
         "custom endpoints": "endpoints",
         "connectors": "connectors",
+        "IDM connectors": "connectors",
         "applications": "applications",
         "Privileges": "privileges",
         "webhooks": "webhooks",

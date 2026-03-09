@@ -5,11 +5,14 @@ This module provides import functionality for PingOne Advanced Identity Cloud En
 Secrets and Variables.
 """
 
-import json
 import base64
-from typing import List, Dict, Any
+import json
+from typing import Any, Dict, List
+
 import typer
+
 from trxo.utils.console import console, error, info, warning
+
 from .base_importer import BaseImporter
 
 
@@ -196,6 +199,11 @@ def create_esv_commands():
     """Create ESV import command functions"""
 
     def import_esv_variables(
+        cherry_pick: str = typer.Option(
+            None,
+            "--cherry-pick",
+            help="Cherry-pick specific variables by id (comma-separated)",
+        ),
         file: str = typer.Option(
             None,
             "--file",
@@ -273,9 +281,15 @@ def create_esv_commands():
             branch=branch,
             diff=diff,
             rollback=rollback,
+            cherry_pick=cherry_pick,
         )
 
     def import_esv_secrets(
+        cherry_pick: str = typer.Option(
+            None,
+            "--cherry-pick",
+            help="Cherry-pick specific secrets by id (comma-separated)",
+        ),
         file: str = typer.Option(
             None, "--file", help="Path to JSON file containing Environment Secrets data"
         ),
@@ -351,6 +365,7 @@ def create_esv_commands():
             branch=branch,
             diff=diff,
             rollback=rollback,
+            cherry_pick=cherry_pick,
         )
 
     return import_esv_variables, import_esv_secrets

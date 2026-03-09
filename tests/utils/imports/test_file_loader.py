@@ -1,8 +1,9 @@
 import json
 import os
-import pytest
 from pathlib import Path
 from unittest.mock import MagicMock
+
+import pytest
 
 from trxo.utils.imports.file_loader import FileLoader
 

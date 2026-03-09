@@ -8,9 +8,12 @@ Import functionality for PingIDM Privileges.
 """
 
 import json
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 import typer
+
 from trxo.utils.console import error, info
+
 from .base_importer import BaseImporter
 
 
@@ -60,8 +63,22 @@ def create_privileges_import_command():
     """Create the Privileges import command function"""
 
     def import_privileges(
+        cherry_pick: str = typer.Option(
+            None,
+            "--cherry-pick",
+            help="Cherry-pick specific privileges by name (comma-separated)",
+        ),
+        diff: bool = typer.Option(
+            False, "--diff", help="Show differences before import"
+        ),
         file: str = typer.Option(
             None, "--file", help="Path to JSON file containing Privileges"
+        ),
+        force_import: bool = typer.Option(
+            False, "--force-import", "-f", help="Skip hash validation and force import"
+        ),
+        branch: str = typer.Option(
+            None, "--branch", help="Git branch to import from (Git mode only)"
         ),
         jwk_path: str = typer.Option(
             None, "--jwk-path", help="Path to JWK private key file"
@@ -99,15 +116,6 @@ def create_privileges_import_command():
         idm_password: str = typer.Option(
             None, "--idm-password", help="On-Prem IDM password", hide_input=True
         ),
-        force_import: bool = typer.Option(
-            False, "--force-import", "-f", help="Skip hash validation and force import"
-        ),
-        diff: bool = typer.Option(
-            False, "--diff", help="Show differences before import"
-        ),
-        branch: str = typer.Option(
-            None, "--branch", help="Git branch to import from (Git mode only)"
-        ),
     ):
         """Import Privileges from JSON file (local mode) or Git repository (Git mode)"""
         importer = PrivilegesImporter()
@@ -129,6 +137,7 @@ def create_privileges_import_command():
             force_import=force_import,
             branch=branch,
             diff=diff,
+            cherry_pick=cherry_pick,
         )
 
     return import_privileges

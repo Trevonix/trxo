@@ -1,11 +1,12 @@
 import json
 import os
 import platform
-import pytest
 from pathlib import Path
 from unittest.mock import MagicMock
 
-from trxo.utils.config_store import ConfigStore, SERVICE_NAME
+import pytest
+
+from trxo.utils.config_store import SERVICE_NAME, ConfigStore
 
 
 @pytest.fixture

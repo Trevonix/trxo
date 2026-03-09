@@ -4,7 +4,8 @@ Cherry-pick filter for import operations.
 Handles filtering items based on cherry-pick IDs.
 """
 
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 from trxo.utils.console import error, info
 
 

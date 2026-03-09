@@ -5,16 +5,18 @@ This module handles validation of authentication credentials, JWK files,
 and git setup.
 """
 
-import os
-import json
 import hashlib
-from typing import Tuple, Optional
+import json
+import os
+from typing import Optional, Tuple
+
 import typer
-from trxo.auth.service_account import ServiceAccountAuth
+
 from trxo.auth.on_premise import OnPremAuth
-from trxo.utils.console import error, success, info
-from trxo.utils.git import validate_and_setup_git_repo
+from trxo.auth.service_account import ServiceAccountAuth
 from trxo.utils.config_store import ConfigStore
+from trxo.utils.console import error, info, success
+from trxo.utils.git import validate_and_setup_git_repo
 
 
 def validate_authentication(auth: ServiceAccountAuth) -> bool:

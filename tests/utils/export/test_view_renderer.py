@@ -1,5 +1,6 @@
-from trxo.utils.export.view_renderer import ViewRenderer
 from rich.table import Table
+
+from trxo.utils.export.view_renderer import ViewRenderer
 
 
 def test_is_single_config_object_with_id_and_rev():

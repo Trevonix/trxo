@@ -1,6 +1,8 @@
 import logging
+
 import pytest
-from trxo.logging.formatters import TRxOFormatter, APICallFormatter, MultiplexFormatter
+
+from trxo.logging.formatters import APICallFormatter, MultiplexFormatter, TRxOFormatter
 
 
 def test_trxo_formatter_basic_format():

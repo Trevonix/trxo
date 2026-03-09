@@ -5,8 +5,10 @@ This module provides export functionality for PingOne Advanced Identity Cloud Pr
 Filters /openidm/config?_queryFilter=true to only include items with _id containing "privilege/".
 """
 
+from typing import Any, Dict
+
 import typer
-from typing import Dict, Any
+
 from .base_exporter import BaseExporter
 
 
