@@ -29,7 +29,10 @@ class WebhooksImporter(BaseImporter):
         return ["_id"]
 
     def get_item_type(self) -> str:
-        return f"webhooks ({self.realm})"
+        return "webhooks"
+
+    def get_item_id(self, item: Dict[str, Any]) -> str:
+        return item.get("_id")
 
     def get_api_endpoint(self, item_id: str, base_url: str) -> str:
         return self._construct_api_url(
@@ -39,28 +42,33 @@ class WebhooksImporter(BaseImporter):
         )
 
     def update_item(self, item_data: Dict[str, Any], token: str, base_url: str) -> bool:
-        """Upsert webhook via PUT after stripping _rev"""
         item_id = item_data.get("_id")
         if not item_id:
             error("Webhook missing '_id'; required for upsert")
             return False
 
-        # Make a copy and remove _rev if present
         payload_obj = dict(item_data)
         payload_obj.pop("_rev", None)
         payload = json.dumps(payload_obj)
 
         url = self.get_api_endpoint(item_id, base_url)
+
         headers = {
             "Content-Type": "application/json",
-            "Accept-API-Version": "protocol=1.0,resource=1.0",
+            "Accept-API-Version": "protocol=2.0,resource=1.0",
         }
         headers = {**headers, **self.build_auth_headers(token)}
 
         try:
-            self.make_http_request(url, "PUT", headers, payload)
-            info(f"Upserted webhook ({self.realm}): {item_id}")
+            response = self.make_http_request(url, "PUT", headers, payload)
+
+            if response.status_code == 201:
+                info(f"Created webhook ({self.realm}): {item_id}")
+            else:
+                info(f"Updated webhook ({self.realm}): {item_id}")
+
             return True
+
         except Exception as e:
             error(
                 f"Failed to upsert webhook '{item_id}' in realm " f"'{self.realm}': {e}"
@@ -132,6 +140,11 @@ def create_webhooks_import_command():
         idm_password: str = typer.Option(
             None, "--idm-password", help="On-Prem IDM password", hide_input=True
         ),
+        rollback: bool = typer.Option(
+            False,
+            "--rollback",
+            help="Automatically rollback imported webhooks on first failure",
+        ),
     ):
         """Import webhooks from JSON file to specified realm"""
         importer = WebhooksImporter(realm=realm)
@@ -153,7 +166,7 @@ def create_webhooks_import_command():
             force_import=force_import,
             branch=branch,
             diff=diff,
-            cherry_pick=cherry_pick,
+            rollback=rollback,
         )
 
     return import_webhooks

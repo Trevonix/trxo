@@ -192,42 +192,54 @@ class BaseImporter(BaseCommand):
         self.failed_updates = 0
 
         for item in items:
-            # Determine item identifier
             item_id = self._get_item_identifier(item)
 
-            action = "updated"
             baseline_item = None
-            if rollback_manager and item_id:
+            action = "created"
+
+            if (
+                rollback_manager
+                and item_id
+                and str(item_id) in rollback_manager.baseline_snapshot
+            ):
                 baseline_item = rollback_manager.baseline_snapshot.get(str(item_id))
-                action = "updated" if baseline_item else "created"
+                action = "updated"
 
             try:
                 if self.update_item(item, token, base_url):
                     self.successful_updates += 1
-                    # Track for rollback
-                    if rollback_manager and item_id:
+
+                    # Use entityId for SAML items if present
+                    track_id = self._get_item_identifier(item)
+
+                    if rollback_manager and track_id:
                         rollback_manager.track_import(
-                            str(item_id), action, baseline_item
+                            str(track_id), action, baseline_item
                         )
                 else:
                     self.failed_updates += 1
-                    # On failure, if rollback requested, execute rollback ONCE and exit
+
+                    # On failure trigger rollback if requested
                     if rollback_on_failure and rollback_manager:
                         self._execute_rollback_and_exit(
                             rollback_manager, token, base_url, item_id
                         )
+
             except typer.Exit:
-                # Re-raise Exit exceptions without catching them
                 raise
+
             except Exception as e:
                 self.failed_updates += 1
+
                 if rollback_on_failure and rollback_manager:
                     info(
                         f"Exception during import of "
                         f"{item_id or '<unknown>'}: {e} - executing rollback"
                     )
+
                     report = rollback_manager.execute_rollback(token, base_url)
                     self._print_rollback_report(report)
+
                     raise typer.Exit(1)
 
     # ==================== Private Helper Methods ====================
@@ -487,10 +499,25 @@ class BaseImporter(BaseCommand):
         raise typer.Exit(1)
 
     def _get_item_identifier(self, item: Dict[str, Any]) -> Optional[str]:
-        """Get item identifier from item data"""
-        if isinstance(item, dict):
-            return item.get("_id") or item.get("id") or item.get("name")
-        return None
+        if not isinstance(item, dict):
+            return None
+
+        # Allow importer to define its own identifier
+        if hasattr(self, "get_item_id"):
+            custom_id = self.get_item_id(item)
+            if custom_id:
+                return custom_id
+
+        if item.get("_id"):
+            return item.get("_id")
+
+        type_info = item.get("_type", {})
+        type_id = type_info.get("_id")
+
+        if type_id:
+            return type_id
+
+        return item.get("id") or item.get("name")
 
     def _perform_diff_analysis(
         self,

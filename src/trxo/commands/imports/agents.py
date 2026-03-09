@@ -32,38 +32,87 @@ class AgentsImporter(BaseImporter):
         return []
 
     def get_item_type(self) -> str:
-        return f"{self.agent_type} agents"
+        if self.agent_type == "WebAgent":
+            return "agents_web"
+        elif self.agent_type == "J2EEAgent":
+            return "agents_java"
+        elif self.agent_type == "IdentityGatewayAgent":
+            return "agents_gateway"
+
+        return "agents"
 
     def get_api_endpoint(self, item_id: str, base_url: str) -> str:
-        """Return the full endpoint for a specific agent id."""
-        base_path = AGENTS_BASE.format(realm=self.realm)
-        base = self._construct_api_url(base_url, f"{base_path}/{self.agent_type}")
-        return f"{base}/{item_id}"
+        return self._construct_api_url(
+            base_url,
+            f"/am/json/realms/root/realms/{self.realm}/realm-config/agents/{self.agent_type}/{item_id}",
+        )
 
     def _build_payload(self, item_data: Dict[str, Any]) -> str:
-        # Remove _rev only, keep all other fields as-is (including _id)
-        filtered = {k: v for k, v in item_data.items() if k != "_rev"}
+
+        forbidden_fields = {
+            "_rev",
+            "_type",
+            "repositoryLocation",
+            "disableJwtAudit",
+            "jwtAuditWhitelist",
+            "secretLabelIdentifier",
+        }
+
+        def clean(data):
+
+            if isinstance(data, dict):
+                cleaned = {}
+
+                for k, v in data.items():
+
+                    if k in forbidden_fields:
+                        continue
+
+                    # remove null / empty values
+                    if v is None or v == [] or v == {}:
+                        continue
+
+                    cleaned_value = clean(v)
+
+                    if cleaned_value not in (None, "", [], {}):
+                        cleaned[k] = cleaned_value
+
+                return cleaned
+
+            if isinstance(data, list):
+                cleaned_list = [clean(v) for v in data if v not in (None, [], {})]
+                return [v for v in cleaned_list if v not in (None, "", [], {})]
+
+            return data
+
+        filtered = clean(item_data)
+
         return json.dumps(filtered)
 
     def update_item(self, item_data: Dict[str, Any], token: str, base_url: str) -> bool:
-        """Upsert agent with PUT semantics only."""
+
         item_id = item_data.get("_id")
+
         if not item_id:
-            error("Agent missing '_id'; required for upsert (PUT)")
+            error("Agent missing '_id'; required for upsert")
             return False
 
-        url = self.get_api_endpoint(item_id, base_url)
+        update_url = self.get_api_endpoint(item_id, base_url)
+
         headers = {
             "Content-Type": "application/json",
-            "Accept-API-Version": "protocol=1.0,resource=1.0",
+            "Accept-API-Version": "protocol=2.0,resource=1.0",
         }
         headers = {**headers, **self.build_auth_headers(token)}
+
         payload = self._build_payload(item_data)
 
         try:
-            self.make_http_request(url, "PUT", headers, payload)
+            self.make_http_request(update_url, "PUT", headers, payload)
+
             info(f"Upserted {self.agent_type} agent: {item_id}")
             return True
+
         except Exception as e:
             error(f"Failed to upsert {self.agent_type} agent '{item_id}' : {e}")
             return False
@@ -134,6 +183,11 @@ def create_agents_import_command():
         branch: str = typer.Option(
             None, "--branch", help="Git branch to import from (Git mode only)"
         ),
+        rollback: bool = typer.Option(
+            False,
+            "--rollback",
+            help="Automatically rollback imported agents on first failure",
+        ),
     ):
         importer = AgentsImporter("IdentityGatewayAgent", realm=realm)
         importer.import_from_file(
@@ -155,6 +209,7 @@ def create_agents_import_command():
             branch=branch,
             cherry_pick=cherry_pick,
             diff=diff,
+            rollback=rollback,
         )
 
     def import_java_agents(
@@ -217,6 +272,11 @@ def create_agents_import_command():
         branch: str = typer.Option(
             None, "--branch", help="Git branch to import from (Git mode only)"
         ),
+        rollback: bool = typer.Option(
+            False,
+            "--rollback",
+            help="Automatically rollback imported agents on first failure",
+        ),
     ):
         importer = AgentsImporter("J2EEAgent", realm=realm)
         importer.import_from_file(
@@ -238,6 +298,7 @@ def create_agents_import_command():
             branch=branch,
             cherry_pick=cherry_pick,
             diff=diff,
+            rollback=rollback,
         )
 
     def import_web_agents(
@@ -300,6 +361,11 @@ def create_agents_import_command():
         branch: str = typer.Option(
             None, "--branch", help="Git branch to import from (Git mode only)"
         ),
+        rollback: bool = typer.Option(
+            False,
+            "--rollback",
+            help="Automatically rollback imported agents on first failure",
+        ),
     ):
         importer = AgentsImporter("WebAgent", realm=realm)
         importer.import_from_file(
@@ -321,6 +387,7 @@ def create_agents_import_command():
             branch=branch,
             diff=diff,
             cherry_pick=cherry_pick,
+            rollback=rollback,
         )
 
     return (

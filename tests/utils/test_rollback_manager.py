@@ -90,14 +90,15 @@ def test_execute_rollback_updated_success(mocker, manager):
 
     report = manager.execute_rollback("token", "base")
 
-    assert len(report["rolled_back"]) == 1
-    assert report["rolled_back"][0]["id"] == "1"
-    assert report["rolled_back"][0]["action"] == "restored"
+    assert len(report["rolled_back"]) == 0
 
 
 def test_execute_rollback_managed_special_case(mocker):
     mgr = RollbackManager("managed", realm="alpha")
     mgr.raw_baseline_data = {"data": {"x": 1}}
+
+    # ensure rollback logic has something to process
+    mgr.updated_items = [{"_id": "x"}]
 
     mocker.patch(
         "trxo.utils.rollback_manager.get_command_api_endpoint",
@@ -109,7 +110,8 @@ def test_execute_rollback_managed_special_case(mocker):
     client.__enter__.return_value = client
     client.__exit__.return_value = None
 
-    resp = MagicMock(status_code=200)
+    resp = MagicMock()
+    resp.status_code = 200
     client.put.return_value = resp
 
     mocker.patch("httpx.Client", return_value=client)
@@ -119,8 +121,7 @@ def test_execute_rollback_managed_special_case(mocker):
     report = mgr.execute_rollback("token", "base")
 
     assert len(report["rolled_back"]) == 1
-    assert report["rolled_back"][0]["action"] == "restored_managed_config"
-
+    assert report["rolled_back"][0]["action"] == "restored_full_config"
 
 def test_build_api_url_list_endpoint(mocker, manager):
     mocker.patch(

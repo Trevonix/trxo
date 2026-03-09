@@ -13,7 +13,7 @@ def test_authn_importer_required_fields():
 
 def test_authn_importer_item_type():
     importer = AuthnImporter()
-    assert importer.get_item_type() == "authentication settings"
+    assert importer.get_item_type() == "authn"
 
 
 def test_authn_importer_api_endpoint(mocker):
@@ -32,13 +32,21 @@ def test_authn_importer_update_item_success(mocker):
     mocker.patch.object(
         importer, "build_auth_headers", return_value={"Authorization": "Bearer t"}
     )
-    mocker.patch.object(importer, "make_http_request")
+
+    # create mock response with status_code
+    mock_response = mocker.Mock()
+    mock_response.status_code = 200
+
+    mock_request = mocker.patch.object(
+        importer, "make_http_request", return_value=mock_response
+    )
+
     mocker.patch("trxo.commands.imports.authn.info")
 
     result = importer.update_item({"a": 1, "_rev": "x"}, "t", "http://base")
 
     assert result is True
-    importer.make_http_request.assert_called_once()
+    mock_request.assert_called_once()
 
 
 def test_authn_importer_update_item_failure(mocker):

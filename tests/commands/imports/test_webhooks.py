@@ -15,7 +15,7 @@ def test_get_required_fields():
 
 def test_get_item_type():
     importer = WebhooksImporter(realm="alpha")
-    assert importer.get_item_type() == "webhooks (alpha)"
+    assert importer.get_item_type() == "webhooks"
 
 
 def test_get_api_endpoint():

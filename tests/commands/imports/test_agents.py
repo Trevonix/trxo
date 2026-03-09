@@ -22,7 +22,7 @@ def importer(mocker):
 
 def test_agents_importer_getters(importer):
     assert importer.get_required_fields() == []
-    assert importer.get_item_type() == "IdentityGatewayAgent agents"
+    assert importer.get_item_type() == "agents_gateway"
 
 
 def test_agents_importer_get_api_endpoint(importer):
