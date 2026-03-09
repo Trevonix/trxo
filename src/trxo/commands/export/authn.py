@@ -6,8 +6,10 @@ Exports realm authentication settings from realm:
 """
 
 import typer
-from .base_exporter import BaseExporter
+
 from trxo.constants import DEFAULT_REALM
+
+from .base_exporter import BaseExporter
 
 
 def create_authn_export_command():

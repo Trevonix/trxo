@@ -1,6 +1,8 @@
 import json
+
 import pytest
 from click.exceptions import Exit
+
 from trxo.commands.imports.oauth import OAuthImporter, create_oauth_import_command
 from trxo.constants import DEFAULT_REALM
 

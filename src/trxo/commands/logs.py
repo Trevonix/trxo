@@ -5,15 +5,17 @@ This module provides commands for viewing, configuring, and managing
 TRXO application logs.
 """
 
-import typer
 from typing import Optional
+
+import typer
 from rich.console import Console
-from rich.table import Table
 from rich.syntax import Syntax
-from trxo.logging import get_logger, setup_logging
-from trxo.logging.config import LogConfig, get_log_file_path, get_log_directory
-from trxo.utils.console import error, info, warning
+from rich.table import Table
+
 from trxo.constants import LOG_APP_NAME, LOG_LINES_TO_SHOW
+from trxo.logging import get_logger, setup_logging
+from trxo.logging.config import LogConfig, get_log_directory, get_log_file_path
+from trxo.utils.console import error, info, warning
 
 app = typer.Typer(help="Manage TRXO logs")
 console = Console()

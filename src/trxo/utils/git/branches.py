@@ -4,9 +4,11 @@ Git branch management (ensure branch, sync check).
 
 import os
 from contextlib import redirect_stderr
-from git import Repo, GitCommandError
-from trxo.utils.console import info
+
+from git import GitCommandError, Repo
+
 from trxo.logging import get_logger
+from trxo.utils.console import info
 from trxo.utils.git.common import extract_branch_name_from_ref
 from trxo.utils.git.operations import validate_clean_state_for_operation
 

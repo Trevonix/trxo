@@ -8,7 +8,7 @@ and integration with the existing console output system with daily rotation.
 import logging
 import logging.handlers
 import sys
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 from .config import LogConfig, LogLevel, get_log_file_path
 from .formatters import TRxOFormatter, APICallFormatter, MultiplexFormatter
@@ -48,8 +48,9 @@ def setup_logging(
 
             # Try to read log level from user config as an override
             try:
-                from trxo.utils.config_store import ConfigStore
                 import json
+
+                from trxo.utils.config_store import ConfigStore
 
                 config_store = ConfigStore()
                 global_settings_file = config_store.base_dir / "settings.json"
@@ -209,8 +210,9 @@ def log_transaction(
     extra = {"transaction_operation": operation}
 
     if details:
-        from .utils import sanitize_data
         from trxo.constants import SENSITIVE_KEYS
+
+        from .utils import sanitize_data
 
         sanitized_details = sanitize_data(details, SENSITIVE_KEYS)
         extra["transaction_details"] = sanitized_details
@@ -246,8 +248,9 @@ def log_authentication_event(
     extra = {"auth_type": auth_type, "auth_success": success}
 
     if details:
-        from .utils import sanitize_data
         from trxo.constants import SENSITIVE_KEYS
+
+        from .utils import sanitize_data
 
         sanitized_details = sanitize_data(details, SENSITIVE_KEYS)
         extra["auth_details"] = sanitized_details

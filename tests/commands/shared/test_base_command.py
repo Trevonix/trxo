@@ -1,7 +1,8 @@
 import json
+
+import httpx
 import pytest
 import typer
-import httpx
 
 from trxo.commands.shared.base_command import BaseCommand
 

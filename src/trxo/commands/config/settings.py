@@ -4,9 +4,11 @@ User settings and credential management.
 This module handles user input, credential collection, and configuration display.
 """
 
-from typing import Optional, Dict
 from pathlib import Path
+from typing import Dict, Optional
+
 from rich.prompt import Prompt
+
 from trxo.utils.console import display_panel, warning
 
 

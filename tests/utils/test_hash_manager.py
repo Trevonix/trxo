@@ -1,7 +1,8 @@
 import json
-import pytest
 from pathlib import Path
 from unittest.mock import MagicMock
+
+import pytest
 
 from trxo.utils.hash_manager import HashManager, get_command_name_from_item_type
 

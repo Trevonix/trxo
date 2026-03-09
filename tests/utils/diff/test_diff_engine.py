@@ -1,5 +1,6 @@
 import pytest
-from trxo.utils.diff.diff_engine import DiffEngine, ChangeType
+
+from trxo.utils.diff.diff_engine import ChangeType, DiffEngine
 
 
 def _mock_insights(mocker):

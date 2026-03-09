@@ -1,10 +1,12 @@
 import json
+
 import pytest
 import typer
+
 from trxo.commands.imports.agents import (
     AgentsImporter,
-    create_agents_import_command,
     create_agents_callback,
+    create_agents_import_command,
 )
 
 

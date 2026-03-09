@@ -5,11 +5,14 @@ Imports authentication settings to realm using PUT.
 """
 
 import json
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 import typer
-from trxo.utils.console import error, info
-from .base_importer import BaseImporter
+
 from trxo.constants import DEFAULT_REALM
+from trxo.utils.console import error, info
+
+from .base_importer import BaseImporter
 
 
 class AuthnImporter(BaseImporter):

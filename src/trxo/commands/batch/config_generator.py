@@ -4,8 +4,10 @@ Configuration generator for batch operations.
 Generates template configuration files for batch import/export.
 """
 
-import typer
 import json
+
+import typer
+
 from trxo.utils.console import info, success
 
 

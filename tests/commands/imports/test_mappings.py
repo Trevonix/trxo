@@ -1,6 +1,6 @@
 import json
-import tempfile
 import os
+import tempfile
 
 from trxo.commands.imports.mappings import (
     MappingsImporter,

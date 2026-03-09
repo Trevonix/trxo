@@ -1,13 +1,14 @@
-import pytest
 from unittest.mock import MagicMock
 
+import pytest
+
 from trxo.utils.git.branches import (
-    get_default_branch,
-    check_branch_sync_status,
-    validate_branch_sync_for_operation,
-    ensure_branch,
-    list_branches,
     branch_exists,
+    check_branch_sync_status,
+    ensure_branch,
+    get_default_branch,
+    list_branches,
+    validate_branch_sync_for_operation,
 )
 
 

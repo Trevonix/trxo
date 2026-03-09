@@ -1,15 +1,16 @@
 import json
-import pytest
 from types import SimpleNamespace
+
+import pytest
 import typer
 
 from trxo.commands.batch.batch_import import (
-    create_batch_import_command,
-    _get_storage_mode,
-    _load_config_file_imports,
+    _extract_version_number,
     _find_file_for_command,
     _get_search_patterns,
-    _extract_version_number,
+    _get_storage_mode,
+    _load_config_file_imports,
+    create_batch_import_command,
 )
 
 

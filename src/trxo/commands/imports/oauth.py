@@ -6,12 +6,15 @@ clients with script dependencies.
 """
 
 import json
-from typing import List, Dict, Any, Optional
-import typer
-from trxo.utils.console import error, info, warning
-from .base_importer import BaseImporter
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import typer
+
 from trxo.constants import DEFAULT_REALM
+from trxo.utils.console import error, info, warning
+
+from .base_importer import BaseImporter
 from .scripts import ScriptImporter
 
 

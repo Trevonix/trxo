@@ -4,7 +4,9 @@ Git operations (commit, push, status, diff).
 
 import os
 from contextlib import redirect_stderr
-from git import Repo, GitCommandError
+
+from git import GitCommandError, Repo
+
 from trxo.logging import get_logger
 
 logger = get_logger("trxo.utils.git.operations")

@@ -8,10 +8,11 @@ Payload fields supported: name, active, parentPath, aliases
 """
 
 import json
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
 import typer
+
 from trxo.utils.console import error, info
-from .base_importer import BaseImporter
 
 REALMS_COLLECTION = "/am/json/global-config/realms"
 

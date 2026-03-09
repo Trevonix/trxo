@@ -5,15 +5,17 @@ This module provides clean, table-based summaries and HTML diff reports
 for PingOne Advanced Identity Cloud configuration differences.
 """
 
-import json
-import html as _html
-import re
-from typing import Dict, Any, List, Optional
-from pathlib import Path
-from datetime import datetime, timezone
 import difflib
+import html as _html
+import json
+import re
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
 from rich.panel import Panel
-from trxo.utils.console import console, success, info, error
+
+from trxo.utils.console import console, error, info, success
 from trxo.utils.diff.diff_engine import DiffResult
 
 

@@ -8,9 +8,12 @@ Import functionality for PingIDM custom endpoints.
 """
 
 import json
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 import typer
+
 from trxo.utils.console import error, info
+
 from .base_importer import BaseImporter
 
 

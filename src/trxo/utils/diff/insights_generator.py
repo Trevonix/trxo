@@ -6,8 +6,9 @@ of SPECIFIC FIELD CHANGES in human-readable English.
 Only highlights important fields that changed, avoiding redundancy with the detailed table.
 """
 
-from typing import Dict, Any, List, Optional
 import re
+from typing import Any, Dict, List, Optional
+
 from trxo.utils.diff.diff_engine import DiffItem
 
 

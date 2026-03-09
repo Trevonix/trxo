@@ -6,13 +6,14 @@ by reusing the existing export functionality without saving files.
 """
 
 import json
-from typing import Dict, Any, Optional
 from pathlib import Path
-from trxo.utils.console import info, error, warning
+from typing import Any, Dict, Optional
+
 from trxo.commands.export.base_exporter import BaseExporter
+from trxo.commands.export.saml import process_saml_response
 from trxo.commands.export.scripts import decode_script_response
 from trxo.constants import DEFAULT_REALM
-from trxo.commands.export.saml import process_saml_response
+from trxo.utils.console import error, info, warning
 
 
 class DataFetcher:
@@ -209,8 +210,8 @@ class DataFetcher:
     ) -> Optional[Dict[str, Any]]:
         """Fetch data from Git repository"""
         try:
-            from trxo.utils.git import get_repo_base_path
             from trxo.utils.config_store import ConfigStore
+            from trxo.utils.git import get_repo_base_path
 
             config_store = ConfigStore()
 
@@ -312,7 +313,7 @@ def get_command_api_endpoint(
             f"/am/json/realms/root/realms/{realm}/realm-config/authentication",
             None,
         ),
-        "themes": (f"/openidm/config/ui/themerealm?_fields=realm/{realm}", None),
+        "themes": ("/openidm/config/ui/themerealm", None),
         "oauth": (
             f"/am/json/realms/root/realms/{realm}"
             "/realm-config/agents/OAuth2Client?_queryFilter=true",

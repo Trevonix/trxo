@@ -8,9 +8,11 @@ Fetches complete service configurations by individual service ID.
 """
 
 import typer
-from trxo.utils.console import warning
-from .base_exporter import BaseExporter
+
 from trxo.constants import DEFAULT_REALM
+from trxo.utils.console import warning
+
+from .base_exporter import BaseExporter
 
 
 def services_response_filter(data, *, exporter, scope, realm, headers):
