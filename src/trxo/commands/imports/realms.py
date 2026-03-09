@@ -14,6 +14,8 @@ import typer
 
 from trxo.utils.console import error, info
 
+from .base_importer import BaseImporter
+
 REALMS_COLLECTION = "/am/json/global-config/realms"
 
 
