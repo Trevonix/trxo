@@ -456,7 +456,10 @@ class BaseImporter(BaseCommand):
         try:
             from trxo.utils.rollback_manager import RollbackManager
 
-            rollback_manager = RollbackManager(self.get_item_type(), realm)
+            from trxo.utils.hash_manager import get_command_name_from_item_type
+
+            command_name = get_command_name_from_item_type(self.get_item_type())
+            rollback_manager = RollbackManager(command_name, realm)
 
             # Provide GitManager if in git mode so snapshot is persisted
             git_mgr = None
@@ -470,6 +473,7 @@ class BaseImporter(BaseCommand):
                 auth_mode=self.auth_mode,
                 idm_username=self._idm_username,
                 idm_password=self._idm_password,
+                idm_base_url=self._idm_base_url,
             )
 
             if not created:
