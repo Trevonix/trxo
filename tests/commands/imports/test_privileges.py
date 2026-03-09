@@ -1,6 +1,7 @@
 import json
 
 import pytest
+
 from trxo.commands.imports.privileges import (
     PrivilegesImporter,
     create_privileges_import_command,

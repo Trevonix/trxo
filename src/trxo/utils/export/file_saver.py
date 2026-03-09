@@ -58,9 +58,9 @@ class FileSaver:
         try:
             # Try using py-file-versioning first
             from py_file_versioning import (
+                CompressionType,
                 FileVersioning,
                 FileVersioningConfig,
-                CompressionType,
             )
 
             ledger_dir = (

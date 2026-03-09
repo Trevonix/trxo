@@ -11,7 +11,7 @@ import sys
 from typing import Any, Dict, Optional
 
 from .config import LogConfig, LogLevel, get_log_file_path
-from .formatters import TRxOFormatter, APICallFormatter, MultiplexFormatter
+from .formatters import APICallFormatter, MultiplexFormatter, TRxOFormatter
 
 # Global logger registry
 _loggers: Dict[str, logging.Logger] = {}

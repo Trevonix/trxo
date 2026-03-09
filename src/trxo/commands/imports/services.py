@@ -10,7 +10,8 @@ Future-ready with flexible realm selection.
 """
 
 import json
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
 import typer
 
 from trxo.constants import DEFAULT_REALM

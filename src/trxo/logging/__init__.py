@@ -22,8 +22,8 @@ from .logger import (
     log_api_call,
     log_application_event,
     log_authentication_event,
-    setup_logging,
     log_transaction,
+    setup_logging,
 )
 from .utils import get_log_directory, sanitize_data
 
