@@ -9,6 +9,7 @@ run fails and the user requested automatic rollback.
 
 import json
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 from xmlrpc import client
 from trxo.utils.console import info, error, warning
 from trxo.utils.git import GitManager
@@ -79,7 +80,7 @@ class RollbackManager:
                 return False
 
             # Normalize to list of items if possible
-           # Normalize fetched data into a list of items
+            # Normalize fetched data into a list of items
             items = []
 
             def flatten_items(obj):
@@ -164,7 +165,9 @@ class RollbackManager:
                         if resp.status_code == 200:
                             mapping[str(item_id)] = resp.json()
                         else:
-                            warning(f"Could not fetch full config for {item_id}: {resp.status_code}")
+                            warning(
+                                f"Could not fetch full config for {item_id}: {resp.status_code}"
+                            )
 
                     except Exception as e:
                         warning(f"Failed baseline fetch for {item_id}: {e}")
@@ -175,7 +178,10 @@ class RollbackManager:
             self.baseline_snapshot = mapping
 
             # If export structure has "data", flatten it for rollback usage
-            if isinstance(self.raw_baseline_data, dict) and "data" in self.raw_baseline_data:
+            if (
+                isinstance(self.raw_baseline_data, dict)
+                and "data" in self.raw_baseline_data
+            ):
                 flattened = {}
 
                 data_section = self.raw_baseline_data["data"]
@@ -229,8 +235,7 @@ class RollbackManager:
                         baseline_file_data = {"data": mapping}
 
                     file_path.write_text(
-                        json.dumps(baseline_file_data, indent=2),
-                        encoding="utf-8"
+                        json.dumps(baseline_file_data, indent=2), encoding="utf-8"
                     )
                     # Commit and push
                     rel = file_path.relative_to(repo_path)
@@ -277,11 +282,16 @@ class RollbackManager:
         # If nothing was tracked but baseline exists → restore full configuration
         if not self.imported_items and getattr(self, "raw_baseline_data", None):
             try:
-                info("No tracked items found - restoring full baseline configuration...")
+                info(
+                    "No tracked items found - restoring full baseline configuration..."
+                )
 
-                api_endpoint, _ = get_command_api_endpoint(self.command_name, self.realm)
+                api_endpoint, _ = get_command_api_endpoint(
+                    self.command_name, self.realm
+                )
 
                 from trxo.utils.url import construct_api_url
+
                 url = construct_api_url(base_url, api_endpoint)
 
                 headers = {
@@ -302,7 +312,8 @@ class RollbackManager:
 
                     if isinstance(baseline_data, dict):
                         baseline_data = {
-                            k: v for k, v in baseline_data.items()
+                            k: v
+                            for k, v in baseline_data.items()
                             if k not in {"_id", "_rev", "_type"}
                         }
                     payload = json.dumps(baseline_data)
@@ -366,7 +377,9 @@ class RollbackManager:
 
                     if resp.status_code in (200, 204):
                         info(f"Rolled back (deleted): {item_id}")
-                        report["rolled_back"].append({"id": item_id, "action": "deleted"})
+                        report["rolled_back"].append(
+                            {"id": item_id, "action": "deleted"}
+                        )
                     else:
                         warning(
                             f"Failed to delete {item_id} during rollback: {resp.status_code}"
@@ -394,9 +407,7 @@ class RollbackManager:
                     headers = {**headers, **self._build_auth_headers(token, url)}
 
                     restore_data = {
-                        k: v
-                        for k, v in baseline.items()
-                        if k not in {"_rev", "_type"}
+                        k: v for k, v in baseline.items() if k not in {"_rev", "_type"}
                     }
                     payload = json.dumps(restore_data)
 
@@ -416,7 +427,9 @@ class RollbackManager:
 
                     if resp.status_code in (200, 201):
                         info(f"Rolled back (restored): {item_id}")
-                        report["rolled_back"].append({"id": item_id, "action": "restored"})
+                        report["rolled_back"].append(
+                            {"id": item_id, "action": "restored"}
+                        )
                     else:
                         warning(
                             f"Failed to restore {item_id} during rollback: {resp.status_code}"
@@ -463,6 +476,7 @@ class RollbackManager:
 
         except Exception:
             from trxo.utils.url import construct_api_url
+
             return construct_api_url(base_url, f"/{item_id}")
 
     def _build_auth_headers(self, token: str, url: str) -> Dict[str, str]:

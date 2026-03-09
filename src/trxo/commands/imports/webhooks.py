@@ -30,7 +30,7 @@ class WebhooksImporter(BaseImporter):
 
     def get_item_type(self) -> str:
         return "webhooks"
-    
+
     def get_item_id(self, item: Dict[str, Any]) -> str:
         return item.get("_id")
 
@@ -71,8 +71,7 @@ class WebhooksImporter(BaseImporter):
 
         except Exception as e:
             error(
-                f"Failed to upsert webhook '{item_id}' in realm "
-                f"'{self.realm}': {e}"
+                f"Failed to upsert webhook '{item_id}' in realm " f"'{self.realm}': {e}"
             )
             return False
 
@@ -140,20 +139,6 @@ def create_webhooks_import_command():
         ),
         idm_password: str = typer.Option(
             None, "--idm-password", help="On-Prem IDM password", hide_input=True
-        ),
-        force_import: bool = typer.Option(
-            False, "--force-import", "-f", help="Skip hash validation and force import"
-        ),
-        diff: bool = typer.Option(
-            False, "--diff", help="Show differences before import"
-        ),
-        branch: str = typer.Option(
-            None, "--branch", help="Git branch to import from (Git mode only)"
-        ),
-        realm: str = typer.Option(
-            DEFAULT_REALM,
-            "--realm",
-            help=f"Target realm name (default: {DEFAULT_REALM})",
         ),
         rollback: bool = typer.Option(
             False,

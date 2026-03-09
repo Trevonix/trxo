@@ -12,6 +12,8 @@ import typer
 from trxo.constants import DEFAULT_REALM
 from trxo.utils.console import error, info
 
+from .base_importer import BaseImporter
+
 # Base path template
 AGENTS_BASE = "/am/json/realms/root/realms/{realm}/realm-config/agents"
 
