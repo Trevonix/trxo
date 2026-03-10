@@ -292,7 +292,7 @@ class RollbackManager:
                         continue
 
                     info("Baseline item found for restore")
-
+                    info(url)
                     restore_data = {
                         k: v
                         for k, v in baseline.items()

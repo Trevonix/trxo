@@ -118,6 +118,11 @@ def create_endpoints_import_command():
         idm_password: str = typer.Option(
             None, "--idm-password", help="On-Prem IDM password", hide_input=True
         ),
+        rollback: bool = typer.Option(
+            False,
+            "--rollback",
+            help="Automatically rollback imported endpoints on first failure",
+        ),
     ):
         """Import custom endpoints from JSON file (local mode) or Git repository (Git mode)"""
         importer = EndpointsImporter()
@@ -140,6 +145,7 @@ def create_endpoints_import_command():
             branch=branch,
             diff=diff,
             cherry_pick=cherry_pick,
+            rollback=rollback,
         )
 
     return import_endpoints
