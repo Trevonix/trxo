@@ -23,9 +23,9 @@ class RollbackManager:
     def __init__(self, command_name: str, realm: Optional[str] = None):
         self.command_name = command_name
 
-        # Privileges are root-level IDM configs
-        if command_name == "privileges":
-            self.realm = "root"
+        # Root-level IDM configs
+        if command_name in ["privileges", "email_templates"]:
+            self.realm = realm if realm else "root"
         else:
             self.realm = realm or DEFAULT_REALM
 
@@ -286,6 +286,12 @@ class RollbackManager:
                         resp = client.delete(url, headers=headers)
 
                 elif action == "updated":
+                    if not baseline:
+                        warning(f"No baseline found for {item_id}; skipping restore")
+                        report["errors"].append({"id": item_id, "error": "no_baseline"})
+                        continue
+
+                    info("Baseline item found for restore")
 
                     restore_data = {
                         k: v
@@ -304,6 +310,11 @@ class RollbackManager:
                 if resp.status_code in (200, 201, 204):
 
                     rollback_action = "deleted" if action == "created" else "restored"
+
+                    if rollback_action == "restored":
+                        info(f"Rolled back (restored): {item_id}")
+                    else:
+                        info(f"Rolled back (deleted): {item_id}")
 
                     report["rolled_back"].append(
                         {

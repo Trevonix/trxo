@@ -1,8 +1,9 @@
 """
 Email templates import command.
 
-Import functionality for PingOne Advanced Identity Cloud email templates.
+Import functionality for PingIDM Email Templates.
 - Uses PUT with _id in endpoint: /openidm/config/{_id}
+- Keeps complete data as payload (no field removal)
 - Works as upsert (create or update)
 """
 
@@ -17,7 +18,7 @@ from .base_importer import BaseImporter
 
 
 class EmailTemplatesImporter(BaseImporter):
-    """Importer for PingOne Advanced Identity Cloud email templates"""
+    """Importer for PingIDM Email Templates"""
 
     def __init__(self):
         super().__init__()
@@ -27,14 +28,16 @@ class EmailTemplatesImporter(BaseImporter):
         return ["_id"]
 
     def get_item_type(self) -> str:
-        return "email templates"
+        return "Email Templates"
 
     def get_api_endpoint(self, item_id: str, base_url: str) -> str:
         return f"{base_url}/openidm/config/{item_id}"
 
     def update_item(self, item_data: Dict[str, Any], token: str, base_url: str) -> bool:
-        """Upsert email template using PUT"""
+        """Upsert Email Template using PUT"""
+
         item_id = item_data.get("_id")
+
         if not item_id:
             error("Email template missing '_id'; required for upsert")
             return False
@@ -42,40 +45,41 @@ class EmailTemplatesImporter(BaseImporter):
         payload = json.dumps(item_data)
 
         url = self.get_api_endpoint(item_id, base_url)
+
         headers = {
             "Content-Type": "application/json",
             "Accept-API-Version": "protocol=2.1,resource=1.0",
         }
+
         headers = {**headers, **self.build_auth_headers(token)}
 
         try:
             self.make_http_request(url, "PUT", headers, payload)
-            info(f"Upserted email template: {item_id}")
+            info(f"Upserted Email Template: {item_id}")
             return True
+
         except Exception as e:
-            error(f"Failed to upsert email template '{item_id}': {e}")
+            error(f"Failed to upsert Email Template '{item_id}': {e}")
             return False
 
 
 def create_email_templates_import_command():
-    """Create the email templates import command function"""
+    """Create the Email Templates import command function"""
 
     def import_email_templates(
         cherry_pick: str = typer.Option(
             None,
             "--cherry-pick",
-            help="Cherry-pick specific email templates by ID (Note: provide complete _id e.g., "
-            "emailTemplate/registration) for multiple IDs,"
-            " use comma-separated list e.g., id1,id2,id3",
-        ),
-        file: str = typer.Option(
-            None, "--file", help="Path to JSON file containing email templates"
-        ),
-        force_import: bool = typer.Option(
-            False, "--force-import", "-f", help="Skip hash validation and force import"
+            help="Cherry-pick specific email templates by _id (comma-separated)",
         ),
         diff: bool = typer.Option(
             False, "--diff", help="Show differences before import"
+        ),
+        file: str = typer.Option(
+            None, "--file", help="Path to JSON file containing Email Templates"
+        ),
+        force_import: bool = typer.Option(
+            False, "--force-import", "-f", help="Skip hash validation and force import"
         ),
         branch: str = typer.Option(
             None, "--branch", help="Git branch to import from (Git mode only)"
@@ -116,9 +120,16 @@ def create_email_templates_import_command():
         idm_password: str = typer.Option(
             None, "--idm-password", help="On-Prem IDM password", hide_input=True
         ),
+        rollback: bool = typer.Option(
+            False,
+            "--rollback",
+            help="Automatically rollback imported email templates on first failure",
+        ),
     ):
-        """Import email templates from JSON file (local mode) or Git repository (Git mode)"""
+        """Import Email Templates from JSON file (local mode) or Git repository (Git mode)"""
+
         importer = EmailTemplatesImporter()
+
         importer.import_from_file(
             file_path=file,
             realm=None,  # Root-level config
@@ -137,6 +148,7 @@ def create_email_templates_import_command():
             force_import=force_import,
             branch=branch,
             diff=diff,
+            rollback=rollback,
             cherry_pick=cherry_pick,
         )
 
