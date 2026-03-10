@@ -19,6 +19,7 @@ It handles two export formats:
 
 import base64
 import json
+import httpx
 from typing import Any, Dict, List, Optional
 from urllib.parse import quote
 
@@ -473,27 +474,31 @@ class JourneyImporter(BaseImporter):
         headers = {**headers, **self.build_auth_headers(token)}
 
         try:
-            self.make_http_request(url, "PUT", headers, json.dumps(payload_data))
-            self.logger.debug(f"Imported script: {script_name} ({script_id})")
-            return True
-        except Exception as exc:
-            # If script doesn't exist try creating it
-            if "404" in str(exc):
-                try:
+            # First try updating (PUT) using httpx directly to avoid noisy 404 logs
+            # from make_http_request since a 404 here just means "needs creation"
+            with httpx.Client(timeout=30.0) as client:
+                response = client.put(url, headers=headers, json=payload_data)
+
+                if response.status_code == 404:
+                    # Switch to create logic
                     create_url = self._construct_api_url(
                         base_url,
-                        f"/am/json/realms/root/realms/{self.realm}"
-                        "/scripts?_action=create",
+                        f"/am/json/realms/root/realms/{self.realm}/scripts?_action=create",
                     )
                     self.make_http_request(
                         create_url, "POST", headers, json.dumps(payload_data)
                     )
                     self.logger.debug(f"Created script: {script_name} ({script_id})")
                     return True
-                except Exception as create_exc:
-                    error(f"Failed to create script '{script_name}': {create_exc}")
-                    return False
-            error(f"Failed to import script '{script_name}': {exc}")
+
+                # Otherwise, raise if not successful
+                response.raise_for_status()
+
+            self.logger.debug(f"Imported script: {script_name} ({script_id})")
+            return True
+
+        except Exception as exc:
+            error(f"Failed to import/create script '{script_name}': {exc}")
             return False
 
     def _import_email_template(
@@ -556,6 +561,54 @@ class JourneyImporter(BaseImporter):
             error(f"Failed to import node '{node_id}' [{node_type}]: {exc}")
             return False
 
+    def _post_saml_metadata(
+        self, entity_id: str, metadata_xml: str, token: str, base_url: str
+    ) -> bool:
+        """POST metadata ignoring 500/409 conflict errors which indicate it exists."""
+        url = self._construct_api_url(
+            base_url,
+            f"/am/json/realms/root/realms/{self.realm}/realm-config/"
+            "saml2/remote/?_action=importEntity",
+        )
+        try:
+            encoded = base64.urlsafe_b64encode(metadata_xml.encode("utf-8")).decode(
+                "ascii"
+            )
+        except Exception as e:
+            error(f"Failed to encode metadata for '{entity_id}': {e}")
+            return False
+
+        payload = {"standardMetadata": encoded}
+        headers = {
+            "Content-Type": "application/json",
+            "Accept-API-Version": "protocol=2.1,resource=1.0",
+            **self.build_auth_headers(token),
+        }
+
+        # We explicitly use httpx here instead of self.make_http_request
+        # to avoid printing loud ERROR messages to the console for the
+        # expected 409/500 "metadata already exists" responses.
+        try:
+            with httpx.Client(timeout=30.0) as client:
+                response = client.post(url, headers=headers, json=payload)
+
+                # If it's a 409 or 500, we treat it as "already exists" and skip
+                if response.status_code in (409, 500):
+                    self.logger.debug(
+                        f"Metadata for '{entity_id}' likely already exists "
+                        f"(status {response.status_code}), skipping POST."
+                    )
+                    return True
+
+                # Otherwise, raise if not successful
+                response.raise_for_status()
+                self.logger.debug(f"Imported metadata for: {entity_id}")
+                return True
+
+        except Exception as e:
+            error(f"Failed to import metadata for '{entity_id}': {e}")
+            return False
+
     def _import_saml_entity(
         self,
         entity_id: str,
@@ -585,7 +638,7 @@ class JourneyImporter(BaseImporter):
             # Remote entities: POST metadata first so the entity exists,
             # then upsert the config.
             if location == "remote" and metadata_xml:
-                if not saml_imp._post_metadata(
+                if not self._post_saml_metadata(
                     entity_id, metadata_xml, token, base_url
                 ):
                     self.logger.debug(
@@ -611,7 +664,7 @@ class JourneyImporter(BaseImporter):
         payload_data = {k: v for k, v in cot_cfg.items() if k != "_rev"}
         headers = {
             "Content-Type": "application/json",
-            "Accept-API-Version": "protocol=2.1,resource=1.0",
+            "Accept-API-Version": "protocol=2.0,resource=1.0",
         }
         headers = {**headers, **self.build_auth_headers(token)}
         try:

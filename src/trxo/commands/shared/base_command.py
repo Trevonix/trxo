@@ -313,7 +313,7 @@ class BaseCommand(ABC):
                 error=clean_error,
             )
 
-            error(f"HTTP error: {clean_error}")
+            self.logger.error(f"HTTP error: {clean_error}")
 
             # Raise generic exception with clean message
             # to avoid verbose string representation in callers

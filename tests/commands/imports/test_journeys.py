@@ -74,14 +74,19 @@ def test_import_script_missing_id(mocker):
 
 def test_import_script_list_encoded(mocker):
     importer = JourneyImporter()
-    importer.make_http_request = mocker.Mock()
+
+    mock_client = mocker.MagicMock()
+    mock_response = mocker.Mock()
+    mock_response.status_code = 200
+    mock_client.__enter__.return_value.put.return_value = mock_response
+    mocker.patch("httpx.Client", return_value=mock_client)
 
     data = {"_id": "s1", "name": "myscript", "script": ["var x = 1;", "var y = 2;"]}
     assert importer._import_single_script(data, "tok", "http://x") is True
-    importer.make_http_request.assert_called_once()
+
     # Verify payload had base64-encoded script
-    call_args = importer.make_http_request.call_args
-    sent_payload = json.loads(call_args[0][3])
+    call_args = mock_client.__enter__.return_value.put.call_args
+    sent_payload = call_args[1]["json"]
     import base64
 
     decoded = base64.b64decode(sent_payload["script"]).decode("utf-8")
@@ -90,7 +95,12 @@ def test_import_script_list_encoded(mocker):
 
 def test_import_script_string_field(mocker):
     importer = JourneyImporter()
-    importer.make_http_request = mocker.Mock()
+
+    mock_client = mocker.MagicMock()
+    mock_response = mocker.Mock()
+    mock_response.status_code = 200
+    mock_client.__enter__.return_value.put.return_value = mock_response
+    mocker.patch("httpx.Client", return_value=mock_client)
 
     data = {"_id": "s1", "script": "console.log('hi')"}
     assert importer._import_single_script(data, "tok", "http://x") is True
@@ -98,7 +108,7 @@ def test_import_script_string_field(mocker):
 
 def test_import_script_request_failure(mocker):
     importer = JourneyImporter()
-    importer.make_http_request = mocker.Mock(side_effect=Exception("500 err"))
+    mocker.patch("httpx.Client", side_effect=Exception("500 err"))
     mocker.patch("trxo.commands.imports.journeys.error")
 
     data = {"_id": "s1", "script": "x"}

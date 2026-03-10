@@ -6,6 +6,7 @@ This module provides import functionality for PingOne Advanced Identity Cloud sc
 
 import base64
 import json
+import httpx
 from typing import Any, Dict, List
 
 import typer
@@ -127,26 +128,26 @@ class ScriptImporter(BaseImporter):
         payload = json.dumps(payload_data)
 
         try:
-            # First try updating (PUT)
-            self.make_http_request(url, "PUT", headers, payload)
+            # First try updating (PUT) using httpx directly to avoid noisy 404 logs
+            # from make_http_request since a 404 here just means "needs creation"
+            with httpx.Client(timeout=30.0) as client:
+                response = client.put(url, headers=headers, json=payload_data)
 
-        except Exception as e:
-            error_message = str(e)
-
-            # If script does not exist → create it
-            if "404" in error_message:
-                try:
+                if response.status_code == 404:
+                    # Switch to create logic
                     collection_url = self._construct_api_url(
                         base_url,
                         f"/am/json/realms/root/realms/{self.realm}/scripts?_action=create",
                     )
                     self.make_http_request(collection_url, "POST", headers, payload)
-                except Exception as create_error:
-                    error(f"Error creating script '{item_name}': {str(create_error)}")
-                    return False
-            else:
-                error(f"Error updating script '{item_name}': {error_message}")
-                return False
+                else:
+                    # Otherwise, raise if not successful
+                    response.raise_for_status()
+
+        except Exception as e:
+            error(f"Error updating/creating script '{item_name}': {str(e)}")
+            return False
+
         info(f"Successfully processed script: {item_name} (ID: {item_id})")
         return True
 
