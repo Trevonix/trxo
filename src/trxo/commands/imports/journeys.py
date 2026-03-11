@@ -149,12 +149,77 @@ class JourneyImporter(BaseImporter):
 
         Legacy flat list falls through to the standard BaseImporter flow.
         """
-        # ── Git mode: delegate entirely to the base class ────────────────
+        # ── Git mode: load file from git, then probe for enriched format ──
         storage_mode = self._get_storage_mode()
         if storage_mode == "git":
-            return super().import_from_file(
-                file_path=file_path,
-                realm=realm,
+            # Ask the base-class machinery to resolve the git file path/content
+            # so we can probe it for the enriched format before deciding how to route.
+            from trxo.utils.imports.file_loader import FileLoader
+            from trxo.utils.git_manager import GitManager
+            from pathlib import Path as _Path
+
+            git_manager = self._setup_git_manager(branch)
+            effective_realm = self._determine_effective_realm(
+                realm, self.get_item_type(), branch
+            )
+            repo_path = _Path(git_manager.local_path)
+            discovered = FileLoader.discover_git_files(
+                repo_path, self.get_item_type(), effective_realm
+            )
+
+            if not discovered:
+                self._handle_no_git_files_found(
+                    self.get_item_type(), effective_realm, realm
+                )
+                return
+
+            # Use the first discovered file (same logic as base _import_from_git)
+            git_file_path = discovered[0]
+            info(f"Found: {git_file_path.relative_to(repo_path)}")
+            info(f"Loading from: {git_file_path.relative_to(repo_path)}")
+
+            import json as _json
+
+            with open(git_file_path, "r", encoding="utf-8") as _fh:
+                raw_file = _json.load(_fh)
+
+            # Unwrap trxo metadata wrapper
+            if isinstance(raw_file, dict) and "data" in raw_file:
+                payload = raw_file["data"]
+            else:
+                payload = raw_file
+
+            is_enriched = isinstance(payload, dict) and "trees" in payload
+
+            if not is_enriched:
+                # Legacy format — let BaseImporter handle everything via super()
+                return super().import_from_file(
+                    file_path=str(git_file_path),
+                    realm=realm,
+                    jwk_path=jwk_path,
+                    sa_id=sa_id,
+                    base_url=base_url,
+                    project_name=project_name,
+                    auth_mode=auth_mode,
+                    onprem_username=onprem_username,
+                    onprem_password=onprem_password,
+                    onprem_realm=onprem_realm,
+                    idm_base_url=idm_base_url,
+                    idm_username=idm_username,
+                    idm_password=idm_password,
+                    am_base_url=am_base_url,
+                    force_import=force_import,
+                    branch=branch,
+                    diff=diff,
+                    rollback=rollback,
+                    sync=sync,
+                    cherry_pick=cherry_pick,
+                )
+
+            # ── Enriched git file → same path as local enriched ───────────
+            info("Detected enriched journey export (with dependency graph)")
+
+            token, api_base_url = self.initialize_auth(
                 jwk_path=jwk_path,
                 sa_id=sa_id,
                 base_url=base_url,
@@ -167,13 +232,42 @@ class JourneyImporter(BaseImporter):
                 idm_username=idm_username,
                 idm_password=idm_password,
                 am_base_url=am_base_url,
-                force_import=force_import,
-                branch=branch,
-                diff=diff,
-                rollback=rollback,
-                sync=sync,
-                cherry_pick=cherry_pick,
             )
+
+            try:
+                # Git mode does not perform local hash validation
+
+                if diff:
+                    self._perform_enriched_journey_diff(
+                        payload=payload,
+                        realm=realm,
+                        jwk_path=jwk_path,
+                        sa_id=sa_id,
+                        base_url=base_url,
+                        project_name=project_name,
+                        auth_mode=auth_mode,
+                        onprem_username=onprem_username,
+                        onprem_password=onprem_password,
+                        onprem_realm=onprem_realm,
+                        idm_base_url=idm_base_url,
+                        idm_username=idm_username,
+                        idm_password=idm_password,
+                        am_base_url=am_base_url,
+                        file_path=str(git_file_path),
+                    )
+                    return
+
+                ok = self.import_journey_data(
+                    data=payload,
+                    token=token,
+                    base_url=api_base_url,
+                    cherry_pick_ids=cherry_pick,
+                )
+                if not ok:
+                    raise typer.Exit(1)
+            finally:
+                self.cleanup()
+            return
 
         # ── Local mode: probe the file for enriched format ───────────────
         if not file_path:
