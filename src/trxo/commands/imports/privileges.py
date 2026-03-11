@@ -120,7 +120,7 @@ def create_privileges_import_command():
             False,
             "--rollback",
             help="Automatically rollback imported privileges on first failure",
-        )
+        ),
     ):
         """Import Privileges from JSON file (local mode) or Git repository (Git mode)"""
         importer = PrivilegesImporter()

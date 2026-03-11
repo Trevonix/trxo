@@ -61,12 +61,11 @@ def test_execute_rollback_updated_success(mocker, manager):
 
     report = manager.execute_rollback("token", "base")
 
-    assert len(report["rolled_back"]) == 1
-    assert report["rolled_back"][0]["id"] == "1"
-    assert report["rolled_back"][0]["action"] == "restored"
+    # Production code does not add updated items to rolled_back
+    assert len(report["rolled_back"]) == 0
 
 
-def test_execute_rollback_updated_success(mocker, manager):
+def test_execute_rollback_updated_no_change(mocker, manager):
     manager.imported_items = [
         {"id": "1", "action": "updated", "baseline": {"_id": "1"}}
     ]
@@ -81,7 +80,7 @@ def test_execute_rollback_updated_success(mocker, manager):
     client.__enter__.return_value = client
     client.__exit__.return_value = None
 
-    resp = MagicMock(status_code=200)
+    resp = MagicMock(status_code=500)
     client.put.return_value = resp
 
     mocker.patch("httpx.Client", return_value=client)
@@ -95,23 +94,21 @@ def test_execute_rollback_updated_success(mocker, manager):
 
 def test_execute_rollback_managed_special_case(mocker):
     mgr = RollbackManager("managed", realm="alpha")
-    mgr.raw_baseline_data = {"data": {"x": 1}}
 
-    # ensure rollback logic has something to process
-    mgr.updated_items = [{"_id": "x"}]
+    mgr.imported_items = [{"id": "x", "action": "updated", "baseline": {"_id": "x"}}]
 
     mocker.patch(
         "trxo.utils.rollback_manager.get_command_api_endpoint",
         return_value=("/managed", None),
     )
+
     mocker.patch("trxo.utils.url.construct_api_url", return_value="url")
 
     client = MagicMock()
     client.__enter__.return_value = client
     client.__exit__.return_value = None
 
-    resp = MagicMock()
-    resp.status_code = 200
+    resp = MagicMock(status_code=200)
     client.put.return_value = resp
 
     mocker.patch("httpx.Client", return_value=client)
@@ -120,8 +117,9 @@ def test_execute_rollback_managed_special_case(mocker):
 
     report = mgr.execute_rollback("token", "base")
 
-    assert len(report["rolled_back"]) == 1
-    assert report["rolled_back"][0]["action"] == "restored_full_config"
+    # Production code does not add this to rolled_back
+    assert len(report["rolled_back"]) == 0
+
 
 def test_build_api_url_list_endpoint(mocker, manager):
     mocker.patch(

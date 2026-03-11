@@ -247,12 +247,7 @@ class MappingsImporter(BaseImporter):
                 if isinstance(value, dict):
                     mappings.append(value)
 
-            return {
-                "data": {
-                    "_id": "sync",
-                    "mappings": mappings
-                }
-            }
+            return {"data": {"_id": "sync", "mappings": mappings}}
 
         return data
 
@@ -446,7 +441,7 @@ class MappingsImporter(BaseImporter):
 
             # Load and parse file with flexible format support
             data = self._load_mappings_file(file_path)
-            #mappings_to_process = self._normalize_mappings(data)
+            # mappings_to_process = self._normalize_mappings(data)
             # Handle different input formats
             mappings_to_process = self._normalize_mappings(data)
 

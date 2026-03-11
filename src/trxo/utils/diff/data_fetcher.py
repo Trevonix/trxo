@@ -353,7 +353,10 @@ def get_command_api_endpoint(
         "connectors": ('/openidm/config?_queryFilter=_id+sw+"provisioner"', None),
         "endpoints": ('/openidm/config?_queryFilter=_id+sw+"endpoint"', None),
         "email": ('/openidm/config?_queryFilter=_id co "emailTemplate"', None),
-        "email_templates": ('/openidm/config?_queryFilter=_id co "emailTemplate"', None),
+        "email_templates": (
+            '/openidm/config?_queryFilter=_id co "emailTemplate"',
+            None,
+        ),
         "Environment_Secrets": ("/environment/secrets", None),
         "privileges": ('/openidm/config?_queryFilter=_id co "privilege"', None),
         "Environment_Variables": ("/environment/variables", None),

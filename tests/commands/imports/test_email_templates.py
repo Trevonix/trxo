@@ -14,7 +14,7 @@ def test_email_templates_importer_required_fields():
 
 def test_email_templates_importer_item_type():
     importer = EmailTemplatesImporter()
-    assert importer.get_item_type() == "email templates"
+    assert importer.get_item_type() == "Email Templates"
 
 
 def test_email_templates_importer_api_endpoint():

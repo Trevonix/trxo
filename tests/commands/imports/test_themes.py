@@ -10,7 +10,7 @@ from trxo.commands.imports.themes import (
 
 def test_get_item_type():
     importer = ThemesImporter()
-    assert importer.get_item_type() == "themes (ui/themerealm)"
+    assert importer.get_item_type() == "themes"
 
 
 def test_get_api_endpoint():

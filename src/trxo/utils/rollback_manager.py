@@ -24,7 +24,14 @@ class RollbackManager:
         self.command_name = command_name
 
         # Root-level IDM configs
-        if command_name in ["privileges", "email_templates", "endpoints", "managed", "connectors", "themes"]:
+        if command_name in [
+            "privileges",
+            "email_templates",
+            "endpoints",
+            "managed",
+            "connectors",
+            "themes",
+        ]:
             self.realm = realm if realm else "root"
         else:
             self.realm = realm or DEFAULT_REALM
@@ -148,7 +155,9 @@ class RollbackManager:
                         f"({self.realm}) at {timestamp}"
                     )
 
-                    git_manager.commit_and_push([str(rel)], commit_msg, smart_pull=False)
+                    git_manager.commit_and_push(
+                        [str(rel)], commit_msg, smart_pull=False
+                    )
 
                     self.git_branch = branch_name
 
@@ -283,10 +292,7 @@ class RollbackManager:
 
                     if self.command_name == "mappings":
                         baseline_file_data = {
-                            "data": {
-                                "_id": "sync",
-                                "mappings": list(mapping.values())
-                            }
+                            "data": {"_id": "sync", "mappings": list(mapping.values())}
                         }
                     else:
                         baseline_file_data = {"data": mapping}
@@ -303,7 +309,9 @@ class RollbackManager:
                         f"({self.realm}) at {timestamp}"
                     )
 
-                    git_manager.commit_and_push([str(rel)], commit_msg, smart_pull=False)
+                    git_manager.commit_and_push(
+                        [str(rel)], commit_msg, smart_pull=False
+                    )
 
                     self.git_branch = branch_name
 
@@ -359,11 +367,13 @@ class RollbackManager:
                     headers = {**headers, **self._build_auth_headers(token, url)}
 
                     restore_data = {
-                        k: v for k, v in baseline_item.items()
+                        k: v
+                        for k, v in baseline_item.items()
                         if k not in {"_rev", "_type"}
                     }
 
                     import httpx
+
                     with httpx.Client() as client:
                         resp = client.put(url, headers=headers, json=restore_data)
 
@@ -373,14 +383,10 @@ class RollbackManager:
                             {"id": baseline_id, "action": "restored"}
                         )
                     else:
-                        report["errors"].append(
-                            {"id": baseline_id, "error": resp.text}
-                        )
+                        report["errors"].append({"id": baseline_id, "error": resp.text})
 
                 except Exception as e:
-                    report["errors"].append(
-                        {"id": baseline_id, "error": str(e)}
-                    )
+                    report["errors"].append({"id": baseline_id, "error": str(e)})
 
             info("Rollback completed (baseline snapshot restored)")
             return report
@@ -419,16 +425,13 @@ class RollbackManager:
                             {"id": item_id, "action": "deleted"}
                         )
                     else:
-                        report["errors"].append(
-                            {"id": item_id, "error": resp.text}
-                        )
+                        report["errors"].append({"id": item_id, "error": resp.text})
 
                 # If item existed before → restore baseline
                 elif action == "updated" and baseline:
 
                     restore_data = {
-                        k: v for k, v in baseline.items()
-                        if k not in {"_rev", "_type"}
+                        k: v for k, v in baseline.items() if k not in {"_rev", "_type"}
                     }
 
                     with httpx.Client() as client:
@@ -440,16 +443,13 @@ class RollbackManager:
                             {"id": item_id, "action": "restored"}
                         )
                     else:
-                        report["errors"].append(
-                            {"id": item_id, "error": resp.text}
-                        )
+                        report["errors"].append({"id": item_id, "error": resp.text})
 
             except Exception as e:
-                report["errors"].append(
-                    {"id": item_id, "error": str(e)}
-                )
+                report["errors"].append({"id": item_id, "error": str(e)})
 
         return report
+
     # ---------------------------------------------------------------------
     # URL BUILDER (FIXED)
     # ---------------------------------------------------------------------

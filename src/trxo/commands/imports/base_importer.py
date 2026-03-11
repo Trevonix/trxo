@@ -470,9 +470,8 @@ class BaseImporter(BaseCommand):
             return None
 
         try:
-            from trxo.utils.rollback_manager import RollbackManager
-
             from trxo.utils.hash_manager import get_command_name_from_item_type
+            from trxo.utils.rollback_manager import RollbackManager
 
             command_name = get_command_name_from_item_type(self.get_item_type())
             rollback_manager = RollbackManager(command_name, realm)
