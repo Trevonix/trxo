@@ -30,6 +30,10 @@ class MappingsImporter(BaseImporter):
     def get_item_type(self) -> str:
         return "sync mappings"
 
+    def get_item_id(self, item: Dict[str, Any]) -> str:
+        """Use mapping name as identifier for rollback tracking"""
+        return item.get("name")
+
     def get_api_endpoint(self, item_id: str, base_url: str) -> str:
         return f"{base_url}/openidm/config/sync"
 
@@ -114,6 +118,22 @@ class MappingsImporter(BaseImporter):
 
     def update_item(self, item_data: Dict[str, Any], token: str, base_url: str) -> bool:
         """Smart upsert for sync mappings using PATCH for updates, PUT for creates"""
+        # Ignore sync wrapper object
+
+        # Handle sync wrapper object safely
+        if item_data.get("_id") == "sync":
+            mappings = item_data.get("mappings", [])
+
+            success = True
+            for mapping in mappings:
+                if not mapping.get("name"):
+                    continue  # skip invalid mapping
+
+                if not self.update_item(mapping, token, base_url):
+                    success = False
+
+            return success
+
         mapping_name = item_data.get("name")
         if not mapping_name:
             error("Sync mapping missing 'name'; required for upsert")
@@ -209,6 +229,120 @@ class MappingsImporter(BaseImporter):
             return data
         else:
             raise ValueError("Invalid file format. Expected JSON object or array")
+
+    def _convert_to_sync_format(self, data):
+        """
+        Convert keyed mappings format into IDM sync config format.
+        """
+
+        if not isinstance(data, dict):
+            return data
+
+        # Case 1 — keyed mappings inside data
+        if "data" in data and isinstance(data["data"], dict):
+
+            mappings = []
+
+            for key, value in data["data"].items():
+                if isinstance(value, dict):
+                    mappings.append(value)
+
+            return {"data": {"_id": "sync", "mappings": mappings}}
+
+        return data
+
+    def _normalize_mappings(self, data):
+        """
+        Normalize mappings input so importer always receives
+        a list of mappings regardless of export format.
+        """
+
+        if isinstance(data, dict):
+
+            # unwrap export wrapper
+            if "data" in data:
+                data = data["data"]
+
+            # sync config format
+            if isinstance(data, dict) and "mappings" in data:
+                return data["mappings"]
+
+            # keyed mappings format
+            if isinstance(data, dict):
+                return list(data.values())
+
+        if isinstance(data, list):
+            return data
+
+        return []
+
+    def load_data_from_file(self, file_path: str):
+        """
+        Ensure mappings importer receives individual mappings
+        instead of the sync wrapper object.
+        """
+
+        import json
+
+        with open(file_path, "r", encoding="utf-8") as f:
+            raw = json.load(f)
+
+        # unwrap export structure
+        data = raw.get("data", raw)
+
+        # case 1 — sync export format
+        if isinstance(data, dict) and "mappings" in data:
+            return data["mappings"]
+
+        # case 2 — keyed mapping format
+        if isinstance(data, dict):
+            return list(data.values())
+
+        # case 3 — already list
+        if isinstance(data, list):
+            return data
+
+        return []
+
+    def load_data_from_git(self, git_manager, item_type, realm, branch):
+        """Ensure mappings importer only processes individual mappings"""
+        raw_items = self.file_loader.load_git_files(
+            git_manager, item_type, realm, branch
+        )
+
+        normalized = []
+
+        for item in raw_items:
+            if isinstance(item, dict) and "mappings" in item:
+                normalized.extend(item["mappings"])
+            else:
+                normalized.append(item)
+
+        return normalized
+
+    def _import_from_git(
+        self, realm: str, force_import: bool, branch: str = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Override Git loading to unwrap the IDM sync wrapper
+        and return only individual mappings.
+        """
+
+        items = super()._import_from_git(realm, force_import, branch)
+
+        normalized = []
+
+        for item in items:
+            if isinstance(item, dict) and item.get("_id") == "sync":
+                normalized.extend(item.get("mappings", []))
+
+            elif isinstance(item, dict) and "mappings" in item:
+                normalized.extend(item["mappings"])
+
+            else:
+                normalized.append(item)
+
+        return normalized
 
     def import_from_file(
         self,
@@ -307,41 +441,15 @@ class MappingsImporter(BaseImporter):
 
             # Load and parse file with flexible format support
             data = self._load_mappings_file(file_path)
-
+            # mappings_to_process = self._normalize_mappings(data)
             # Handle different input formats
-            info_msg = ""
-            if isinstance(data, dict):
-                if "mappings" in data:
-                    # Full sync config with mappings array
-                    mappings_to_process = data["mappings"]
-                    info_msg = "from full config"
-                elif "name" in data:
-                    # Single mapping
-                    mappings_to_process = [data]
-                    info_msg = "single sync mapping"
-                else:
-                    error(
-                        "Invalid sync mappings format. Expected object with "
-                        "'name' or 'mappings' array"
-                    )
-                    return
-            elif isinstance(data, list):
-                # Array of mappings or single item list
-                if (
-                    len(data) == 1
-                    and isinstance(data[0], dict)
-                    and "mappings" in data[0]
-                ):
-                    # Single export item containing full config
-                    mappings_to_process = data[0]["mappings"]
-                    info_msg = "from exported config"
-                else:
-                    # Array of mappings
-                    mappings_to_process = data
-                    info_msg = "from array"
-            else:
-                error("Invalid file format. Expected object or array of sync mappings")
+            mappings_to_process = self._normalize_mappings(data)
+
+            if not mappings_to_process:
+                error("No sync mappings found in file")
                 return
+
+            info_msg = "from normalized input"
 
             if cherry_pick:
                 mappings_to_process = self.cherry_pick_filter.apply_filter(
@@ -426,6 +534,11 @@ def create_mappings_import_command():
         branch: str = typer.Option(
             None, "--branch", help="Git branch to import from (Git mode only)"
         ),
+        rollback: bool = typer.Option(
+            False,
+            "--rollback",
+            help="Automatically rollback imported mappings on first failure",
+        ),
     ):
         """Import sync mappings from JSON file (local mode) or Git repository (Git mode).
 
@@ -451,6 +564,7 @@ def create_mappings_import_command():
             branch=branch,
             diff=diff,
             cherry_pick=cherry_pick,
+            rollback=rollback,
         )
 
     return import_mappings

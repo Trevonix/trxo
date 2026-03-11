@@ -138,6 +138,8 @@ class BaseImporter(BaseCommand):
                 rollback, storage_mode, realm, branch, token, api_base_url
             )
 
+            self.rollback_manager = rollback_manager
+
             # Process items (track for rollback if requested)
             self.process_items(
                 items_to_process,
@@ -188,6 +190,8 @@ class BaseImporter(BaseCommand):
         item_type = self.get_item_type()
         info(f"Processing {len(items)} {item_type}...")
 
+        items = [item for item in items if isinstance(item, dict)]
+
         self.successful_updates = 0
         self.failed_updates = 0
 
@@ -233,8 +237,7 @@ class BaseImporter(BaseCommand):
 
                 if rollback_on_failure and rollback_manager:
                     info(
-                        f"Exception during import of "
-                        f"{item_id or '<unknown>'}: {e} - executing rollback"
+                        f"Import failed on item {item_id or '<unknown>'} - executing rollback"
                     )
 
                     report = rollback_manager.execute_rollback(token, base_url)
@@ -336,11 +339,24 @@ class BaseImporter(BaseCommand):
             git_manager, item_type, effective_realm, branch
         )
 
-        if not all_items:
+        # Normalize Git export format
+        # Normalize items so only valid objects with identifiers remain
+        normalized_items = []
+
+        for item in all_items:
+            if not isinstance(item, dict):
+                continue
+
+            if self._get_item_identifier(item) is None:
+                continue
+
+            normalized_items.append(item)
+
+        if not normalized_items:
             self._handle_no_git_files_found(item_type, effective_realm, realm)
             return []
 
-        return all_items
+        return normalized_items
 
     def _determine_effective_realm(
         self,
@@ -454,9 +470,11 @@ class BaseImporter(BaseCommand):
             return None
 
         try:
+            from trxo.utils.hash_manager import get_command_name_from_item_type
             from trxo.utils.rollback_manager import RollbackManager
 
-            rollback_manager = RollbackManager(self.get_item_type(), realm)
+            command_name = get_command_name_from_item_type(self.get_item_type())
+            rollback_manager = RollbackManager(command_name, realm)
 
             # Provide GitManager if in git mode so snapshot is persisted
             git_mgr = None
@@ -470,6 +488,7 @@ class BaseImporter(BaseCommand):
                 auth_mode=self.auth_mode,
                 idm_username=self._idm_username,
                 idm_password=self._idm_password,
+                idm_base_url=self._idm_base_url,
             )
 
             if not created:

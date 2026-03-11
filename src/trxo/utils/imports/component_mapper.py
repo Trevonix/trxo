@@ -107,15 +107,16 @@ class ComponentMapper:
     # Root-level components (not realm-specific)
     ROOT_LEVEL_COMPONENTS = [
         "custom endpoints",
-        "email templates",
+        "Email Templates",
         "managed_objects",
         "sync mappings",
-        "IDM connectors",
+        "connectors",
         "Privileges",
         "Applications",
         "Environment_Secrets",
         "Environment_Variables",
         "Realms",
+        "themes",
     ]
 
     @staticmethod

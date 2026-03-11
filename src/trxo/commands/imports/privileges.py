@@ -116,6 +116,11 @@ def create_privileges_import_command():
         idm_password: str = typer.Option(
             None, "--idm-password", help="On-Prem IDM password", hide_input=True
         ),
+        rollback: bool = typer.Option(
+            False,
+            "--rollback",
+            help="Automatically rollback imported privileges on first failure",
+        ),
     ):
         """Import Privileges from JSON file (local mode) or Git repository (Git mode)"""
         importer = PrivilegesImporter()
@@ -137,6 +142,7 @@ def create_privileges_import_command():
             force_import=force_import,
             branch=branch,
             diff=diff,
+            rollback=rollback,
             cherry_pick=cherry_pick,
         )
 

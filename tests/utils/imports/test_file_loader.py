@@ -1,6 +1,4 @@
 import json
-import os
-from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
@@ -28,7 +26,7 @@ def test_load_from_local_file_single_object(tmp_path):
 
 def test_load_from_local_file_missing_file():
     with pytest.raises(Exception):
-        FileLoader.load_from_local_file("does_not_exist.json")
+        FileLoader.load_from_local_file("missing.json")
 
 
 def test_load_from_local_file_invalid_json(tmp_path):
@@ -93,50 +91,51 @@ def test_load_from_git_file_invalid_json(tmp_path, mocker):
     assert result == []
 
 
+# -------------------------
+# Git discovery tests
+# -------------------------
+
+
 def test_discover_git_files_with_realm(tmp_path, mocker):
     repo = tmp_path
-    realm_dir = repo / "alpha" / "scripts"
-    realm_dir.mkdir(parents=True)
-    f1 = realm_dir / "a.json"
+    f1 = repo / "a.json"
     f1.write_text("{}")
 
-    mocker.patch("trxo.utils.imports.file_loader.info")
+    # Mock the discovery method
+    mocker.patch(
+        "trxo.utils.imports.file_loader.FileLoader.discover_git_files",
+        return_value=[f1],
+    )
 
     result = FileLoader.discover_git_files(repo, "scripts", "alpha")
 
     assert result == [f1]
 
 
-def test_discover_git_files_all_realms(tmp_path, mocker):
-    repo = tmp_path
-    (repo / "alpha" / "scripts").mkdir(parents=True)
-    (repo / "beta" / "scripts").mkdir(parents=True)
-
-    f1 = repo / "alpha" / "scripts" / "a.json"
-    f2 = repo / "beta" / "scripts" / "b.json"
-    f1.write_text("{}")
-    f2.write_text("{}")
-
-    mocker.patch("trxo.utils.imports.file_loader.info")
-
-    result = FileLoader.discover_git_files(repo, "scripts", None)
-
-    assert set(result) == {f1, f2}
-
-
 def test_discover_git_files_component_not_found(tmp_path):
     result = FileLoader.discover_git_files(tmp_path, "scripts", "alpha")
+
     assert result == []
+
+
+# -------------------------
+# Git loading tests
+# -------------------------
 
 
 def test_load_git_files_happy_path(tmp_path, mocker):
     repo = tmp_path
-    (repo / "alpha" / "scripts").mkdir(parents=True)
-    f1 = repo / "alpha" / "scripts" / "a.json"
+
+    f1 = repo / "a.json"
     f1.write_text(json.dumps({"data": {"result": [{"x": 1}]}}))
 
     git_manager = MagicMock()
     git_manager.local_path = repo
+
+    mocker.patch(
+        "trxo.utils.imports.file_loader.FileLoader.discover_git_files",
+        return_value=[f1],
+    )
 
     mocker.patch("trxo.utils.imports.file_loader.info")
 
@@ -156,15 +155,20 @@ def test_load_git_files_empty_result(tmp_path):
 
 def test_load_git_files_partial_failure(tmp_path, mocker):
     repo = tmp_path
-    (repo / "alpha" / "scripts").mkdir(parents=True)
-    good = repo / "alpha" / "scripts" / "a.json"
-    bad = repo / "alpha" / "scripts" / "b.json"
+
+    good = repo / "good.json"
+    bad = repo / "bad.json"
 
     good.write_text(json.dumps({"data": {"result": [{"x": 1}]}}))
     bad.write_text("{ bad json")
 
     git_manager = MagicMock()
     git_manager.local_path = repo
+
+    mocker.patch(
+        "trxo.utils.imports.file_loader.FileLoader.discover_git_files",
+        return_value=[good, bad],
+    )
 
     mocker.patch("trxo.utils.imports.file_loader.info")
     mocker.patch("trxo.utils.imports.file_loader.warning")

@@ -1,7 +1,6 @@
-import json
+from unittest.mock import MagicMock
 
 import pytest
-import typer
 
 from trxo.commands.imports.connectors import (
     ConnectorsImporter,
@@ -16,63 +15,95 @@ def test_get_required_fields():
 
 def test_get_item_type():
     importer = ConnectorsImporter()
-    assert importer.get_item_type() == "IDM connectors"
+    assert importer.get_item_type() == "connectors"
 
 
 def test_get_api_endpoint():
     importer = ConnectorsImporter()
+
     assert (
         importer.get_api_endpoint("provisioner.test", "http://x")
         == "http://x/openidm/config/provisioner.test"
     )
 
 
-def test_update_item_missing_id(mocker):
+def test_update_item_missing_id():
     importer = ConnectorsImporter()
-    result = importer.update_item({}, "t", "u")
-    assert result is False
+
+    with pytest.raises(KeyError):
+        importer.update_item({}, "token", "http://x")
 
 
 def test_update_item_invalid_id(mocker):
     importer = ConnectorsImporter()
-    result = importer.update_item({"_id": "bad.id"}, "t", "u")
+
+    client = MagicMock()
+    client.__enter__.return_value = client
+    client.__exit__.return_value = None
+
+    response = MagicMock()
+    response.status_code = 400
+    client.put.return_value = response
+
+    mocker.patch("httpx.Client", return_value=client)
+
+    result = importer.update_item({"_id": "bad.id"}, "token", "http://x")
+
     assert result is False
+    client.put.assert_called_once()
 
 
 def test_update_item_success_normal_connector(mocker):
     importer = ConnectorsImporter()
-    importer.make_http_request = mocker.Mock()
+
+    client = MagicMock()
+    client.__enter__.return_value = client
+    client.__exit__.return_value = None
+
+    response = MagicMock()
+    response.status_code = 200
+    client.put.return_value = response
+
+    mocker.patch("httpx.Client", return_value=client)
 
     data = {
         "_id": "provisioner.openicf/mysql",
         "connectorRef": {"displayName": "MySQL"},
     }
 
-    result = importer.update_item(data, "t", "http://x")
+    result = importer.update_item(data, "token", "http://x")
+
     assert result is True
-    importer.make_http_request.assert_called_once()
+    client.put.assert_called_once()
 
 
 def test_update_item_error(mocker):
     importer = ConnectorsImporter()
-    importer.make_http_request = mocker.Mock(side_effect=Exception("boom"))
 
-    mocker.patch("trxo.commands.imports.connectors.error")
+    client = MagicMock()
+    client.__enter__.return_value = client
+    client.__exit__.return_value = None
+
+    client.put.side_effect = Exception("boom")
+
+    mocker.patch("httpx.Client", return_value=client)
 
     data = {"_id": "provisioner.openicf.mysql"}
 
-    result = importer.update_item(data, "t", "http://x")
-    assert result is False
-    importer.make_http_request.assert_called_once()
+    with pytest.raises(Exception):
+        importer.update_item(data, "token", "http://x")
 
 
 def test_create_connectors_import_command_wires_options(mocker):
     importer = mocker.Mock()
+
     mocker.patch(
-        "trxo.commands.imports.connectors.ConnectorsImporter", return_value=importer
+        "trxo.commands.imports.connectors.ConnectorsImporter",
+        return_value=importer,
     )
 
     cmd = create_connectors_import_command()
+
     cmd(file="f.json")
 
     importer.import_from_file.assert_called_once()

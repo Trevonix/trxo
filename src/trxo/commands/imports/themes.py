@@ -47,7 +47,7 @@ class ThemesImporter(BaseImporter):
         return []
 
     def get_item_type(self) -> str:
-        return "themes (ui/themerealm)"
+        return "themes"
 
     def get_api_endpoint(self, item_id: str, base_url: str) -> str:
         return f"{base_url}/openidm/config/ui/themerealm"
@@ -351,6 +351,11 @@ def create_themes_import_command():
         branch: str = typer.Option(
             None, "--branch", help="Git branch to import from (Git mode only)"
         ),
+        rollback: bool = typer.Option(
+            False,
+            "--rollback",
+            help="Automatically rollback imported themes on first failure",
+        ),
     ):
         """Import themes from JSON file or Git repository."""
         importer = ThemesImporter()
@@ -372,6 +377,7 @@ def create_themes_import_command():
             force_import=force_import,
             branch=branch,
             diff=diff,
+            rollback=rollback,
             cherry_pick=cherry_pick,
         )
 
