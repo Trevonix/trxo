@@ -110,7 +110,7 @@ class ComponentMapper:
         "Email Templates",
         "managed_objects",
         "sync mappings",
-        "IDM connectors",
+        "connectors",
         "Privileges",
         "Applications",
         "Environment_Secrets",

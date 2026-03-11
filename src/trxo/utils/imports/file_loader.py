@@ -148,6 +148,11 @@ class FileLoader:
             realm_component_dir = repo_path / realm / component
             if realm_component_dir.exists():
                 for json_file in realm_component_dir.glob("*.json"):
+
+                    # Only load the main export file
+                    if not json_file.name.endswith(f"{component}.json"):
+                        continue
+
                     discovered_files.append(json_file)
                     info(f"Found: {json_file.relative_to(repo_path)}")
         else:

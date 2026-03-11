@@ -8,11 +8,11 @@ Import functionality for PingIDM connectors.
 """
 
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import typer
 
-from trxo.utils.console import error, info
+from trxo.utils.console import error, success
 
 from .base_importer import BaseImporter
 
@@ -28,46 +28,116 @@ class ConnectorsImporter(BaseImporter):
         return ["_id"]
 
     def get_item_type(self) -> str:
-        return "IDM connectors"
+        return "connectors"
 
     def get_api_endpoint(self, item_id: str, base_url: str) -> str:
         return f"{base_url}/openidm/config/{item_id}"
 
+    def load_data_from_git(self, git_manager, item_type, realm, branch):
+        """
+        Normalize connectors export format when loading from Git.
+        """
+
+        raw_items = self.file_loader.load_git_files(
+            git_manager, item_type, realm, branch
+        )
+
+        normalized = []
+
+        for item in raw_items:
+
+            # unwrap export wrapper
+            if isinstance(item, dict) and "data" in item:
+                data = item["data"]
+
+                # standard TRXO export format
+                if isinstance(data, dict) and "result" in data:
+                    normalized.extend(data["result"])
+                    continue
+
+            # already list of connectors
+            if isinstance(item, list):
+                normalized.extend(item)
+
+            # already connector dict
+            if isinstance(item, dict) and "_id" in item:
+                normalized.append(item)
+
+        return normalized
+
+    def load_data_from_file(self, file_path: str):
+
+        with open(file_path, "r", encoding="utf-8") as f:
+            raw = json.load(f)
+
+        data = raw.get("data", raw)
+
+        # Correct TRXO export format
+        if isinstance(data, dict) and "result" in data:
+            return data["result"]
+
+        # fallback
+        if isinstance(data, list):
+            return data
+
+        return []
+
     def update_item(self, item_data: Dict[str, Any], token: str, base_url: str) -> bool:
-        """Upsert IDM connector using PUT"""
-        item_id = item_data.get("_id")
-        if not item_id:
-            error("Connector missing '_id'; required for upsert")
-            return False
 
-        # Validate that this is a connector (starts with "provisioner")
-        if not item_id.startswith("provisioner"):
-            error(f"Invalid connector ID '{item_id}'; must start with 'provisioner'")
-            return False
-
-        # Keep complete data as payload (no field removal as per requirement)
-        payload = json.dumps(item_data)
-
+        item_id = item_data["_id"]
         url = self.get_api_endpoint(item_id, base_url)
+
+        payload = item_data.copy()
+        payload.pop("_rev", None)
+        payload.pop("_type", None)
+
         headers = {
             "Content-Type": "application/json",
-            "Accept-API-Version": "protocol=2.1,resource=1.0",
+            "Accept-API-Version": "protocol=2.0,resource=1.0",
         }
-        headers = {**headers, **self.build_auth_headers(token)}
 
-        try:
-            self.make_http_request(url, "PUT", headers, payload)
+        if hasattr(self, "rollback_manager") and self.rollback_manager:
+            headers.update(self.rollback_manager._build_auth_headers(token, url))
 
-            connector_name = item_data.get("connectorRef", {}).get(
-                "displayName", item_id
-            )
-            info(f"Successfully upserted connector: {connector_name} ({item_id})")
+        import httpx
 
+        with httpx.Client() as client:
+            resp = client.put(url, headers=headers, json=payload)
+
+        if resp.status_code in (200, 201, 204):
+            success(f"Successfully upserted connector: {item_id}")
             return True
 
-        except Exception as e:
-            error(f"Failed to upsert connector '{item_id}': {e}")
-            return False
+        error(f"Failed to upsert connector '{item_id}'")
+        return False
+
+    def _import_from_git(
+        self, realm: Optional[str], force_import: bool, branch: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+
+        item_type = self.get_item_type()
+
+        effective_realm = self._determine_effective_realm(realm, item_type, branch)
+
+        git_manager = self._setup_git_manager(branch)
+
+        all_items = self.file_loader.load_git_files(
+            git_manager, item_type, effective_realm, branch
+        )
+
+        normalized_items = []
+
+        for item in all_items:
+
+            # unwrap connector structures accidentally returned as dict keys
+            if isinstance(item, dict) and "_id" in item:
+                normalized_items.append(item)
+
+        if not normalized_items:
+            self._handle_no_git_files_found(item_type, effective_realm, realm)
+            return []
+
+        return normalized_items
 
 
 def create_connectors_import_command():
@@ -127,6 +197,11 @@ def create_connectors_import_command():
         idm_password: str = typer.Option(
             None, "--idm-password", help="On-Prem IDM password", hide_input=True
         ),
+        rollback: bool = typer.Option(
+            False,
+            "--rollback",
+            help="Automatically rollback imported connectors on first failure",
+        ),
     ):
         """Import IDM connectors from JSON file (local mode) or Git repository (Git mode).
 
@@ -153,6 +228,7 @@ def create_connectors_import_command():
             branch=branch,
             diff=diff,
             cherry_pick=cherry_pick,
+            rollback=rollback,
         )
 
     return import_connectors

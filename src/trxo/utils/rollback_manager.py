@@ -24,7 +24,7 @@ class RollbackManager:
         self.command_name = command_name
 
         # Root-level IDM configs
-        if command_name in ["privileges", "email_templates"]:
+        if command_name in ["privileges", "email_templates", "endpoints", "managed", "connectors"]:
             self.realm = realm if realm else "root"
         else:
             self.realm = realm or DEFAULT_REALM
@@ -100,6 +100,9 @@ class RollbackManager:
                     if "data" in obj:
                         return flatten_items(obj["data"])
 
+                    if "mappings" in obj and isinstance(obj["mappings"], list):
+                        return obj["mappings"]
+
                     collected = []
 
                     for value in obj.values():
@@ -111,7 +114,10 @@ class RollbackManager:
 
                 return []
 
-            items = flatten_items(data)
+            if self.command_name == "mappings" and isinstance(data, dict):
+                items = data.get("mappings", [])
+            else:
+                items = flatten_items(data)
 
             if not items and isinstance(data, dict):
                 if "data" in data and isinstance(data["data"], dict):
@@ -206,7 +212,15 @@ class RollbackManager:
                     filename = f"{(self.realm or 'root')}_{component}.json"
                     file_path = comp_dir / filename
 
-                    baseline_file_data = {"data": mapping}
+                    if self.command_name == "mappings":
+                        baseline_file_data = {
+                            "data": {
+                                "_id": "sync",
+                                "mappings": list(mapping.values())
+                            }
+                        }
+                    else:
+                        baseline_file_data = {"data": mapping}
 
                     file_path.write_text(
                         json.dumps(baseline_file_data, indent=2),
@@ -260,15 +274,60 @@ class RollbackManager:
 
         info("Initiating rollback of imported items...")
 
+        # If rollback triggered before any valid item ID was tracked
+        if not self.imported_items:
+            warning("No imported items tracked. Restoring entire baseline snapshot...")
+
+            for baseline_id, baseline_item in self.baseline_snapshot.items():
+                try:
+                    url = self._build_api_url(baseline_id, base_url)
+
+                    headers = {
+                        "Content-Type": "application/json",
+                        "Accept-API-Version": "protocol=2.0,resource=1.0",
+                    }
+
+                    headers = {**headers, **self._build_auth_headers(token, url)}
+
+                    restore_data = {
+                        k: v for k, v in baseline_item.items()
+                        if k not in {"_rev", "_type"}
+                    }
+
+                    import httpx
+                    with httpx.Client() as client:
+                        resp = client.put(url, headers=headers, json=restore_data)
+
+                    if resp.status_code in (200, 201, 204):
+                        info(f"Restored baseline item: {baseline_id}")
+                        report["rolled_back"].append(
+                            {"id": baseline_id, "action": "restored"}
+                        )
+                    else:
+                        report["errors"].append(
+                            {"id": baseline_id, "error": resp.text}
+                        )
+
+                except Exception as e:
+                    report["errors"].append(
+                        {"id": baseline_id, "error": str(e)}
+                    )
+
+            info("Rollback completed (baseline snapshot restored)")
+            return report
+
+        # Rollback previously imported items
         for record in reversed(self.imported_items):
 
             item_id = record.get("id")
             action = record.get("action")
 
+            if not item_id:
+                continue
+
             baseline = self.baseline_snapshot.get(str(item_id))
 
             try:
-
                 url = self._build_api_url(item_id, base_url)
 
                 headers = {
@@ -280,65 +339,48 @@ class RollbackManager:
 
                 import httpx
 
+                # If item was newly created → delete it
                 if action == "created":
-
                     with httpx.Client() as client:
                         resp = client.delete(url, headers=headers)
 
-                elif action == "updated":
-                    if not baseline:
-                        warning(f"No baseline found for {item_id}; skipping restore")
-                        report["errors"].append({"id": item_id, "error": "no_baseline"})
-                        continue
+                    if resp.status_code in (200, 204):
+                        info(f"Deleted created item: {item_id}")
+                        report["rolled_back"].append(
+                            {"id": item_id, "action": "deleted"}
+                        )
+                    else:
+                        report["errors"].append(
+                            {"id": item_id, "error": resp.text}
+                        )
 
-                    info("Baseline item found for restore")
-                    info(url)
+                # If item existed before → restore baseline
+                elif action == "updated" and baseline:
+
                     restore_data = {
-                        k: v
-                        for k, v in baseline.items()
+                        k: v for k, v in baseline.items()
                         if k not in {"_rev", "_type"}
                     }
 
-                    payload = json.dumps(restore_data)
-
                     with httpx.Client() as client:
-                        resp = client.put(url, headers=headers, data=payload)
+                        resp = client.put(url, headers=headers, json=restore_data)
 
-                else:
-                    continue
-
-                if resp.status_code in (200, 201, 204):
-
-                    rollback_action = "deleted" if action == "created" else "restored"
-
-                    if rollback_action == "restored":
-                        info(f"Rolled back (restored): {item_id}")
+                    if resp.status_code in (200, 201, 204):
+                        info(f"Restored baseline item: {item_id}")
+                        report["rolled_back"].append(
+                            {"id": item_id, "action": "restored"}
+                        )
                     else:
-                        info(f"Rolled back (deleted): {item_id}")
-
-                    report["rolled_back"].append(
-                        {
-                            "id": item_id,
-                            "action": rollback_action,
-                        }
-                    )
-
-                else:
-
-                    warning(f"Failed rollback for {item_id}: {resp.status_code}")
-
-                    report["errors"].append(resp.text)
+                        report["errors"].append(
+                            {"id": item_id, "error": resp.text}
+                        )
 
             except Exception as e:
-
-                warning(f"Rollback error for {item_id}: {e}")
-
-                report["errors"].append(str(e))
-
-        info("Rollback completed")
+                report["errors"].append(
+                    {"id": item_id, "error": str(e)}
+                )
 
         return report
-
     # ---------------------------------------------------------------------
     # URL BUILDER (FIXED)
     # ---------------------------------------------------------------------
