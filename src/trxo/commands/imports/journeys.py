@@ -292,11 +292,24 @@ class JourneyImporter(BaseImporter):
             return True
 
         selected_tree_ids: Optional[List[str]] = None
+        cherry_pick_scope: Optional[Dict[str, set]] = None
         if cherry_pick_ids:
             selected_tree_ids = [
                 i.strip() for i in cherry_pick_ids.split(",") if i.strip()
             ]
             info(f"Cherry-pick mode: importing journeys {selected_tree_ids}")
+            # Single O(n) pass over the local JSON — no network calls.
+            cherry_pick_scope = _resolve_deps_for_trees(data, selected_tree_ids)
+            info(
+                f"  Resolved deps: "
+                f"{len(cherry_pick_scope['root_nodes'])} root node(s), "
+                f"{len(cherry_pick_scope['inner_nodes'])} inner node(s), "
+                f"{len(cherry_pick_scope['scripts'])} script(s), "
+                f"{len(cherry_pick_scope['email_templates'])} email template(s), "
+                f"{len(cherry_pick_scope['saml2_entities'])} SAML2 entity(ies), "
+                f"{len(cherry_pick_scope['cots'])} CoT(s), "
+                f"{len(cherry_pick_scope['themes'])} theme(s)"
+            )
 
         error_count = 0
 
@@ -318,7 +331,14 @@ class JourneyImporter(BaseImporter):
         # -- 2. Email templates -----------------------------------------------
         email_templates: Dict[str, Any] = data.get("emailTemplates", {})
         if email_templates:
-            info(f"Importing {len(email_templates)} email template(s)")
+            if cherry_pick_scope is not None:
+                email_templates = {
+                    k: v
+                    for k, v in email_templates.items()
+                    if k in cherry_pick_scope["email_templates"]
+                }
+            if email_templates:
+                info(f"Importing {len(email_templates)} email template(s)")
             for name, tmpl_cfg in email_templates.items():
                 if not self._import_email_template(name, tmpl_cfg, token, base_url):
                     error_count += 1
@@ -326,20 +346,29 @@ class JourneyImporter(BaseImporter):
         # -- 3. SAML2 entities ------------------------------------------------
         saml2_entities: Dict[str, Any] = data.get("saml2Entities", {})
         if saml2_entities:
-            info(f"Importing {len(saml2_entities)} SAML2 entity(ies)")
-            saml_imp = _saml_importer(self.realm)
-            # Share our auth state so build_auth_headers / make_http_request work
-            saml_imp.token = token
-            for entity_id, entity_entry in saml2_entities.items():
-                if not self._import_saml_entity(
-                    entity_id, entity_entry, saml_imp, token, base_url
-                ):
-                    error_count += 1
+            if cherry_pick_scope is not None:
+                saml2_entities = {
+                    k: v
+                    for k, v in saml2_entities.items()
+                    if k in cherry_pick_scope["saml2_entities"]
+                }
+            if saml2_entities:
+                info(f"Importing {len(saml2_entities)} SAML2 entity(ies)")
+                saml_imp = _saml_importer(self.realm)
+                saml_imp.token = token
+                for entity_id, entity_entry in saml2_entities.items():
+                    if not self._import_saml_entity(
+                        entity_id, entity_entry, saml_imp, token, base_url
+                    ):
+                        error_count += 1
 
         # -- 4. Circles of trust ----------------------------------------------
         cots: Dict[str, Any] = data.get("saml2CirclesOfTrust", {})
         if cots:
-            info(f"Importing {len(cots)} circle(s) of trust")
+            if cherry_pick_scope is not None:
+                cots = {k: v for k, v in cots.items() if k in cherry_pick_scope["cots"]}
+            if cots:
+                info(f"Importing {len(cots)} circle(s) of trust")
             for cot_id, cot_cfg in cots.items():
                 if not self._import_circle_of_trust(cot_id, cot_cfg, token, base_url):
                     error_count += 1
@@ -347,7 +376,14 @@ class JourneyImporter(BaseImporter):
         # -- 5. Inner nodes ---------------------------------------------------
         inner_nodes: Dict[str, Any] = data.get("innerNodes", {})
         if inner_nodes:
-            info(f"Importing {len(inner_nodes)} inner node(s)")
+            if cherry_pick_scope is not None:
+                inner_nodes = {
+                    k: v
+                    for k, v in inner_nodes.items()
+                    if k in cherry_pick_scope["inner_nodes"]
+                }
+            if inner_nodes:
+                info(f"Importing {len(inner_nodes)} inner node(s)")
             for node_id, node_cfg in inner_nodes.items():
                 if not self._import_node(node_id, node_cfg, token, base_url):
                     error_count += 1
@@ -355,7 +391,14 @@ class JourneyImporter(BaseImporter):
         # -- 6. Root nodes ----------------------------------------------------
         nodes: Dict[str, Any] = data.get("nodes", {})
         if nodes:
-            info(f"Importing {len(nodes)} root node(s)")
+            if cherry_pick_scope is not None:
+                nodes = {
+                    k: v
+                    for k, v in nodes.items()
+                    if k in cherry_pick_scope["root_nodes"]
+                }
+            if nodes:
+                info(f"Importing {len(nodes)} root node(s)")
             for node_id, node_cfg in nodes.items():
                 if not self._import_node(node_id, node_cfg, token, base_url):
                     error_count += 1
@@ -363,9 +406,14 @@ class JourneyImporter(BaseImporter):
         # -- 7. Themes --------------------------------------------------------
         themes: Dict[str, Any] = data.get("themes", {})
         if themes:
-            info(f"Importing {len(themes)} theme(s)")
-            if not self._import_themes(themes, token, base_url):
-                error_count += 1
+            if cherry_pick_scope is not None:
+                themes = {
+                    k: v for k, v in themes.items() if k in cherry_pick_scope["themes"]
+                }
+            if themes:
+                info(f"Importing {len(themes)} theme(s)")
+                if not self._import_themes(themes, token, base_url):
+                    error_count += 1
 
         # -- 8. Journeys (trees) ----------------------------------------------
         trees: Dict[str, Any] = data.get("trees", {})
@@ -748,42 +796,134 @@ class JourneyImporter(BaseImporter):
 # ---------------------------------------------------------------------------
 
 
-def _scripts_needed_by_trees(data: Dict[str, Any], selected_tree_ids: List[str]) -> set:
+def _resolve_deps_for_trees(
+    data: Dict[str, Any], selected_tree_ids: List[str]
+) -> Dict[str, set]:
     """
-    Return the set of script IDs that are directly referenced by nodes
-    belonging to the selected trees.
+    Single O(n) in-memory pass over the local export JSON.
 
-    This is a best-effort scan: it looks at node.script,
-    node.transformationScript, node.validationScript, node.filterScript.
+    Returns a dict of sets keyed by dep type:
+      root_nodes, inner_nodes, scripts, email_templates,
+      saml2_entities, cots, themes
+
+    Algorithm:
+    1.  Walk the selected tree definitions to collect their direct node IDs
+        (root_nodes).  Also harvest the theme ID if the tree references one.
+    2.  For every root node, inspect its inner-node children (pageNode pattern)
+        → inner_nodes.
+    3.  Scan all required nodes for known script-reference fields → scripts.
+    4.  Scan all required nodes for known email-template fields → email_templates.
+    5.  Scan all required nodes for SAML entity references → saml2_entities;
+        look up each entity's CoT membership → cots.
+
+    This keeps cherry-pick imports to the minimum possible network requests.
     """
-    # Build set of node IDs belonging to selected trees
-    selected_node_ids: set = set()
-    trees = data.get("trees", {})
+    trees: Dict[str, Any] = data.get("trees", {})
+    all_nodes: Dict[str, Any] = {**data.get("nodes", {}), **data.get("innerNodes", {})}
+    all_saml: Dict[str, Any] = data.get("saml2Entities", {})
+    all_cots: Dict[str, Any] = data.get("saml2CirclesOfTrust", {})
+    all_themes: Dict[str, Any] = data.get("themes", {})
+
+    root_nodes: set = set()
+    inner_nodes: set = set()
+    scripts: set = set()
+    email_templates: set = set()
+    saml2_entities: set = set()
+    cots: set = set()
+    themes: set = set()
+
+    # ── Step 1: root nodes + theme from tree definition ─────────────────────
     for tid in selected_tree_ids:
         tree = trees.get(tid, {})
-        selected_node_ids.update(tree.get("nodes", {}).keys())
+        # Tree-level node references live under "nodes": {nodeId: {nodeType}}
+        root_nodes.update(tree.get("nodes", {}).keys())
+        # Some tree definitions carry a "uiThemeId" or "themeId" reference
+        for theme_field in ("uiThemeId", "themeId"):
+            theme_id = tree.get(theme_field)
+            if theme_id and theme_id in all_themes:
+                themes.add(theme_id)
 
-    script_fields = (
+    # ── Step 2 & 3 & 4: walk nodes for inner-nodes, scripts, email templates,
+    #    SAML entity refs — we need a closure over all reachable node IDs, so
+    #    we expand page-node children into root_nodes first (one extra pass).
+    #
+    #    Page nodes store children in node.nodes list → those are inner nodes.
+    to_scan = set(root_nodes)  # Start with what the tree explicitly references
+    visited: set = set()
+
+    _SCRIPT_FIELDS = (
         "script",
         "transformationScript",
         "validationScript",
         "filterScript",
     )
-    needed: set = set()
+    _EMAIL_FIELDS = ("emailTemplateName", "emailTemplate")
+    _SAML_FIELDS = ("saml2EntityName", "entityId", "idpEntityId", "spEntityId")
 
-    all_nodes: Dict[str, Any] = {}
-    all_nodes.update(data.get("nodes", {}))
-    all_nodes.update(data.get("innerNodes", {}))
-
-    for nid, node in all_nodes.items():
-        if nid not in selected_node_ids:
+    while to_scan:
+        nid = to_scan.pop()
+        if nid in visited:
             continue
-        for field in script_fields:
-            sid = node.get(field)
-            if sid and isinstance(sid, str):
-                needed.add(sid)
+        visited.add(nid)
 
-    return needed
+        node = all_nodes.get(nid)
+        if node is None:
+            continue
+
+        # Inner-node children (page node pattern: node.nodes is a list of IDs)
+        for child_id in node.get("nodes", []):
+            if isinstance(child_id, str) and child_id not in visited:
+                inner_nodes.add(child_id)
+                to_scan.add(child_id)
+        # Also handle dict-form {nodeId: {nodeType}} used by some node types
+        for child_id in (
+            node.get("nodes", {}).keys() if isinstance(node.get("nodes"), dict) else []
+        ):
+            if child_id not in visited:
+                inner_nodes.add(child_id)
+                to_scan.add(child_id)
+
+        # Scripts
+        for field in _SCRIPT_FIELDS:
+            val = node.get(field)
+            if val and isinstance(val, str):
+                scripts.add(val)
+
+        # Email templates
+        for field in _EMAIL_FIELDS:
+            val = node.get(field)
+            if val and isinstance(val, str):
+                email_templates.add(val)
+
+        # SAML entities referenced by specific node types
+        for field in _SAML_FIELDS:
+            val = node.get(field)
+            if val and isinstance(val, str) and val in all_saml:
+                saml2_entities.add(val)
+
+    # ── Step 5: CoTs — pull in any CoT whose trustedProviders list overlaps
+    #   with the entities we already need.
+    for cot_id, cot_cfg in all_cots.items():
+        trusted: list = cot_cfg.get("trustedProviders", [])
+        # trustedProviders entries look like "entityId|saml2"
+        trusted_entity_ids = {p.split("|")[0] for p in trusted if "|" in p}
+        if trusted_entity_ids & saml2_entities:  # intersection
+            cots.add(cot_id)
+
+    return {
+        "root_nodes": root_nodes,
+        "inner_nodes": inner_nodes,
+        "scripts": scripts,
+        "email_templates": email_templates,
+        "saml2_entities": saml2_entities,
+        "cots": cots,
+        "themes": themes,
+    }
+
+
+def _scripts_needed_by_trees(data: Dict[str, Any], selected_tree_ids: List[str]) -> set:
+    """Thin shim kept for backward-compatibility; delegates to _resolve_deps_for_trees."""
+    return _resolve_deps_for_trees(data, selected_tree_ids)["scripts"]
 
 
 # ---------------------------------------------------------------------------
