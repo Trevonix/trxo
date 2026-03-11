@@ -61,7 +61,13 @@ def test_update_item_missing_id_returns_false(mocker):
 def test_update_item_encodes_script_list(mocker):
     importer = ScriptImporter(realm=DEFAULT_REALM)
 
-    mocker.patch.object(importer, "make_http_request")
+    # We mock httpx.Client directly since we bypass make_http_request for the 404 check
+    mock_client = mocker.MagicMock()
+    mock_response = mocker.Mock()
+    mock_response.status_code = 200
+    mock_client.__enter__.return_value.put.return_value = mock_response
+    mocker.patch("httpx.Client", return_value=mock_client)
+
     mocker.patch.object(importer, "build_auth_headers", return_value={})
 
     data = {
@@ -78,7 +84,12 @@ def test_update_item_encodes_script_list(mocker):
 def test_update_item_encodes_script_string(mocker):
     importer = ScriptImporter(realm=DEFAULT_REALM)
 
-    mocker.patch.object(importer, "make_http_request")
+    mock_client = mocker.MagicMock()
+    mock_response = mocker.Mock()
+    mock_response.status_code = 200
+    mock_client.__enter__.return_value.put.return_value = mock_response
+    mocker.patch("httpx.Client", return_value=mock_client)
+
     mocker.patch.object(importer, "build_auth_headers", return_value={})
 
     data = {
@@ -111,7 +122,8 @@ def test_update_item_invalid_script_type_returns_false(mocker):
 def test_update_item_http_failure_returns_false(mocker):
     importer = ScriptImporter(realm=DEFAULT_REALM)
 
-    mocker.patch.object(importer, "make_http_request", side_effect=Exception("boom"))
+    # Mock httpx to throw an exception
+    mocker.patch("httpx.Client", side_effect=Exception("boom"))
     mocker.patch.object(importer, "build_auth_headers", return_value={})
     mocker.patch("trxo.commands.imports.scripts.error")
 

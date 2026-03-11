@@ -8,18 +8,18 @@ from trxo.constants import DEFAULT_REALM
 def mock_exporter(mocker):
     exporter = mocker.Mock()
     mocker.patch(
-        "trxo.commands.export.journeys.BaseExporter",
+        "trxo.commands.export.journeys.JourneyExporter",
         return_value=exporter,
+    )
+    # process_journey_response would be called with the exporter; mock it out
+    mocker.patch(
+        "trxo.commands.export.journeys.process_journey_response",
+        return_value=mocker.Mock(),
     )
     return exporter
 
 
-@pytest.fixture
-def mock_info(mocker):
-    return mocker.patch("trxo.commands.export.journeys.info")
-
-
-def test_export_journeys_defaults(mock_exporter, mock_info):
+def test_export_journeys_defaults(mock_exporter):
     export_journeys = create_journeys_export_command()
 
     export_journeys(
@@ -41,6 +41,9 @@ def test_export_journeys_defaults(mock_exporter, mock_info):
         onprem_password=None,
         onprem_realm="root",
         am_base_url=None,
+        idm_base_url=None,
+        idm_username=None,
+        idm_password=None,
     )
 
     kwargs = mock_exporter.export_data.call_args.kwargs
@@ -50,7 +53,7 @@ def test_export_journeys_defaults(mock_exporter, mock_info):
         f"/realms/{DEFAULT_REALM}/realm-config/authentication/authenticationtrees/trees"
         in kwargs["api_endpoint"]
     )
-    mock_info.assert_called_once()
+    assert "?_queryFilter=true" in kwargs["api_endpoint"]
     assert kwargs["view"] is None
     assert kwargs["view_columns"] is None
     assert kwargs["version"] is None
@@ -59,7 +62,7 @@ def test_export_journeys_defaults(mock_exporter, mock_info):
     assert kwargs["commit_message"] is None
 
 
-def test_export_journeys_custom_realm_and_args(mock_exporter, mock_info):
+def test_export_journeys_custom_realm_and_args(mock_exporter):
     export_journeys = create_journeys_export_command()
 
     export_journeys(
@@ -81,6 +84,9 @@ def test_export_journeys_custom_realm_and_args(mock_exporter, mock_info):
         onprem_password="pass",
         onprem_realm="custom",
         am_base_url="http://am",
+        idm_base_url=None,
+        idm_username=None,
+        idm_password=None,
     )
 
     kwargs = mock_exporter.export_data.call_args.kwargs

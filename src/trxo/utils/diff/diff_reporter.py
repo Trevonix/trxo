@@ -166,6 +166,43 @@ class DiffReporter:
             or diff_result.removed_items
         )
 
+    def _display_changes_table(self, diff_result: DiffResult) -> None:
+        """Print a concise per-item changes table to the console."""
+        from rich.table import Table
+        from rich.text import Text
+
+        table = Table(
+            title="Changed Items",
+            show_header=True,
+            header_style="bold blue",
+            show_lines=False,
+        )
+        table.add_column("#", style="dim", width=4)
+        table.add_column("ID", overflow="fold")
+        table.add_column("Name", overflow="fold")
+        table.add_column("Change", width=10)
+        table.add_column("Summary", overflow="fold")
+
+        colour_map = {"added": "green", "modified": "yellow", "removed": "red"}
+
+        combined = (
+            [(item, "added") for item in diff_result.added_items]
+            + [(item, "modified") for item in diff_result.modified_items]
+            + [(item, "removed") for item in diff_result.removed_items]
+        )
+
+        for idx, (item, change_type) in enumerate(combined, 1):
+            colour = colour_map.get(change_type, "white")
+            table.add_row(
+                str(idx),
+                Text(item.item_id, style=colour),
+                item.item_name or "—",
+                Text(change_type.upper(), style=f"bold {colour}"),
+                item.summary,
+            )
+
+        self.console.print(table)
+
     def generate_html_diff(
         self,
         diff_result: DiffResult,

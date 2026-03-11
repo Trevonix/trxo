@@ -85,6 +85,15 @@ class DataFetcher:
             # Temporarily replace save_response to capture data
             self.exporter.save_response = capture_data
 
+            # Also suppress hash persistence: export_data calls
+            # save_export_hash after every successful export, which would
+            # overwrite the checksum stored for this command with the live
+            # server's hash.  On the next real import the validator would
+            # compare the file hash against the (now-wrong) server hash and
+            # always fail.  We neutralise it for the duration of this call.
+            original_save_export_hash = self.exporter.hash_manager.save_export_hash
+            self.exporter.hash_manager.save_export_hash = lambda *a, **kw: None
+
             try:
                 # Call export_data but capture the data instead of saving
                 self.exporter.export_data(
@@ -117,7 +126,9 @@ class DataFetcher:
                 return captured_data
 
             finally:
-                # Restore original save method
+                # Restore original methods — order matters least here, but
+                # hash must be restored before save_response to be safe.
+                self.exporter.hash_manager.save_export_hash = original_save_export_hash
                 self.exporter.save_response = original_save_method
 
         except Exception as e:
