@@ -244,6 +244,27 @@ class JourneyImporter(BaseImporter):
                 error("Import validation failed: hash mismatch with exported data")
                 raise typer.Exit(1)
 
+            # ── Diff mode: show changes without importing ─────────────────
+            if diff:
+                self._perform_enriched_journey_diff(
+                    payload=payload,
+                    realm=realm,
+                    jwk_path=jwk_path,
+                    sa_id=sa_id,
+                    base_url=base_url,
+                    project_name=project_name,
+                    auth_mode=auth_mode,
+                    onprem_username=onprem_username,
+                    onprem_password=onprem_password,
+                    onprem_realm=onprem_realm,
+                    idm_base_url=idm_base_url,
+                    idm_username=idm_username,
+                    idm_password=idm_password,
+                    am_base_url=am_base_url,
+                    file_path=file_path,
+                )
+                return
+
             ok = self.import_journey_data(
                 data=payload,
                 token=token,
@@ -254,6 +275,161 @@ class JourneyImporter(BaseImporter):
                 raise typer.Exit(1)
         finally:
             self.cleanup()
+
+    # ── Diff helper (enriched format) ─────────────────────────────────────
+
+    def _perform_enriched_journey_diff(
+        self,
+        payload: dict,
+        realm: str,
+        file_path: str,
+        jwk_path=None,
+        sa_id=None,
+        base_url=None,
+        project_name=None,
+        auth_mode=None,
+        onprem_username=None,
+        onprem_password=None,
+        onprem_realm=None,
+        idm_base_url=None,
+        idm_username=None,
+        idm_password=None,
+        am_base_url=None,
+    ) -> None:
+        """
+        Show diff for enriched journey exports.
+
+        - Journeys (trees): full DiffEngine diff against live AM data
+          (fetched via DataFetcher so auth is reused), rendered via
+          DiffReporter with HTML report generation.
+        - All other deps (nodes, scripts, etc.): counts-only table with
+          file vs server columns.  Server count is fetched for journeys
+          as a by-product of the tree diff — no extra round-trips needed.
+        """
+        from trxo.utils.diff.data_fetcher import DataFetcher, get_command_api_endpoint
+        from trxo.utils.diff.diff_engine import DiffEngine
+        from trxo.utils.diff.diff_reporter import DiffReporter
+        from pathlib import Path
+
+        info("Diff mode: comparing journey trees against live environment...")
+
+        # ── Step 1: Fetch live tree list from AM ──────────────────────────
+        fetcher = DataFetcher()
+        api_endpoint, response_filter = get_command_api_endpoint(
+            "journeys", realm or "alpha"
+        )
+        current_data = fetcher.fetch_data(
+            command_name="journeys",
+            api_endpoint=api_endpoint,
+            response_filter=response_filter,
+            realm=realm,
+            jwk_path=jwk_path,
+            sa_id=sa_id,
+            base_url=base_url,
+            project_name=project_name,
+            auth_mode=auth_mode,
+            onprem_username=onprem_username,
+            onprem_password=onprem_password,
+            onprem_realm=onprem_realm,
+            idm_base_url=idm_base_url,
+            idm_username=idm_username,
+            idm_password=idm_password,
+            am_base_url=am_base_url,
+        )
+
+        # ── Step 2: Convert local trees dict → result list ────────────────
+        # The enriched export stores trees as {treeId: {_id, nodes, ...}}.
+        # DiffEngine._extract_items expects {"result": [{_id, ...}, ...]}
+        # (or raw list).  We convert once here so no engine changes needed.
+        local_trees: dict = payload.get("trees", {})
+        local_trees_list = list(local_trees.values())
+        new_data = {"result": local_trees_list}
+
+        server_tree_count = 0
+        diff_result = None
+
+        if current_data is None:
+            from trxo.utils.console import warning as _warning
+
+            _warning("Could not fetch live data — showing file counts only")
+        else:
+            # current_data already comes back as {"result": [...]} from
+            # DataFetcher (it unwraps the AM response wrapper for us).
+            if isinstance(current_data, dict) and "result" in current_data:
+                server_tree_count = len(current_data["result"])
+            elif isinstance(current_data, list):
+                server_tree_count = len(current_data)
+                current_data = {"result": current_data}
+
+            # ── Step 3: Run diff engine ───────────────────────────────────
+            engine = DiffEngine()
+            diff_result = engine.compare_data(
+                current_data=current_data,
+                new_data=new_data,
+                command_name="journeys",
+                realm=realm,
+            )
+
+            # ── Step 4: Display rich diff report ──────────────────────────
+            reporter = DiffReporter()
+            reporter.display_summary(diff_result)
+
+            html_path = reporter.generate_html_diff(
+                diff_result=diff_result,
+                current_data=current_data,
+                new_data=new_data,
+            )
+            if html_path:
+                html_uri = Path(html_path).absolute().as_uri()
+                info(f"Open HTML report: {html_uri}")
+
+            total = (
+                len(diff_result.added_items)
+                + len(diff_result.modified_items)
+                + len(diff_result.removed_items)
+            )
+            if total > 0:
+                from trxo.utils.console import warning as _warning
+
+                _warning(
+                    f"Journey diff: {total} change(s) found — "
+                    "run without --diff to import"
+                )
+            else:
+                from trxo.utils.console import success as _success
+
+                _success("Journey diff: no changes — journeys are already up to date")
+
+        # ── Step 5: Dep counts table (file counts only) ───────────────────
+        dep_sections = [
+            ("Trees (journeys)", "trees"),
+            ("Root nodes", "nodes"),
+            ("Inner nodes", "innerNodes"),
+            ("Scripts", "scripts"),
+            ("Email templates", "emailTemplates"),
+            ("SAML2 entities", "saml2Entities"),
+            ("Circles of trust", "saml2CirclesOfTrust"),
+            ("Themes", "themes"),
+            ("Social providers", "socialIdentityProviders"),
+        ]
+
+        rows = [
+            (label, len(payload.get(key, {})))
+            for label, key in dep_sections
+            if len(payload.get(key, {})) > 0
+        ]
+
+        if rows:
+            print()
+            col_w = max(len(label) for label, _ in rows) + 2
+            separator = "+" + "-" * (col_w + 2) + "+" + "-" * 9 + "+"
+            print(separator)
+            print(f"| {'Dependency':<{col_w}} | {'In file':>7} |")
+            print(separator)
+            for label, count in rows:
+                print(f"| {label:<{col_w}} | {count:>7} |")
+            print(separator)
+            info("(Dep counts are from the export file — use import to apply them)")
 
     # ── Enriched import orchestrator ─────────────────────────────────────
 
