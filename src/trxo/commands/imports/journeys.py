@@ -19,10 +19,10 @@ It handles two export formats:
 
 import base64
 import json
-import httpx
 from typing import Any, Dict, List, Optional
 from urllib.parse import quote
 
+import httpx
 import typer
 
 from trxo.constants import DEFAULT_REALM
@@ -154,9 +154,10 @@ class JourneyImporter(BaseImporter):
         if storage_mode == "git":
             # Ask the base-class machinery to resolve the git file path/content
             # so we can probe it for the enriched format before deciding how to route.
-            from trxo.utils.imports.file_loader import FileLoader
-            from trxo.utils.git_manager import GitManager
             from pathlib import Path as _Path
+
+            from trxo.utils.git_manager import GitManager
+            from trxo.utils.imports.file_loader import FileLoader
 
             git_manager = self._setup_git_manager(branch)
             effective_realm = self._determine_effective_realm(
@@ -400,10 +401,11 @@ class JourneyImporter(BaseImporter):
           file vs server columns.  Server count is fetched for journeys
           as a by-product of the tree diff — no extra round-trips needed.
         """
+        from pathlib import Path
+
         from trxo.utils.diff.data_fetcher import DataFetcher, get_command_api_endpoint
         from trxo.utils.diff.diff_engine import DiffEngine
         from trxo.utils.diff.diff_reporter import DiffReporter
-        from pathlib import Path
 
         info("Diff mode: comparing journey trees against live environment...")
 

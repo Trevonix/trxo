@@ -8,7 +8,6 @@ from trxo.commands.imports.journeys import (
     create_journey_import_command,
 )
 
-
 # ---------------------------------------------------------------------------
 # Basic contract tests
 # ---------------------------------------------------------------------------
