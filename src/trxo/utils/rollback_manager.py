@@ -24,7 +24,7 @@ class RollbackManager:
         self.command_name = command_name
 
         # Root-level IDM configs
-        if command_name in ["privileges", "email_templates", "endpoints", "managed", "connectors"]:
+        if command_name in ["privileges", "email_templates", "endpoints", "managed", "connectors", "themes"]:
             self.realm = realm if realm else "root"
         else:
             self.realm = realm or DEFAULT_REALM
@@ -85,6 +85,75 @@ class RollbackManager:
                 error("Failed to capture baseline snapshot from server")
                 return False
 
+            # ---------------------------------------------------------
+            # THEMES SPECIAL HANDLING (ui/themerealm)
+            # ---------------------------------------------------------
+            if self.command_name == "themes":
+
+                if not isinstance(data, dict):
+                    error("Unexpected response for ui/themerealm baseline snapshot")
+                    return False
+
+                item_id = data.get("_id", "ui/themerealm")
+
+                # Filter only the requested realm
+                filtered_doc = dict(data)
+
+                if "realm" in filtered_doc and isinstance(filtered_doc["realm"], dict):
+                    if self.realm in filtered_doc["realm"]:
+                        filtered_doc["realm"] = {
+                            self.realm: filtered_doc["realm"][self.realm]
+                        }
+                    else:
+                        warning(f"Realm '{self.realm}' not found in ui/themerealm")
+                        filtered_doc["realm"] = {}
+
+                mapping = {item_id: filtered_doc}
+
+                self.baseline_snapshot = mapping
+                self.raw_baseline_data = mapping
+
+                # ------------------- Git baseline -------------------
+                if git_manager:
+
+                    self.git_manager = git_manager
+
+                    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+                    branch_name = f"baseline/{self.command_name}/{timestamp}"
+
+                    info(f"Creating baseline git branch: {branch_name}")
+                    git_manager.ensure_branch(branch_name)
+
+                    repo_path = git_manager.local_path
+                    component = self.command_name
+
+                    realm_dir = repo_path / (self.realm or "root")
+                    comp_dir = realm_dir / component
+                    comp_dir.mkdir(parents=True, exist_ok=True)
+
+                    filename = f"{(self.realm or 'root')}_{component}.json"
+                    file_path = comp_dir / filename
+
+                    baseline_file_data = {"data": mapping}
+
+                    file_path.write_text(
+                        json.dumps(baseline_file_data, indent=2),
+                        encoding="utf-8",
+                    )
+
+                    rel = file_path.relative_to(repo_path)
+
+                    commit_msg = (
+                        f"Baseline snapshot for {self.command_name} "
+                        f"({self.realm}) at {timestamp}"
+                    )
+
+                    git_manager.commit_and_push([str(rel)], commit_msg, smart_pull=False)
+
+                    self.git_branch = branch_name
+
+                info("Baseline snapshot created")
+                return True
             items = []
 
             def flatten_items(obj):

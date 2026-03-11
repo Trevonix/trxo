@@ -116,6 +116,7 @@ class ComponentMapper:
         "Environment_Secrets",
         "Environment_Variables",
         "Realms",
+        "themes",
     ]
 
     @staticmethod
