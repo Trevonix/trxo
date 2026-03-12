@@ -121,7 +121,6 @@ def test_execute_rollback_managed_special_case(mocker):
     assert len(report["rolled_back"]) == 0
 
 
-
 def test_build_api_url_list_endpoint(mocker, manager):
     mocker.patch(
         "trxo.utils.rollback_manager.get_command_api_endpoint",

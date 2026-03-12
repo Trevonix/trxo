@@ -156,7 +156,6 @@ class JourneyImporter(BaseImporter):
             # so we can probe it for the enriched format before deciding how to route.
             from pathlib import Path as _Path
 
-            from trxo.utils.git_manager import GitManager
             from trxo.utils.imports.file_loader import FileLoader
 
             git_manager = self._setup_git_manager(branch)
