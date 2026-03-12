@@ -50,14 +50,14 @@ class ConnectorsImporter(BaseImporter):
             if isinstance(item, dict) and "data" in item:
                 data = item["data"]
 
-                # standard TRXO export format
                 if isinstance(data, dict) and "result" in data:
                     normalized.extend(data["result"])
                     continue
 
-            # already list of connectors
+            # already list
             if isinstance(item, list):
                 normalized.extend(item)
+                continue
 
             # already connector dict
             if isinstance(item, dict) and "_id" in item:
@@ -93,23 +93,30 @@ class ConnectorsImporter(BaseImporter):
 
         headers = {
             "Content-Type": "application/json",
-            "Accept-API-Version": "protocol=2.0,resource=1.0",
+            "Accept-API-Version": "protocol=2.1,resource=1.0",
         }
 
-        if hasattr(self, "rollback_manager") and self.rollback_manager:
-            headers.update(self.rollback_manager._build_auth_headers(token, url))
+        headers.update(self.build_auth_headers(token))
 
         import httpx
 
-        with httpx.Client() as client:
-            resp = client.put(url, headers=headers, json=payload)
+        try:
+            with httpx.Client(timeout=60) as client:
+                resp = client.put(url, headers=headers, json=payload)
 
-        if resp.status_code in (200, 201, 204):
-            success(f"Successfully upserted connector: {item_id}")
-            return True
+            if resp.status_code in (200, 201, 204):
+                success(f"Successfully upserted connector: {item_id}")
+                return True
 
-        error(f"Failed to upsert connector '{item_id}'")
-        return False
+            error(
+                f"Failed to upsert connector '{item_id}': "
+                f"{resp.status_code} - {resp.text}"
+            )
+            return False
+
+        except Exception as e:
+            error(f"Connector import error for '{item_id}': {str(e)}")
+            return False
 
     def _import_from_git(
         self, realm: Optional[str], force_import: bool, branch: Optional[str] = None
@@ -121,23 +128,33 @@ class ConnectorsImporter(BaseImporter):
 
         git_manager = self._setup_git_manager(branch)
 
-        all_items = self.file_loader.load_git_files(
+        raw_items = self.file_loader.load_git_files(
             git_manager, item_type, effective_realm, branch
         )
 
-        normalized_items = []
+        normalized = []
 
-        for item in all_items:
+        for item in raw_items:
 
-            # unwrap connector structures accidentally returned as dict keys
+            if isinstance(item, dict) and "data" in item:
+                data = item["data"]
+
+                if isinstance(data, dict) and "result" in data:
+                    normalized.extend(data["result"])
+                    continue
+
+            if isinstance(item, list):
+                normalized.extend(item)
+                continue
+
             if isinstance(item, dict) and "_id" in item:
-                normalized_items.append(item)
+                normalized.append(item)
 
-        if not normalized_items:
+        if not normalized:
             self._handle_no_git_files_found(item_type, effective_realm, realm)
             return []
 
-        return normalized_items
+        return normalized
 
 
 def create_connectors_import_command():
