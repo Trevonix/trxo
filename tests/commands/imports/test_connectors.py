@@ -90,8 +90,9 @@ def test_update_item_error(mocker):
 
     data = {"_id": "provisioner.openicf.mysql"}
 
-    with pytest.raises(Exception):
-        importer.update_item(data, "token", "http://x")
+    result = importer.update_item(data, "token", "http://x")
+
+    assert result is False
 
 
 def test_create_connectors_import_command_wires_options(mocker):
