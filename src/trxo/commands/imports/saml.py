@@ -35,7 +35,6 @@ from trxo.commands.shared.options import (
     SaIdOpt,
 )
 from trxo.config.api_headers import get_headers
-
 from trxo.constants import DEFAULT_REALM
 from trxo.utils.console import error, info, success, warning
 from trxo.utils.rollback_manager import RollbackManager

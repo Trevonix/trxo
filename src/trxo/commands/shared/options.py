@@ -11,7 +11,9 @@ from trxo.constants import DEFAULT_REALM
 # Core Options
 RealmOpt = Annotated[
     str,
-    typer.Option(..., "--realm",
+    typer.Option(
+        ...,
+        "--realm",
         help=f"Target realm name (default: {DEFAULT_REALM})",
     ),
 ]
@@ -24,14 +26,18 @@ InputFileOpt = Annotated[
 # View Options
 ViewOpt = Annotated[
     bool,
-    typer.Option(..., "--view",
+    typer.Option(
+        ...,
+        "--view",
         help="Display data in table format instead of exporting to file",
     ),
 ]
 
 ViewColumnsOpt = Annotated[
     Optional[str],
-    typer.Option(..., "--view-columns",
+    typer.Option(
+        ...,
+        "--view-columns",
         help="Comma-separated list of columns to display (e.g., '_id,name,active')",
     ),
 ]
@@ -44,14 +50,18 @@ VersionOpt = Annotated[
 
 NoVersionOpt = Annotated[
     bool,
-    typer.Option(..., "--no-version",
+    typer.Option(
+        ...,
+        "--no-version",
         help="Disable auto versioning for legacy filenames",
     ),
 ]
 
 BranchOpt = Annotated[
     Optional[str],
-    typer.Option(..., "--branch",
+    typer.Option(
+        ...,
+        "--branch",
         help="Git branch to use (Git mode only)",
     ),
 ]
@@ -64,7 +74,9 @@ CommitMessageOpt = Annotated[
 # Import-Specific Options
 ForceImportOpt = Annotated[
     bool,
-    typer.Option(..., "--force-import",
+    typer.Option(
+        ...,
+        "--force-import",
         "-f",
         help="Skip hash validation and force import",
     ),
@@ -72,28 +84,36 @@ ForceImportOpt = Annotated[
 
 DiffOpt = Annotated[
     bool,
-    typer.Option(..., "--diff",
+    typer.Option(
+        ...,
+        "--diff",
         help="Show differences before import",
     ),
 ]
 
 RollbackOpt = Annotated[
     bool,
-    typer.Option(..., "--rollback",
+    typer.Option(
+        ...,
+        "--rollback",
         help="Automatically rollback imported items on first failure (requires git storage)",
     ),
 ]
 
 SyncOpt = Annotated[
     bool,
-    typer.Option(..., "--sync",
+    typer.Option(
+        ...,
+        "--sync",
         help="Synchronize items (create new, update existing, delete missing)",
     ),
 ]
 
 CherryPickOpt = Annotated[
     Optional[str],
-    typer.Option(..., "--cherry-pick",
+    typer.Option(
+        ...,
+        "--cherry-pick",
         help="Comma-separated IDs of specific items to import",
     ),
 ]
@@ -111,14 +131,18 @@ SaIdOpt = Annotated[
 
 BaseUrlOpt = Annotated[
     Optional[str],
-    typer.Option(..., "--base-url",
+    typer.Option(
+        ...,
+        "--base-url",
         help="Base URL for PingOne Advanced Identity Cloud instance",
     ),
 ]
 
 ProjectNameOpt = Annotated[
     Optional[str],
-    typer.Option(..., "--project-name",
+    typer.Option(
+        ...,
+        "--project-name",
         help="Project name for argument mode (optional)",
     ),
 ]
@@ -137,7 +161,9 @@ OutputFileOpt = Annotated[
 # Auth Mode Overrides
 AuthModeOpt = Annotated[
     Optional[str],
-    typer.Option(..., "--auth-mode",
+    typer.Option(
+        ...,
+        "--auth-mode",
         help="Auth mode override: service-account|onprem",
     ),
 ]

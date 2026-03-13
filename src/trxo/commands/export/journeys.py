@@ -41,7 +41,6 @@ from trxo.commands.shared.options import (
     ViewColumnsOpt,
     ViewOpt,
 )
-
 from trxo.constants import DEFAULT_REALM
 from trxo.utils.console import error, info, warning
 

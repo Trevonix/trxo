@@ -11,7 +11,6 @@ from typing import Any, Dict, List, Optional
 
 import typer
 
-from trxo.config.api_headers import get_headers
 from trxo.commands.shared.options import (
     AmBaseUrlOpt,
     AuthModeOpt,
@@ -34,7 +33,7 @@ from trxo.commands.shared.options import (
     SaIdOpt,
     SyncOpt,
 )
-
+from trxo.config.api_headers import get_headers
 from trxo.constants import DEFAULT_REALM
 from trxo.utils.console import error, info, warning
 

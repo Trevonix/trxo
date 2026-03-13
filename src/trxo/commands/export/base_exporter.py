@@ -10,8 +10,8 @@ Refactored to use focused utility modules for better maintainability.
 from typing import Any, Callable, Dict, Optional
 
 import typer
-from trxo.config.api_headers import get_headers
 
+from trxo.config.api_headers import get_headers
 from trxo.utils.console import error, info, success, warning
 from trxo.utils.export import (
     FileSaver,
