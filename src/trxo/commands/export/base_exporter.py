@@ -10,6 +10,7 @@ Refactored to use focused utility modules for better maintainability.
 from typing import Any, Callable, Dict, Optional
 
 import typer
+from trxo.config.api_headers import get_headers
 
 from trxo.utils.console import error, info, success, warning
 from trxo.utils.export import (
@@ -129,10 +130,7 @@ class BaseExporter(BaseCommand):
 
             # Prepare headers with authentication
             if headers is None:
-                headers = {
-                    "Content-Type": "application/json",
-                    "Accept-API-Version": "protocol=1.0,resource=1.0",
-                }
+                headers = get_headers("protocol_1_0")
             headers = {**headers, **self.build_auth_headers(token, product=product)}
 
             # Make API call

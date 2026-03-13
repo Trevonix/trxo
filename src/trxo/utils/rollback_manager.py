@@ -12,6 +12,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from trxo.constants import DEFAULT_REALM
+from trxo.config.api_headers import get_headers
 from trxo.utils.console import error, info, warning
 from trxo.utils.diff.data_fetcher import DataFetcher, get_command_api_endpoint
 from trxo.utils.git import GitManager
@@ -238,10 +239,7 @@ class RollbackManager:
 
                     url = self._build_api_url(item_id, base_url)
 
-                    headers = {
-                        "Content-Type": "application/json",
-                        "Accept-API-Version": "protocol=2.0,resource=1.0",
-                    }
+                    headers = get_headers(self.command_name)
 
                     headers = {**headers, **self._build_auth_headers(token, url)}
 
@@ -359,10 +357,7 @@ class RollbackManager:
                 try:
                     url = self._build_api_url(baseline_id, base_url)
 
-                    headers = {
-                        "Content-Type": "application/json",
-                        "Accept-API-Version": "protocol=2.0,resource=1.0",
-                    }
+                    headers = get_headers(self.command_name)
 
                     headers = {**headers, **self._build_auth_headers(token, url)}
 
@@ -405,10 +400,7 @@ class RollbackManager:
             try:
                 url = self._build_api_url(item_id, base_url)
 
-                headers = {
-                    "Content-Type": "application/json",
-                    "Accept-API-Version": "protocol=2.0,resource=1.0",
-                }
+                headers = get_headers(self.command_name)
 
                 headers = {**headers, **self._build_auth_headers(token, url)}
 
@@ -491,10 +483,13 @@ class RollbackManager:
 
             if self._idm_username and self._idm_password:
 
+                headers = get_headers(self.command_name)
                 return {
                     "X-OpenIDM-Username": self._idm_username,
                     "X-OpenIDM-Password": self._idm_password,
-                    "Accept-API-Version": "protocol=2.1,resource=1.0",
+                    "Accept-API-Version": headers.get(
+                        "Accept-API-Version", "protocol=2.1,resource=1.0"
+                    ),
                 }
 
             return {}

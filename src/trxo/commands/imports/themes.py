@@ -17,6 +17,29 @@ from typing import Any, Dict, List, Optional
 
 import typer
 
+from trxo.config.api_headers import get_headers
+from trxo.commands.shared.options import (
+    AmBaseUrlOpt,
+    AuthModeOpt,
+    BaseUrlOpt,
+    BranchOpt,
+    CherryPickOpt,
+    DiffOpt,
+    ForceImportOpt,
+    IdmBaseUrlOpt,
+    IdmPasswordOpt,
+    IdmUsernameOpt,
+    InputFileOpt,
+    JwkPathOpt,
+    OnPremPasswordOpt,
+    OnPremRealmOpt,
+    OnPremUsernameOpt,
+    ProjectNameOpt,
+    RealmOpt,
+    RollbackOpt,
+    SaIdOpt,
+)
+
 from trxo.constants import DEFAULT_REALM
 from trxo.utils.console import error, info
 
@@ -58,8 +81,9 @@ class ThemesImporter(BaseImporter):
         Returns the full dict (including _rev) or {} on failure.
         """
         url = self.get_api_endpoint("", base_url)
+        headers = get_headers("themes")
         headers = {
-            "Accept-API-Version": "protocol=2.1,resource=1.0",
+            **headers,
             **self.build_auth_headers(token),
         }
         try:
@@ -249,9 +273,9 @@ class ThemesImporter(BaseImporter):
 
         # --- Step 3: PUT ---
         url = self.get_api_endpoint("", base_url)
+        headers = get_headers("themes")
         headers = {
-            "Content-Type": "application/json",
-            "Accept-API-Version": "protocol=2.1,resource=1.0",
+            **headers,
             **self.build_auth_headers(token),
         }
 
@@ -286,76 +310,25 @@ def create_themes_import_command():
     """Create the themes import command function."""
 
     def import_themes(
-        cherry_pick: str = typer.Option(
-            None,
-            "--cherry-pick",
-            help="Cherry-pick specific theme realms by name (comma-separated)",
-        ),
-        file: str = typer.Option(
-            None,
-            "--file",
-            help="Path to JSON file containing themes configuration",
-        ),
-        realm: str = typer.Option(
-            DEFAULT_REALM,
-            "--realm",
-            help=f"Target realm name (default: {DEFAULT_REALM})",
-        ),
-        jwk_path: str = typer.Option(
-            None, "--jwk-path", help="Path to JWK private key file"
-        ),
-        sa_id: str = typer.Option(None, "--sa-id", help="Service Account ID"),
-        base_url: str = typer.Option(
-            None,
-            "--base-url",
-            help="Base URL for PingOne Advanced Identity Cloud instance",
-        ),
-        project_name: str = typer.Option(
-            None, "--project-name", help="Project name for argument mode (optional)"
-        ),
-        auth_mode: str = typer.Option(
-            None,
-            "--auth-mode",
-            help="Auth mode override: service-account|onprem",
-        ),
-        onprem_username: str = typer.Option(
-            None, "--onprem-username", help="On-Prem username"
-        ),
-        onprem_password: str = typer.Option(
-            None, "--onprem-password", help="On-Prem password", hide_input=True
-        ),
-        onprem_realm: str = typer.Option(
-            "root", "--onprem-realm", help="On-Prem realm"
-        ),
-        am_base_url: str = typer.Option(
-            None, "--am-base-url", help="On-Prem AM base URL"
-        ),
-        idm_base_url: str = typer.Option(
-            None, "--idm-base-url", help="On-Prem IDM base URL"
-        ),
-        idm_username: str = typer.Option(
-            None, "--idm-username", help="On-Prem IDM username"
-        ),
-        idm_password: str = typer.Option(
-            None, "--idm-password", help="On-Prem IDM password", hide_input=True
-        ),
-        force_import: bool = typer.Option(
-            False,
-            "--force-import",
-            "-f",
-            help="Skip hash validation and force import",
-        ),
-        diff: bool = typer.Option(
-            False, "--diff", help="Show differences before import"
-        ),
-        branch: str = typer.Option(
-            None, "--branch", help="Git branch to import from (Git mode only)"
-        ),
-        rollback: bool = typer.Option(
-            False,
-            "--rollback",
-            help="Automatically rollback imported themes on first failure",
-        ),
+        cherry_pick: CherryPickOpt = None,
+        file: InputFileOpt = None,
+        realm: RealmOpt = DEFAULT_REALM,
+        jwk_path: JwkPathOpt = None,
+        sa_id: SaIdOpt = None,
+        base_url: BaseUrlOpt = None,
+        project_name: ProjectNameOpt = None,
+        auth_mode: AuthModeOpt = None,
+        onprem_username: OnPremUsernameOpt = None,
+        onprem_password: OnPremPasswordOpt = None,
+        onprem_realm: OnPremRealmOpt = "root",
+        am_base_url: AmBaseUrlOpt = None,
+        idm_base_url: IdmBaseUrlOpt = None,
+        idm_username: IdmUsernameOpt = None,
+        idm_password: IdmPasswordOpt = None,
+        force_import: ForceImportOpt = False,
+        diff: DiffOpt = False,
+        branch: BranchOpt = None,
+        rollback: RollbackOpt = False,
     ):
         """Import themes from JSON file or Git repository."""
         importer = ThemesImporter()

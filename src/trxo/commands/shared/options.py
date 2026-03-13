@@ -1,0 +1,205 @@
+"""
+Shared Typer CLI options for TRXO commands.
+"""
+
+from typing import Annotated, Optional
+
+import typer
+
+from trxo.constants import DEFAULT_REALM
+
+# Core Options
+RealmOpt = Annotated[
+    str,
+    typer.Option(
+        DEFAULT_REALM,
+        "--realm",
+        help=f"Target realm name (default: {DEFAULT_REALM})",
+    ),
+]
+
+InputFileOpt = Annotated[
+    Optional[str],
+    typer.Option(None, "--file", help="Path to JSON file containing items"),
+]
+
+# View Options
+ViewOpt = Annotated[
+    bool,
+    typer.Option(
+        False,
+        "--view",
+        help="Display data in table format instead of exporting to file",
+    ),
+]
+
+ViewColumnsOpt = Annotated[
+    Optional[str],
+    typer.Option(
+        None,
+        "--view-columns",
+        help="Comma-separated list of columns to display (e.g., '_id,name,active')",
+    ),
+]
+
+# Versioning & Git Options
+VersionOpt = Annotated[
+    Optional[str],
+    typer.Option(None, "--version", help="Custom version name (default: auto)"),
+]
+
+NoVersionOpt = Annotated[
+    bool,
+    typer.Option(
+        False,
+        "--no-version",
+        help="Disable auto versioning for legacy filenames",
+    ),
+]
+
+BranchOpt = Annotated[
+    Optional[str],
+    typer.Option(
+        None,
+        "--branch",
+        help="Git branch to use (Git mode only)",
+    ),
+]
+
+CommitMessageOpt = Annotated[
+    Optional[str],
+    typer.Option(None, "--commit", help="Custom commit message (Git mode only)"),
+]
+
+# Import-Specific Options
+ForceImportOpt = Annotated[
+    bool,
+    typer.Option(
+        False,
+        "--force-import",
+        "-f",
+        help="Skip hash validation and force import",
+    ),
+]
+
+DiffOpt = Annotated[
+    bool,
+    typer.Option(
+        False,
+        "--diff",
+        help="Show differences before import",
+    ),
+]
+
+RollbackOpt = Annotated[
+    bool,
+    typer.Option(
+        False,
+        "--rollback",
+        help="Automatically rollback imported items on first failure (requires git storage)",
+    ),
+]
+
+SyncOpt = Annotated[
+    bool,
+    typer.Option(
+        False,
+        "--sync",
+        help="Synchronize items (create new, update existing, delete missing)",
+    ),
+]
+
+CherryPickOpt = Annotated[
+    Optional[str],
+    typer.Option(
+        None,
+        "--cherry-pick",
+        help="Comma-separated IDs of specific items to import",
+    ),
+]
+
+# Auth & Connection Options
+JwkPathOpt = Annotated[
+    Optional[str],
+    typer.Option(None, "--jwk-path", help="Path to JWK private key file"),
+]
+
+SaIdOpt = Annotated[
+    Optional[str],
+    typer.Option(None, "--sa-id", help="Service Account ID"),
+]
+
+BaseUrlOpt = Annotated[
+    Optional[str],
+    typer.Option(
+        None,
+        "--base-url",
+        help="Base URL for PingOne Advanced Identity Cloud instance",
+    ),
+]
+
+ProjectNameOpt = Annotated[
+    Optional[str],
+    typer.Option(
+        None,
+        "--project-name",
+        help="Project name for argument mode (optional)",
+    ),
+]
+
+# Output Options
+OutputDirOpt = Annotated[
+    Optional[str],
+    typer.Option(None, "--dir", help="Output directory for JSON files"),
+]
+
+OutputFileOpt = Annotated[
+    Optional[str],
+    typer.Option(None, "--file", help="Output filename (without .json extension)"),
+]
+
+# Auth Mode Overrides
+AuthModeOpt = Annotated[
+    Optional[str],
+    typer.Option(
+        None,
+        "--auth-mode",
+        help="Auth mode override: service-account|onprem",
+    ),
+]
+
+# On-Prem Options
+OnPremUsernameOpt = Annotated[
+    Optional[str],
+    typer.Option(None, "--onprem-username", help="On-Prem username"),
+]
+
+OnPremPasswordOpt = Annotated[
+    Optional[str],
+    typer.Option(None, "--onprem-password", help="On-Prem password", hide_input=True),
+]
+
+OnPremRealmOpt = Annotated[
+    str,
+    typer.Option("root", "--onprem-realm", help="On-Prem realm"),
+]
+
+AmBaseUrlOpt = Annotated[
+    Optional[str],
+    typer.Option(None, "--am-base-url", help="On-Prem AM base URL"),
+]
+
+IdmBaseUrlOpt = Annotated[
+    Optional[str],
+    typer.Option(None, "--idm-base-url", help="On-Prem IDM base URL"),
+]
+
+IdmUsernameOpt = Annotated[
+    Optional[str],
+    typer.Option(None, "--idm-username", help="On-Prem IDM username"),
+]
+
+IdmPasswordOpt = Annotated[
+    Optional[str],
+    typer.Option(None, "--idm-password", help="On-Prem IDM password", hide_input=True),
+]

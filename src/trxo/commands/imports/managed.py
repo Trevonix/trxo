@@ -12,6 +12,28 @@ from typing import Any, Dict, List
 
 import typer
 
+from trxo.commands.shared.options import (
+    AmBaseUrlOpt,
+    AuthModeOpt,
+    BaseUrlOpt,
+    BranchOpt,
+    CherryPickOpt,
+    DiffOpt,
+    ForceImportOpt,
+    IdmBaseUrlOpt,
+    IdmPasswordOpt,
+    IdmUsernameOpt,
+    InputFileOpt,
+    JwkPathOpt,
+    OnPremPasswordOpt,
+    OnPremRealmOpt,
+    OnPremUsernameOpt,
+    ProjectNameOpt,
+    RollbackOpt,
+    SaIdOpt,
+)
+from trxo.config.api_headers import get_headers
+
 from trxo.utils.console import error, info, warning
 
 from .base_importer import BaseImporter
@@ -36,10 +58,7 @@ class ManagedObjectsImporter(BaseImporter):
     def _get_current_managed_config(self, token: str, base_url: str) -> Dict[str, Any]:
         """Fetch current managed objects configuration"""
         url = self.get_api_endpoint("", base_url)
-        headers = {
-            "Content-Type": "application/json",
-            "Accept-API-Version": "protocol=2.1,resource=1.0",
-        }
+        headers = get_headers("managed")
         headers = {**headers, **self.build_auth_headers(token)}
 
         try:
@@ -97,10 +116,7 @@ class ManagedObjectsImporter(BaseImporter):
         info(
             f"[DEBUG] Fetching server schema properties for '{object_name}' from: {url}"
         )
-        headers = {
-            "Content-Type": "application/json",
-            "Accept-API-Version": "protocol=2.1,resource=2.0",
-        }
+        headers = get_headers("managed")
         headers = {**headers, **self.build_auth_headers(token)}
 
         try:
@@ -168,10 +184,7 @@ class ManagedObjectsImporter(BaseImporter):
             f"properties to delete for '{object_name}': {sorted(orphaned_props)}"
         )
 
-        headers = {
-            "Content-Type": "application/json",
-            "Accept-API-Version": "protocol=2.1,resource=2.0",
-        }
+        headers = get_headers("managed")
         headers = {**headers, **self.build_auth_headers(token)}
 
         for prop_name in orphaned_props:
@@ -242,10 +255,7 @@ class ManagedObjectsImporter(BaseImporter):
                     f"[DEBUG] Processing relationship property '{prop_name}' for '{object_name}'"
                 )
 
-                headers = {
-                    "Content-Type": "application/json",
-                    "Accept-API-Version": "protocol=2.1,resource=2.0",
-                }
+                headers = get_headers("managed")
                 headers = {**headers, **self.build_auth_headers(token)}
 
                 # Try to fetch existing property schema to preserve robust configuration
@@ -382,10 +392,7 @@ class ManagedObjectsImporter(BaseImporter):
             and isinstance(item_data["objects"], list)
         ):
             url = self.get_api_endpoint("", base_url)
-            headers = {
-                "Content-Type": "application/json",
-                "Accept-API-Version": "protocol=2.1,resource=1.0",
-            }
+            headers = get_headers("managed")
             headers = {**headers, **self.build_auth_headers(token)}
 
             # Get current configuration once, keep a local copy updated as we go
@@ -526,10 +533,7 @@ class ManagedObjectsImporter(BaseImporter):
         index, existing_object = self._find_object_by_name(current_objects, object_name)
 
         url = self.get_api_endpoint("", base_url)
-        headers = {
-            "Content-Type": "application/json",
-            "Accept-API-Version": "protocol=2.1,resource=1.0",
-        }
+        headers = get_headers("managed")
         headers = {**headers, **self.build_auth_headers(token)}
 
         if index >= 0:
@@ -715,64 +719,24 @@ def create_managed_import_command():
     """Create the managed objects import command function"""
 
     def import_managed(
-        cherry_pick: str = typer.Option(
-            None,
-            "--cherry-pick",
-            help="Cherry-pick specific managed objects by name (comma-separated)",
-        ),
-        file: str = typer.Option(
-            None, "--file", help="Path to JSON file containing managed objects"
-        ),
-        branch: str = typer.Option(
-            None, "--branch", help="Git branch to import from (Git mode only)"
-        ),
-        jwk_path: str = typer.Option(
-            None, "--jwk-path", help="Path to JWK private key file"
-        ),
-        sa_id: str = typer.Option(None, "--sa-id", help="Service Account ID"),
-        base_url: str = typer.Option(
-            None,
-            "--base-url",
-            help="Base URL for PingOne Advanced Identity Cloud instance",
-        ),
-        project_name: str = typer.Option(
-            None, "--project-name", help="Project name for argument mode (optional)"
-        ),
-        auth_mode: str = typer.Option(
-            None, "--auth-mode", help="Auth mode override: service-account|onprem"
-        ),
-        onprem_username: str = typer.Option(
-            None, "--onprem-username", help="On-Prem username"
-        ),
-        onprem_password: str = typer.Option(
-            None, "--onprem-password", help="On-Prem password", hide_input=True
-        ),
-        onprem_realm: str = typer.Option(
-            "root", "--onprem-realm", help="On-Prem realm"
-        ),
-        am_base_url: str = typer.Option(
-            None, "--am-base-url", help="On-Prem AM base URL"
-        ),
-        idm_base_url: str = typer.Option(
-            None, "--idm-base-url", help="On-Prem IDM base URL"
-        ),
-        idm_username: str = typer.Option(
-            None, "--idm-username", help="On-Prem IDM username"
-        ),
-        idm_password: str = typer.Option(
-            None, "--idm-password", help="On-Prem IDM password", hide_input=True
-        ),
-        force_import: bool = typer.Option(
-            False, "--force-import", "-f", help="Skip hash validation and force import"
-        ),
-        diff: bool = typer.Option(
-            False, "--diff", help="Show differences before import"
-        ),
-        rollback: bool = typer.Option(
-            False,
-            "--rollback",
-            help="Automatically rollback imported items on first failure (requires git storage)",
-        ),
+        cherry_pick: CherryPickOpt = None,
+        file: InputFileOpt = None,
+        branch: BranchOpt = None,
+        jwk_path: JwkPathOpt = None,
+        sa_id: SaIdOpt = None,
+        base_url: BaseUrlOpt = None,
+        project_name: ProjectNameOpt = None,
+        auth_mode: AuthModeOpt = None,
+        onprem_username: OnPremUsernameOpt = None,
+        onprem_password: OnPremPasswordOpt = None,
+        onprem_realm: OnPremRealmOpt = "root",
+        am_base_url: AmBaseUrlOpt = None,
+        idm_base_url: IdmBaseUrlOpt = None,
+        idm_username: IdmUsernameOpt = None,
+        idm_password: IdmPasswordOpt = None,
+        force_import: ForceImportOpt = False,
+        diff: DiffOpt = False,
+        rollback: RollbackOpt = False,
     ):
         """Import managed objects from JSON file (local mode) or Git repository (Git mode).
 

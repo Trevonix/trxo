@@ -13,6 +13,29 @@ from urllib.parse import quote
 import httpx
 import typer
 
+from trxo.commands.shared.options import (
+    AmBaseUrlOpt,
+    AuthModeOpt,
+    BaseUrlOpt,
+    BranchOpt,
+    CherryPickOpt,
+    DiffOpt,
+    ForceImportOpt,
+    IdmBaseUrlOpt,
+    IdmPasswordOpt,
+    IdmUsernameOpt,
+    InputFileOpt,
+    JwkPathOpt,
+    OnPremPasswordOpt,
+    OnPremRealmOpt,
+    OnPremUsernameOpt,
+    ProjectNameOpt,
+    RealmOpt,
+    RollbackOpt,
+    SaIdOpt,
+)
+from trxo.config.api_headers import get_headers
+
 from trxo.constants import DEFAULT_REALM
 from trxo.utils.console import error, info, success, warning
 from trxo.utils.rollback_manager import RollbackManager
@@ -350,10 +373,7 @@ class SamlImporter(BaseImporter):
             f"/am/json/realms/root/realms/{self.realm}/scripts/{script_id}",
         )
 
-        headers = {
-            "Content-Type": "application/json",
-            "Accept-API-Version": "protocol=2.1,resource=1.0",
-        }
+        headers = get_headers("saml")
         headers = {**headers, **self.build_auth_headers(token)}
 
         try:
@@ -413,9 +433,7 @@ class SamlImporter(BaseImporter):
             f"{quote(entity_id)}&realm={self.realm}",
         )
 
-        headers = {
-            "Accept-API-Version": "protocol=2.1,resource=1.0",
-        }
+        headers = get_headers("saml_metadata_check")
         headers = {**headers, **self.build_auth_headers(token)}
 
         try:
@@ -461,10 +479,7 @@ class SamlImporter(BaseImporter):
 
         payload = {"standardMetadata": encoded_metadata}
 
-        headers = {
-            "Content-Type": "application/json",
-            "Accept-API-Version": "protocol=2.1,resource=1.0",
-        }
+        headers = get_headers("saml")
         headers = {**headers, **self.build_auth_headers(token)}
 
         try:
@@ -499,10 +514,7 @@ class SamlImporter(BaseImporter):
             f"saml2/{location}/{entity_id}",
         )
 
-        headers = {
-            "Content-Type": "application/json",
-            "Accept-API-Version": "protocol=2.1,resource=1.0",
-        }
+        headers = get_headers("saml")
         headers = {**headers, **self.build_auth_headers(token)}
 
         try:
@@ -580,71 +592,25 @@ def create_saml_import_command():
     """Create the SAML import command function"""
 
     def import_saml(
-        file: str = typer.Option(
-            None,
-            "--file",
-            help="Path to JSON file containing SAML data (local mode only)",
-        ),
-        jwk_path: str = typer.Option(
-            None, "--jwk-path", help="Path to JWK private key file"
-        ),
-        sa_id: str = typer.Option(None, "--sa-id", help="Service Account ID"),
-        base_url: str = typer.Option(
-            None,
-            "--base-url",
-            help="Base URL for PingOne Advanced Identity Cloud instance",
-        ),
-        project_name: str = typer.Option(
-            None, "--project-name", help="Project name for argument mode (optional)"
-        ),
-        auth_mode: str = typer.Option(
-            None, "--auth-mode", help="Auth mode override: service-account|onprem"
-        ),
-        onprem_username: str = typer.Option(
-            None, "--onprem-username", help="On-Prem username"
-        ),
-        onprem_password: str = typer.Option(
-            None, "--onprem-password", help="On-Prem password", hide_input=True
-        ),
-        onprem_realm: str = typer.Option(
-            "root", "--onprem-realm", help="On-Prem realm"
-        ),
-        force_import: bool = typer.Option(
-            False, "--force-import", "-f", help="Skip hash validation and force import"
-        ),
-        diff: bool = typer.Option(
-            False, "--diff", help="Show differences before import"
-        ),
-        branch: str = typer.Option(
-            None, "--branch", help="Git branch to import from (Git mode only)"
-        ),
-        cherry_pick: str = typer.Option(
-            None,
-            "--cherry-pick",
-            help="Import only specific entities by entityId (comma-separated)",
-        ),
-        rollback: bool = typer.Option(
-            False,
-            "--rollback",
-            help="Automatically rollback imported items on first failure",
-        ),
-        realm: str = typer.Option(
-            DEFAULT_REALM,
-            "--realm",
-            help=f"Target realm name (default: {DEFAULT_REALM})",
-        ),
-        am_base_url: str = typer.Option(
-            None, "--am-base-url", help="On-Prem AM base URL"
-        ),
-        idm_base_url: str = typer.Option(
-            None, "--idm-base-url", help="On-Prem IDM base URL"
-        ),
-        idm_username: str = typer.Option(
-            None, "--idm-username", help="On-Prem IDM username"
-        ),
-        idm_password: str = typer.Option(
-            None, "--idm-password", help="On-Prem IDM password", hide_input=True
-        ),
+        file: InputFileOpt = None,
+        jwk_path: JwkPathOpt = None,
+        sa_id: SaIdOpt = None,
+        base_url: BaseUrlOpt = None,
+        project_name: ProjectNameOpt = None,
+        auth_mode: AuthModeOpt = None,
+        onprem_username: OnPremUsernameOpt = None,
+        onprem_password: OnPremPasswordOpt = None,
+        onprem_realm: OnPremRealmOpt = "root",
+        force_import: ForceImportOpt = False,
+        diff: DiffOpt = False,
+        branch: BranchOpt = None,
+        cherry_pick: CherryPickOpt = None,
+        rollback: RollbackOpt = False,
+        realm: RealmOpt = DEFAULT_REALM,
+        am_base_url: AmBaseUrlOpt = None,
+        idm_base_url: IdmBaseUrlOpt = None,
+        idm_username: IdmUsernameOpt = None,
+        idm_password: IdmPasswordOpt = None,
     ):
         """Import SAML configurations."""
 

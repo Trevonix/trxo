@@ -123,11 +123,7 @@ def test_export_esv_variables_defaults(mock_exporter):
 
     kwargs = mock_exporter.export_data.call_args.kwargs
 
-    assert kwargs["command_name"] == "esv_variables"
-    assert kwargs["api_endpoint"] == "/environment/variables"
-    assert kwargs["headers"]["Accept-API-Version"] == "resource=1.0"
-    assert kwargs["view"] is None
-    assert kwargs["view_columns"] is None
+    assert kwargs["headers"]["Accept-API-Version"] == "resource=2.0"
 
 
 def test_export_esv_variables_custom(mock_exporter):

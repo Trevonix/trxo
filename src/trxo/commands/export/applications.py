@@ -9,6 +9,31 @@ only include items with _id containing "application/".
 
 import typer
 
+from trxo.commands.shared.options import (
+    AmBaseUrlOpt,
+    AuthModeOpt,
+    BaseUrlOpt,
+    BranchOpt,
+    CommitMessageOpt,
+    IdmBaseUrlOpt,
+    IdmPasswordOpt,
+    IdmUsernameOpt,
+    JwkPathOpt,
+    NoVersionOpt,
+    OnPremPasswordOpt,
+    OnPremRealmOpt,
+    OnPremUsernameOpt,
+    OutputDirOpt,
+    OutputFileOpt,
+    ProjectNameOpt,
+    RealmOpt,
+    SaIdOpt,
+    VersionOpt,
+    ViewColumnsOpt,
+    ViewOpt,
+)
+from trxo.config.api_headers import get_headers
+
 from trxo.constants import DEFAULT_REALM
 
 from .base_exporter import BaseExporter
@@ -18,94 +43,32 @@ def create_applications_export_command():
     """Create the applications export command function"""
 
     def export_applications(
-        realm: str = typer.Option(
-            DEFAULT_REALM,
-            "--realm",
-            help=f"Target realm name (default: {DEFAULT_REALM})",
-        ),
-        view: bool = typer.Option(
-            False,
-            "--view",
-            help="Display data in table format instead of exporting to file",
-        ),
-        view_columns: str = typer.Option(
-            None,
-            "--view-columns",
-            help=(
-                "Comma-separated list of columns to display "
-                "(e.g., '_id,name,active')"
-            ),
-        ),
-        version: str = typer.Option(
-            None, "--version", help="Custom version name (default: auto)"
-        ),
-        no_version: bool = typer.Option(
-            False,
-            "--no-version",
-            help="Disable auto versioning for legacy filenames",
-        ),
-        branch: str = typer.Option(
-            None,
-            "--branch",
-            help="Git branch to use for export (Git mode only)",
-        ),
-        commit: str = typer.Option(
-            None, "--commit", help="Custom commit message (Git mode only)"
-        ),
-        jwk_path: str = typer.Option(
-            None, "--jwk-path", help="Path to JWK private key file"
-        ),
-        sa_id: str = typer.Option(None, "--sa-id", help="Service Account ID"),
-        base_url: str = typer.Option(
-            None,
-            "--base-url",
-            help="Base URL for PingOne Advanced Identity Cloud instance",
-        ),
-        project_name: str = typer.Option(
-            None,
-            "--project-name",
-            help="Project name for argument mode (optional)",
-        ),
-        output_dir: str = typer.Option(
-            None, "--dir", help="Output directory for JSON files"
-        ),
-        output_file: str = typer.Option(
-            None, "--file", help="Output filename (without .json extension)"
-        ),
-        auth_mode: str = typer.Option(
-            None,
-            "--auth-mode",
-            help="Auth mode override: service-account|onprem",
-        ),
-        onprem_username: str = typer.Option(
-            None, "--onprem-username", help="On-Prem username"
-        ),
-        onprem_password: str = typer.Option(
-            None, "--onprem-password", help="On-Prem password", hide_input=True
-        ),
-        onprem_realm: str = typer.Option(
-            "root", "--onprem-realm", help="On-Prem realm"
-        ),
-        am_base_url: str = typer.Option(
-            None, "--am-base-url", help="On-Prem AM base URL"
-        ),
-        idm_base_url: str = typer.Option(
-            None, "--idm-base-url", help="On-Prem IDM base URL"
-        ),
-        idm_username: str = typer.Option(
-            None, "--idm-username", help="On-Prem IDM username"
-        ),
-        idm_password: str = typer.Option(
-            None, "--idm-password", help="On-Prem IDM password", hide_input=True
-        ),
+        realm: RealmOpt = DEFAULT_REALM,
+        view: ViewOpt = False,
+        view_columns: ViewColumnsOpt = None,
+        version: VersionOpt = None,
+        no_version: NoVersionOpt = False,
+        branch: BranchOpt = None,
+        commit: CommitMessageOpt = None,
+        jwk_path: JwkPathOpt = None,
+        sa_id: SaIdOpt = None,
+        base_url: BaseUrlOpt = None,
+        project_name: ProjectNameOpt = None,
+        output_dir: OutputDirOpt = None,
+        output_file: OutputFileOpt = None,
+        auth_mode: AuthModeOpt = None,
+        onprem_username: OnPremUsernameOpt = None,
+        onprem_password: OnPremPasswordOpt = None,
+        onprem_realm: OnPremRealmOpt = "root",
+        am_base_url: AmBaseUrlOpt = None,
+        idm_base_url: IdmBaseUrlOpt = None,
+        idm_username: IdmUsernameOpt = None,
+        idm_password: IdmPasswordOpt = None,
     ):
         """Export custom applications configuration"""
         exporter = BaseExporter()
 
-        headers = {
-            "Content-Type": "application/json",
-            "Accept-API-Version": "protocol=2.1,resource=1.0",
-        }
+        headers = get_headers("applications")
 
         exporter.export_data(
             command_name="applications",
