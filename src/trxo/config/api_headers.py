@@ -62,7 +62,7 @@ API_HEADERS = {
     },
     "managed": {
         **BASE_HEADERS,
-        "Accept-API-Version": "protocol=2.1,resource=2.0",
+        "Accept-API-Version": "protocol=2.1,resource=1.0",
         # Note: Managed creates (POST) sometimes need resource=2.0 or 1.0 depending on exact endpoint
     },
     "mappings": {
