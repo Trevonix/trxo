@@ -12,6 +12,27 @@ from typing import Any, Dict, List
 
 import typer
 
+from trxo.commands.shared.options import (
+    AmBaseUrlOpt,
+    AuthModeOpt,
+    BaseUrlOpt,
+    BranchOpt,
+    CherryPickOpt,
+    DiffOpt,
+    ForceImportOpt,
+    IdmBaseUrlOpt,
+    IdmPasswordOpt,
+    IdmUsernameOpt,
+    InputFileOpt,
+    JwkPathOpt,
+    OnPremPasswordOpt,
+    OnPremRealmOpt,
+    OnPremUsernameOpt,
+    ProjectNameOpt,
+    RollbackOpt,
+    SaIdOpt,
+)
+from trxo.config.api_headers import get_headers
 from trxo.utils.console import error, info
 
 from .base_importer import BaseImporter
@@ -44,10 +65,7 @@ class EndpointsImporter(BaseImporter):
         payload = json.dumps(item_data)
 
         url = self.get_api_endpoint(item_id, base_url)
-        headers = {
-            "Content-Type": "application/json",
-            "Accept-API-Version": "protocol=2.1,resource=1.0",
-        }
+        headers = get_headers("endpoints")
         headers = {**headers, **self.build_auth_headers(token)}
 
         try:
@@ -63,66 +81,24 @@ def create_endpoints_import_command():
     """Create the endpoints import command function"""
 
     def import_endpoints(
-        cherry_pick: str = typer.Option(
-            None,
-            "--cherry-pick",
-            help="Cherry-pick specific endpoints by ID "
-            "(Note: provide complete _id e.g., endpoint/registration) for multiple IDs,"
-            " use comma-separated list e.g., id1,id2,id3",
-        ),
-        force_import: bool = typer.Option(
-            False, "--force-import", "-f", help="Skip hash validation and force import"
-        ),
-        diff: bool = typer.Option(
-            False, "--diff", help="Show differences before import"
-        ),
-        branch: str = typer.Option(
-            None, "--branch", help="Git branch to import from (Git mode only)"
-        ),
-        file: str = typer.Option(
-            None, "--file", help="Path to JSON file containing custom endpoints"
-        ),
-        jwk_path: str = typer.Option(
-            None, "--jwk-path", help="Path to JWK private key file"
-        ),
-        sa_id: str = typer.Option(None, "--sa-id", help="Service Account ID"),
-        base_url: str = typer.Option(
-            None,
-            "--base-url",
-            help="Base URL for PingOne Advanced Identity Cloud instance",
-        ),
-        project_name: str = typer.Option(
-            None, "--project-name", help="Project name for argument mode (optional)"
-        ),
-        auth_mode: str = typer.Option(
-            None, "--auth-mode", help="Auth mode override: service-account|onprem"
-        ),
-        onprem_username: str = typer.Option(
-            None, "--onprem-username", help="On-Prem username"
-        ),
-        onprem_password: str = typer.Option(
-            None, "--onprem-password", help="On-Prem password", hide_input=True
-        ),
-        onprem_realm: str = typer.Option(
-            "root", "--onprem-realm", help="On-Prem realm"
-        ),
-        am_base_url: str = typer.Option(
-            None, "--am-base-url", help="On-Prem AM base URL"
-        ),
-        idm_base_url: str = typer.Option(
-            None, "--idm-base-url", help="On-Prem IDM base URL"
-        ),
-        idm_username: str = typer.Option(
-            None, "--idm-username", help="On-Prem IDM username"
-        ),
-        idm_password: str = typer.Option(
-            None, "--idm-password", help="On-Prem IDM password", hide_input=True
-        ),
-        rollback: bool = typer.Option(
-            False,
-            "--rollback",
-            help="Automatically rollback imported endpoints on first failure",
-        ),
+        cherry_pick: CherryPickOpt = None,
+        force_import: ForceImportOpt = False,
+        diff: DiffOpt = False,
+        branch: BranchOpt = None,
+        file: InputFileOpt = None,
+        jwk_path: JwkPathOpt = None,
+        sa_id: SaIdOpt = None,
+        base_url: BaseUrlOpt = None,
+        project_name: ProjectNameOpt = None,
+        auth_mode: AuthModeOpt = None,
+        onprem_username: OnPremUsernameOpt = None,
+        onprem_password: OnPremPasswordOpt = None,
+        onprem_realm: OnPremRealmOpt = "root",
+        am_base_url: AmBaseUrlOpt = None,
+        idm_base_url: IdmBaseUrlOpt = None,
+        idm_username: IdmUsernameOpt = None,
+        idm_password: IdmPasswordOpt = None,
+        rollback: RollbackOpt = False,
     ):
         """Import custom endpoints from JSON file (local mode) or Git repository (Git mode)"""
         importer = EndpointsImporter()

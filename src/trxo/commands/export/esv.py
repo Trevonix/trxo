@@ -7,6 +7,29 @@ Secrets and Variables.
 
 import typer
 
+from trxo.commands.shared.options import (
+    AmBaseUrlOpt,
+    AuthModeOpt,
+    BaseUrlOpt,
+    BranchOpt,
+    CommitMessageOpt,
+    IdmBaseUrlOpt,
+    IdmPasswordOpt,
+    IdmUsernameOpt,
+    JwkPathOpt,
+    NoVersionOpt,
+    OnPremPasswordOpt,
+    OnPremRealmOpt,
+    OnPremUsernameOpt,
+    OutputDirOpt,
+    OutputFileOpt,
+    ProjectNameOpt,
+    SaIdOpt,
+    VersionOpt,
+    ViewColumnsOpt,
+    ViewOpt,
+)
+from trxo.config.api_headers import get_headers
 from trxo.utils.console import console, info, warning
 
 from .base_exporter import BaseExporter
@@ -16,74 +39,31 @@ def create_esv_commands():
     """Create ESV export command functions"""
 
     def export_esv_secrets(
-        view: bool = typer.Option(None, "--view", help="View: all secrets"),
-        view_columns: str = typer.Option(
-            None,
-            "--view-columns",
-            help="Comma-separated list of columns to display (e.g., '_id,name,active')",
-        ),
-        version: str = typer.Option(
-            None, "--version", help="Custom version name (default: auto)"
-        ),
-        no_version: bool = typer.Option(
-            False, "--no-version", help="Disable auto versioning for legacy filenames"
-        ),
-        branch: str = typer.Option(
-            None, "--branch", help="Git branch to use for export (Git mode only)"
-        ),
-        commit: str = typer.Option(
-            None, "--commit", help="Custom commit message (Git mode only)"
-        ),
-        jwk_path: str = typer.Option(
-            None, "--jwk-path", help="Path to JWK private key file"
-        ),
-        sa_id: str = typer.Option(None, "--sa-id", help="Service Account ID"),
-        base_url: str = typer.Option(
-            None,
-            "--base-url",
-            help="Base URL for PingOne Advanced Identity Cloud instance",
-        ),
-        project_name: str = typer.Option(
-            None, "--project-name", help="Project name for argument mode (optional)"
-        ),
-        output_dir: str = typer.Option(
-            None, "--dir", help="Output directory for JSON files"
-        ),
-        output_file: str = typer.Option(
-            None, "--file", help="Output filename (without .json extension)"
-        ),
-        auth_mode: str = typer.Option(
-            None, "--auth-mode", help="Auth mode override: service-account|onprem"
-        ),
-        onprem_username: str = typer.Option(
-            None, "--onprem-username", help="On-Prem username"
-        ),
-        onprem_password: str = typer.Option(
-            None, "--onprem-password", help="On-Prem password", hide_input=True
-        ),
-        onprem_realm: str = typer.Option(
-            "root", "--onprem-realm", help="On-Prem realm"
-        ),
-        am_base_url: str = typer.Option(
-            None, "--am-base-url", help="On-Prem AM base URL"
-        ),
-        idm_base_url: str = typer.Option(
-            None, "--idm-base-url", help="On-Prem IDM base URL"
-        ),
-        idm_username: str = typer.Option(
-            None, "--idm-username", help="On-Prem IDM username"
-        ),
-        idm_password: str = typer.Option(
-            None, "--idm-password", help="On-Prem IDM password", hide_input=True
-        ),
+        view: ViewOpt = None,
+        view_columns: ViewColumnsOpt = None,
+        version: VersionOpt = None,
+        no_version: NoVersionOpt = False,
+        branch: BranchOpt = None,
+        commit: CommitMessageOpt = None,
+        jwk_path: JwkPathOpt = None,
+        sa_id: SaIdOpt = None,
+        base_url: BaseUrlOpt = None,
+        project_name: ProjectNameOpt = None,
+        output_dir: OutputDirOpt = None,
+        output_file: OutputFileOpt = None,
+        auth_mode: AuthModeOpt = None,
+        onprem_username: OnPremUsernameOpt = None,
+        onprem_password: OnPremPasswordOpt = None,
+        onprem_realm: OnPremRealmOpt = "root",
+        am_base_url: AmBaseUrlOpt = None,
+        idm_base_url: IdmBaseUrlOpt = None,
+        idm_username: IdmUsernameOpt = None,
+        idm_password: IdmPasswordOpt = None,
     ):
         """Export Environment Secrets"""
         exporter = BaseExporter()
 
-        headers = {
-            "Accept-API-Version": "resource=2.0",
-            "Content-Type": "application/json",
-        }
+        headers = get_headers("esv")
 
         exporter.export_data(
             command_name="esv_secrets",
@@ -112,74 +92,31 @@ def create_esv_commands():
         )
 
     def export_esv_variables(
-        view: bool = typer.Option(None, "--view", help="View: all variables"),
-        view_columns: str = typer.Option(
-            None,
-            "--view-columns",
-            help="Comma-separated list of columns to display (e.g., '_id,name,active')",
-        ),
-        version: str = typer.Option(
-            None, "--version", help="Custom version name (default: auto)"
-        ),
-        no_version: bool = typer.Option(
-            False, "--no-version", help="Disable auto versioning for legacy filenames"
-        ),
-        branch: str = typer.Option(
-            None, "--branch", help="Git branch to use for export (Git mode only)"
-        ),
-        commit: str = typer.Option(
-            None, "--commit", help="Custom commit message (Git mode only)"
-        ),
-        jwk_path: str = typer.Option(
-            None, "--jwk-path", help="Path to JWK private key file"
-        ),
-        sa_id: str = typer.Option(None, "--sa-id", help="Service Account ID"),
-        base_url: str = typer.Option(
-            None,
-            "--base-url",
-            help="Base URL for PingOne Advanced Identity Cloud instance",
-        ),
-        project_name: str = typer.Option(
-            None, "--project-name", help="Project name for argument mode (optional)"
-        ),
-        output_dir: str = typer.Option(
-            None, "--dir", help="Output directory for JSON files"
-        ),
-        output_file: str = typer.Option(
-            None, "--file", help="Output filename (without .json extension)"
-        ),
-        auth_mode: str = typer.Option(
-            None, "--auth-mode", help="Auth mode override: service-account|onprem"
-        ),
-        onprem_username: str = typer.Option(
-            None, "--onprem-username", help="On-Prem username"
-        ),
-        onprem_password: str = typer.Option(
-            None, "--onprem-password", help="On-Prem password", hide_input=True
-        ),
-        onprem_realm: str = typer.Option(
-            "root", "--onprem-realm", help="On-Prem realm"
-        ),
-        am_base_url: str = typer.Option(
-            None, "--am-base-url", help="On-Prem AM base URL"
-        ),
-        idm_base_url: str = typer.Option(
-            None, "--idm-base-url", help="On-Prem IDM base URL"
-        ),
-        idm_username: str = typer.Option(
-            None, "--idm-username", help="On-Prem IDM username"
-        ),
-        idm_password: str = typer.Option(
-            None, "--idm-password", help="On-Prem IDM password", hide_input=True
-        ),
+        view: ViewOpt = None,
+        view_columns: ViewColumnsOpt = None,
+        version: VersionOpt = None,
+        no_version: NoVersionOpt = False,
+        branch: BranchOpt = None,
+        commit: CommitMessageOpt = None,
+        jwk_path: JwkPathOpt = None,
+        sa_id: SaIdOpt = None,
+        base_url: BaseUrlOpt = None,
+        project_name: ProjectNameOpt = None,
+        output_dir: OutputDirOpt = None,
+        output_file: OutputFileOpt = None,
+        auth_mode: AuthModeOpt = None,
+        onprem_username: OnPremUsernameOpt = None,
+        onprem_password: OnPremPasswordOpt = None,
+        onprem_realm: OnPremRealmOpt = "root",
+        am_base_url: AmBaseUrlOpt = None,
+        idm_base_url: IdmBaseUrlOpt = None,
+        idm_username: IdmUsernameOpt = None,
+        idm_password: IdmPasswordOpt = None,
     ):
         """Export Environment Variables"""
         exporter = BaseExporter()
 
-        headers = {
-            "Accept-API-Version": "resource=1.0",
-            "Content-Type": "application/json",
-        }
+        headers = get_headers("esv")
 
         exporter.export_data(
             command_name="esv_variables",

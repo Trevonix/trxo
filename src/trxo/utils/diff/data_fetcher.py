@@ -12,6 +12,7 @@ from typing import Any, Dict, Optional
 from trxo.commands.export.base_exporter import BaseExporter
 from trxo.commands.export.saml import process_saml_response
 from trxo.commands.export.scripts import decode_script_response
+from trxo.config.api_headers import get_headers
 from trxo.constants import DEFAULT_REALM
 from trxo.utils.console import error, info, warning
 
@@ -99,10 +100,7 @@ class DataFetcher:
                 self.exporter.export_data(
                     command_name=command_name,
                     api_endpoint=api_endpoint,
-                    headers={
-                        "Content-Type": "application/json",
-                        "Accept-API-Version": "resource=1.0",
-                    },
+                    headers=get_headers(command_name),
                     view=False,  # Don't display
                     jwk_path=jwk_path,
                     sa_id=sa_id,

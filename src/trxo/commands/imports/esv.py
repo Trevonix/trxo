@@ -11,6 +11,27 @@ from typing import Any, Dict, List
 
 import typer
 
+from trxo.commands.shared.options import (
+    AmBaseUrlOpt,
+    AuthModeOpt,
+    BaseUrlOpt,
+    BranchOpt,
+    CherryPickOpt,
+    DiffOpt,
+    ForceImportOpt,
+    IdmBaseUrlOpt,
+    IdmPasswordOpt,
+    IdmUsernameOpt,
+    InputFileOpt,
+    JwkPathOpt,
+    OnPremPasswordOpt,
+    OnPremRealmOpt,
+    OnPremUsernameOpt,
+    ProjectNameOpt,
+    RollbackOpt,
+    SaIdOpt,
+)
+from trxo.config.api_headers import get_headers
 from trxo.utils.console import console, error, info, warning
 
 from .base_importer import BaseImporter
@@ -50,10 +71,7 @@ class EsvVariablesImporter(BaseImporter):
 
             payload = json.dumps(item_data)
 
-            headers = {
-                "Content-Type": "application/json",
-                "Accept-API-Version": "resource=1.0",
-            }
+            headers = get_headers("esv")
             headers = {**headers, **self.build_auth_headers(token)}
 
             self.make_http_request(url, "PUT", headers, payload)
@@ -86,10 +104,7 @@ class EsvSecretsImporter(BaseImporter):
             error("Secret missing _id field, skipping")
             return False
 
-        headers = {
-            "Content-Type": "application/json",
-            "Accept-API-Version": "resource=2.0",
-        }
+        headers = get_headers("esv")
         headers = {**headers, **self.build_auth_headers(token)}
 
         base_endpoint = self.get_api_endpoint(item_id, base_url)
@@ -199,66 +214,24 @@ def create_esv_commands():
     """Create ESV import command functions"""
 
     def import_esv_variables(
-        cherry_pick: str = typer.Option(
-            None,
-            "--cherry-pick",
-            help="Cherry-pick specific variables by id (comma-separated)",
-        ),
-        file: str = typer.Option(
-            None,
-            "--file",
-            help="Path to JSON file containing Environment Variables data",
-        ),
-        force_import: bool = typer.Option(
-            False, "--force-import", "-f", help="Skip hash validation and force import"
-        ),
-        diff: bool = typer.Option(
-            False, "--diff", help="Show differences before import"
-        ),
-        branch: str = typer.Option(
-            None, "--branch", help="Git branch to import from (Git mode only)"
-        ),
-        rollback: bool = typer.Option(
-            False,
-            "--rollback",
-            help="Automatically rollback imported items on first failure (requires git storage)",
-        ),
-        jwk_path: str = typer.Option(
-            None, "--jwk-path", help="Path to JWK private key file"
-        ),
-        sa_id: str = typer.Option(None, "--sa-id", help="Service Account ID"),
-        base_url: str = typer.Option(
-            None,
-            "--base-url",
-            help="Base URL for PingOne Advanced Identity Cloud instance",
-        ),
-        project_name: str = typer.Option(
-            None, "--project-name", help="Project name for argument mode (optional)"
-        ),
-        auth_mode: str = typer.Option(
-            None, "--auth-mode", help="Auth mode override: service-account|onprem"
-        ),
-        onprem_username: str = typer.Option(
-            None, "--onprem-username", help="On-Prem username"
-        ),
-        onprem_password: str = typer.Option(
-            None, "--onprem-password", help="On-Prem password", hide_input=True
-        ),
-        onprem_realm: str = typer.Option(
-            "root", "--onprem-realm", help="On-Prem realm"
-        ),
-        am_base_url: str = typer.Option(
-            None, "--am-base-url", help="On-Prem AM base URL"
-        ),
-        idm_base_url: str = typer.Option(
-            None, "--idm-base-url", help="On-Prem IDM base URL"
-        ),
-        idm_username: str = typer.Option(
-            None, "--idm-username", help="On-Prem IDM username"
-        ),
-        idm_password: str = typer.Option(
-            None, "--idm-password", help="On-Prem IDM password", hide_input=True
-        ),
+        cherry_pick: CherryPickOpt = None,
+        file: InputFileOpt = None,
+        force_import: ForceImportOpt = False,
+        diff: DiffOpt = False,
+        branch: BranchOpt = None,
+        rollback: RollbackOpt = False,
+        jwk_path: JwkPathOpt = None,
+        sa_id: SaIdOpt = None,
+        base_url: BaseUrlOpt = None,
+        project_name: ProjectNameOpt = None,
+        auth_mode: AuthModeOpt = None,
+        onprem_username: OnPremUsernameOpt = None,
+        onprem_password: OnPremPasswordOpt = None,
+        onprem_realm: OnPremRealmOpt = "root",
+        am_base_url: AmBaseUrlOpt = None,
+        idm_base_url: IdmBaseUrlOpt = None,
+        idm_username: IdmUsernameOpt = None,
+        idm_password: IdmPasswordOpt = None,
     ):
         """Import Environment Variables configuration from JSON file"""
         importer = EsvVariablesImporter()
@@ -285,64 +258,24 @@ def create_esv_commands():
         )
 
     def import_esv_secrets(
-        cherry_pick: str = typer.Option(
-            None,
-            "--cherry-pick",
-            help="Cherry-pick specific secrets by id (comma-separated)",
-        ),
-        file: str = typer.Option(
-            None, "--file", help="Path to JSON file containing Environment Secrets data"
-        ),
-        force_import: bool = typer.Option(
-            False, "--force-import", "-f", help="Skip hash validation and force import"
-        ),
-        diff: bool = typer.Option(
-            False, "--diff", help="Show differences before import"
-        ),
-        branch: str = typer.Option(
-            None, "--branch", help="Git branch to import from (Git mode only)"
-        ),
-        rollback: bool = typer.Option(
-            False,
-            "--rollback",
-            help="Automatically rollback imported items on first failure (requires git storage)",
-        ),
-        jwk_path: str = typer.Option(
-            None, "--jwk-path", help="Path to JWK private key file"
-        ),
-        sa_id: str = typer.Option(None, "--sa-id", help="Service Account ID"),
-        base_url: str = typer.Option(
-            None,
-            "--base-url",
-            help="Base URL for PingOne Advanced Identity Cloud instance",
-        ),
-        project_name: str = typer.Option(
-            None, "--project-name", help="Project name for argument mode (optional)"
-        ),
-        auth_mode: str = typer.Option(
-            None, "--auth-mode", help="Auth mode override: service-account|onprem"
-        ),
-        onprem_username: str = typer.Option(
-            None, "--onprem-username", help="On-Prem username"
-        ),
-        onprem_password: str = typer.Option(
-            None, "--onprem-password", help="On-Prem password", hide_input=True
-        ),
-        onprem_realm: str = typer.Option(
-            "root", "--onprem-realm", help="On-Prem realm"
-        ),
-        am_base_url: str = typer.Option(
-            None, "--am-base-url", help="On-Prem AM base URL"
-        ),
-        idm_base_url: str = typer.Option(
-            None, "--idm-base-url", help="On-Prem IDM base URL"
-        ),
-        idm_username: str = typer.Option(
-            None, "--idm-username", help="On-Prem IDM username"
-        ),
-        idm_password: str = typer.Option(
-            None, "--idm-password", help="On-Prem IDM password", hide_input=True
-        ),
+        cherry_pick: CherryPickOpt = None,
+        file: InputFileOpt = None,
+        force_import: ForceImportOpt = False,
+        diff: DiffOpt = False,
+        branch: BranchOpt = None,
+        rollback: RollbackOpt = False,
+        jwk_path: JwkPathOpt = None,
+        sa_id: SaIdOpt = None,
+        base_url: BaseUrlOpt = None,
+        project_name: ProjectNameOpt = None,
+        auth_mode: AuthModeOpt = None,
+        onprem_username: OnPremUsernameOpt = None,
+        onprem_password: OnPremPasswordOpt = None,
+        onprem_realm: OnPremRealmOpt = "root",
+        am_base_url: AmBaseUrlOpt = None,
+        idm_base_url: IdmBaseUrlOpt = None,
+        idm_username: IdmUsernameOpt = None,
+        idm_password: IdmPasswordOpt = None,
     ):
         """Import Environment Secrets configuration from JSON file"""
         importer = EsvSecretsImporter()
