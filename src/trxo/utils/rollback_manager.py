@@ -30,10 +30,12 @@ class RollbackManager:
             "email_templates",
             "endpoints",
             "managed",
+            "managed_objects",
+            "mappings",
             "connectors",
             "themes",
         ]:
-            self.realm = realm if realm else "root"
+            self.realm = "root"
         else:
             self.realm = realm or DEFAULT_REALM
 
@@ -104,19 +106,7 @@ class RollbackManager:
 
                 item_id = data.get("_id", "ui/themerealm")
 
-                # Filter only the requested realm
-                filtered_doc = dict(data)
-
-                if "realm" in filtered_doc and isinstance(filtered_doc["realm"], dict):
-                    if self.realm in filtered_doc["realm"]:
-                        filtered_doc["realm"] = {
-                            self.realm: filtered_doc["realm"][self.realm]
-                        }
-                    else:
-                        warning(f"Realm '{self.realm}' not found in ui/themerealm")
-                        filtered_doc["realm"] = {}
-
-                mapping = {item_id: filtered_doc}
+                mapping = {item_id: data}
 
                 self.baseline_snapshot = mapping
                 self.raw_baseline_data = mapping
@@ -460,6 +450,16 @@ class RollbackManager:
             # remove query parameters like ?_queryFilter
             api_endpoint = api_endpoint.split("?")[0]
 
+            # Root-level IDM paths represent the full resource path
+            # so we shouldn't append the item_id to them
+            if self.command_name in [
+                "themes",
+                "managed",
+                "managed_objects",
+                "mappings",
+            ]:
+                return construct_api_url(base_url, api_endpoint)
+
             if not api_endpoint.endswith("/"):
                 api_endpoint += "/"
 
@@ -492,6 +492,7 @@ class RollbackManager:
                     ),
                 }
 
-            return {}
+            # AIC/SaaS mode for IDM requires Bearer token
+            return {"Authorization": f"Bearer {token}"}
 
         return {"Cookie": f"iPlanetDirectoryPro={token}"}

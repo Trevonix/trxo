@@ -15,8 +15,6 @@ Fix summary:
 import json
 from typing import Any, Dict, List, Optional
 
-import typer
-
 from trxo.commands.shared.options import (
     AmBaseUrlOpt,
     AuthModeOpt,
