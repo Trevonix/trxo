@@ -7,10 +7,9 @@ Import functionality for PingOne Advanced Identity Cloud managed objects with sm
 - Handles both single objects and multiple objects
 """
 
+import os
 import json
 from typing import Any, Dict, List
-
-import typer
 
 from trxo.commands.shared.options import (
     AmBaseUrlOpt,
@@ -508,6 +507,12 @@ class ManagedObjectsImporter(BaseImporter):
                     except Exception as e:
                         error(f"✗ Failed to add managed object '{name}': {e}")
                         all_ok = False
+            # if os.environ.get("TRXO_BREAK_MANAGED_IMPORT"):
+            #     msg = (
+            #         "TEST: Intentionally breaking managed import at end of collection."
+            #     )
+            #     error(msg)
+            #     return False
             return all_ok
 
         # Fallback: treat item_data as single managed object dict
@@ -633,11 +638,15 @@ class ManagedObjectsImporter(BaseImporter):
             except Exception as e:
                 error(f"✗ Failed to add managed object '{object_name}': {e}")
                 return False
+            # finally:
+            #     if os.environ.get("TRXO_BREAK_MANAGED_IMPORT"):
+            #         msg = "TEST: Intentionally breaking managed import (single) for testing."
+            #         error(msg)
+            #         return False
 
     def _load_managed_objects_file(self, file_path: str) -> Any:
         """Load managed objects file with flexible format support"""
         import json
-        import os
 
         # Convert to absolute path if relative
         if not os.path.isabs(file_path):

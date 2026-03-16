@@ -96,9 +96,13 @@ class RollbackManager:
                 return False
 
             # ---------------------------------------------------------
-            # THEMES SPECIAL HANDLING (ui/themerealm)
+            # ROOT LEVEL IDM CONFIGS (ONE BIG DOCUMENT)
             # ---------------------------------------------------------
-            if self.command_name == "themes":
+            if self.command_name in [
+                "themes",
+                "managed",
+                "managed_objects",
+            ]:
 
                 if not isinstance(data, dict):
                     error("Unexpected response for ui/themerealm baseline snapshot")
@@ -357,10 +361,16 @@ class RollbackManager:
                         if k not in {"_rev", "_type"}
                     }
 
+                    print("url", url)
+                    print("headers", headers)
+                    print("restore_data", json.dumps(restore_data, indent=2))
+
                     import httpx
 
                     with httpx.Client() as client:
                         resp = client.put(url, headers=headers, json=restore_data)
+
+                    print("resp", resp.status_code)
 
                     if resp.status_code in (200, 201, 204):
                         info(f"Restored baseline item: {baseline_id}")
@@ -452,12 +462,7 @@ class RollbackManager:
 
             # Root-level IDM paths represent the full resource path
             # so we shouldn't append the item_id to them
-            if self.command_name in [
-                "themes",
-                "managed",
-                "managed_objects",
-                "mappings",
-            ]:
+            if self.command_name in ["themes", "managed", "managed_objects"]:
                 return construct_api_url(base_url, api_endpoint)
 
             if not api_endpoint.endswith("/"):
