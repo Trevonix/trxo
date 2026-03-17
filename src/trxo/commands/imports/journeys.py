@@ -43,6 +43,7 @@ from trxo.commands.shared.options import (
     OnPremUsernameOpt,
     ProjectNameOpt,
     RealmOpt,
+    RollbackOpt,
     SaIdOpt,
 )
 from trxo.config.api_headers import get_headers
@@ -283,8 +284,16 @@ class JourneyImporter(BaseImporter):
                     token=token,
                     base_url=api_base_url,
                     cherry_pick_ids=cherry_pick,
+                    rollback_managers=self._setup_enriched_rollback_managers(
+                        rollback=rollback,
+                        branch=branch,
+                        token=token,
+                        base_url=api_base_url,
+                    ),
                 )
                 if not ok:
+                    if rollback:
+                        self._execute_enriched_rollback(token, api_base_url)
                     raise typer.Exit(1)
             finally:
                 self.cleanup()
@@ -385,11 +394,91 @@ class JourneyImporter(BaseImporter):
                 token=token,
                 base_url=api_base_url,
                 cherry_pick_ids=cherry_pick,
+                rollback_managers=self._setup_enriched_rollback_managers(
+                    rollback=rollback,
+                    branch=branch,
+                    token=token,
+                    base_url=api_base_url,
+                ),
             )
             if not ok:
+                if rollback:
+                    self._execute_enriched_rollback(token, api_base_url)
                 raise typer.Exit(1)
         finally:
             self.cleanup()
+
+    def _setup_enriched_rollback_managers(
+        self,
+        rollback: bool,
+        branch: Optional[str],
+        token: str,
+        base_url: str,
+    ) -> Dict[str, Any]:
+        """Create rollback managers for journey enriched imports (journeys + deps)."""
+        self._enriched_rollback_managers = {}
+        if not rollback:
+            return self._enriched_rollback_managers
+
+        from trxo.utils.rollback_manager import RollbackManager
+
+        storage_mode = self._get_storage_mode()
+        git_mgr = self._setup_git_manager(branch) if storage_mode == "git" else None
+
+        specs = {
+            "scripts": "scripts",
+            "emailTemplates": "email_templates",
+            "saml2Entities": "saml",
+            "themes": "themes",
+            "trees": "journeys",
+        }
+
+        for section, command_name in specs.items():
+            manager = RollbackManager(command_name, self.realm)
+            created = manager.create_baseline_snapshot(
+                token,
+                base_url,
+                git_manager=git_mgr,
+                auth_mode=self.auth_mode,
+                idm_username=self._idm_username,
+                idm_password=self._idm_password,
+                idm_base_url=self._idm_base_url,
+            )
+            if created:
+                self._enriched_rollback_managers[section] = manager
+            else:
+                warning(
+                    f"Rollback baseline unavailable for {section}; "
+                    "rollback for that section will be skipped"
+                )
+
+        return self._enriched_rollback_managers
+
+    def _track_enriched_rollback(self, section: str, item_id: str) -> None:
+        manager = getattr(self, "_enriched_rollback_managers", {}).get(section)
+        if not manager or not item_id:
+            return
+
+        baseline_item = manager.baseline_snapshot.get(str(item_id))
+        action = "updated" if baseline_item is not None else "created"
+        manager.track_import(str(item_id), action, baseline_item)
+
+    def _execute_enriched_rollback(self, token: str, base_url: str) -> None:
+        """Rollback enriched journey imports in reverse dependency order."""
+        managers = getattr(self, "_enriched_rollback_managers", {})
+        for section in [
+            "trees",
+            "themes",
+            "saml2Entities",
+            "emailTemplates",
+            "scripts",
+        ]:
+            manager = managers.get(section)
+            if not manager:
+                continue
+            info(f"Running rollback for journey section: {section}")
+            report = manager.execute_rollback(token, base_url)
+            self._print_rollback_report(report)
 
     # ── Diff helper (enriched format) ─────────────────────────────────────
 
@@ -555,6 +644,7 @@ class JourneyImporter(BaseImporter):
         token: str,
         base_url: str,
         cherry_pick_ids: Optional[str] = None,
+        rollback_managers: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """
         Import an enriched journey export in dependency order:
@@ -604,6 +694,7 @@ class JourneyImporter(BaseImporter):
             )
 
         error_count = 0
+        fail_fast = bool(rollback_managers)
 
         # -- 1. Scripts -------------------------------------------------------
         scripts: Dict[str, Any] = data.get("scripts", {})
@@ -619,6 +710,10 @@ class JourneyImporter(BaseImporter):
             for script_id, script_cfg in to_import.items():
                 if not self._import_single_script(script_cfg, token, base_url):
                     error_count += 1
+                    if fail_fast:
+                        return False
+                else:
+                    self._track_enriched_rollback("scripts", script_id)
 
         # -- 2. Email templates -----------------------------------------------
         email_templates: Dict[str, Any] = data.get("emailTemplates", {})
@@ -634,6 +729,10 @@ class JourneyImporter(BaseImporter):
             for name, tmpl_cfg in email_templates.items():
                 if not self._import_email_template(name, tmpl_cfg, token, base_url):
                     error_count += 1
+                    if fail_fast:
+                        return False
+                else:
+                    self._track_enriched_rollback("emailTemplates", name)
 
         # -- 3. SAML2 entities ------------------------------------------------
         saml2_entities: Dict[str, Any] = data.get("saml2Entities", {})
@@ -653,6 +752,10 @@ class JourneyImporter(BaseImporter):
                         entity_id, entity_entry, saml_imp, token, base_url
                     ):
                         error_count += 1
+                        if fail_fast:
+                            return False
+                    else:
+                        self._track_enriched_rollback("saml2Entities", entity_id)
 
         # -- 4. Circles of trust ----------------------------------------------
         cots: Dict[str, Any] = data.get("saml2CirclesOfTrust", {})
@@ -664,6 +767,8 @@ class JourneyImporter(BaseImporter):
             for cot_id, cot_cfg in cots.items():
                 if not self._import_circle_of_trust(cot_id, cot_cfg, token, base_url):
                     error_count += 1
+                    if fail_fast:
+                        return False
 
         # -- 5. Inner nodes ---------------------------------------------------
         inner_nodes: Dict[str, Any] = data.get("innerNodes", {})
@@ -679,6 +784,8 @@ class JourneyImporter(BaseImporter):
             for node_id, node_cfg in inner_nodes.items():
                 if not self._import_node(node_id, node_cfg, token, base_url):
                     error_count += 1
+                    if fail_fast:
+                        return False
 
         # -- 6. Root nodes ----------------------------------------------------
         nodes: Dict[str, Any] = data.get("nodes", {})
@@ -694,6 +801,8 @@ class JourneyImporter(BaseImporter):
             for node_id, node_cfg in nodes.items():
                 if not self._import_node(node_id, node_cfg, token, base_url):
                     error_count += 1
+                    if fail_fast:
+                        return False
 
         # -- 7. Themes --------------------------------------------------------
         themes: Dict[str, Any] = data.get("themes", {})
@@ -706,6 +815,10 @@ class JourneyImporter(BaseImporter):
                 info(f"Importing {len(themes)} theme(s)")
                 if not self._import_themes(themes, token, base_url):
                     error_count += 1
+                    if fail_fast:
+                        return False
+                else:
+                    self._track_enriched_rollback("themes", "ui/themerealm")
 
         # -- 8. Journeys (trees) ----------------------------------------------
         trees: Dict[str, Any] = data.get("trees", {})
@@ -717,6 +830,10 @@ class JourneyImporter(BaseImporter):
             for tree_id, tree_cfg in trees.items():
                 if not self.update_item(tree_cfg, token, base_url):
                     error_count += 1
+                    if fail_fast:
+                        return False
+                else:
+                    self._track_enriched_rollback("trees", tree_id)
         else:
             warning("No journeys found in export data")
 
@@ -1222,6 +1339,7 @@ def create_journey_import_command():
         realm: RealmOpt = DEFAULT_REALM,
         cherry_pick: CherryPickOpt = None,
         force_import: ForceImportOpt = False,
+        rollback: RollbackOpt = False,
         diff: DiffOpt = False,
         branch: BranchOpt = None,
         jwk_path: JwkPathOpt = None,
@@ -1258,6 +1376,7 @@ def create_journey_import_command():
             branch=branch,
             cherry_pick=cherry_pick,
             diff=diff,
+            rollback=rollback,
         )
 
     return import_journeys
