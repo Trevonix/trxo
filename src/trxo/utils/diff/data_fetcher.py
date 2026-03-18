@@ -44,6 +44,36 @@ def _process_nodes_response(exporter: BaseExporter, realm: str):
     return _filter
 
 
+def _process_email_templates_response(exporter: BaseExporter, realm: str):
+    """Build a response-filter function for email_templates.
+
+    Email templates query returns items with full _id like "config/emailTemplate/resetPassword".
+    We extract just the template name (last part after /templateName).
+    """
+
+    def _filter(response_data: Any) -> Dict[str, Any]:
+        # Extract items from response
+        if isinstance(response_data, dict) and "result" in response_data:
+            items = response_data["result"]
+        elif isinstance(response_data, list):
+            items = response_data
+        else:
+            items = []
+
+        # Build mapping by template NAME (extract from full _id)
+        template_map = {}
+        for tmpl in items:
+            if isinstance(tmpl, dict) and "_id" in tmpl:
+                full_id = tmpl["_id"]  # e.g., "config/emailTemplate/resetPassword"
+                # Extract just the template name (last part)
+                template_name = full_id.split("/")[-1] if "/" in full_id else full_id
+                template_map[template_name] = tmpl
+
+        return {"emailTemplates": template_map}
+
+    return _filter
+
+
 def _fetch_nodes_direct(
     exporter: BaseExporter,
     realm: str,
@@ -193,6 +223,10 @@ class DataFetcher:
                 response_filter = process_saml_response(self.exporter, realm)
             elif command_name == "nodes":
                 response_filter = _process_nodes_response(self.exporter, realm)
+            elif command_name == "email_templates":
+                response_filter = _process_email_templates_response(
+                    self.exporter, realm
+                )
             # Temporarily replace save_response to capture data
             self.exporter.save_response = capture_data
 

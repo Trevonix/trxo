@@ -429,16 +429,10 @@ class RollbackManager:
                         if k not in {"_rev", "_type"}
                     }
 
-                    print("url", url)
-                    print("headers", headers)
-                    print("restore_data", json.dumps(restore_data, indent=2))
-
                     import httpx
 
                     with httpx.Client() as client:
                         resp = client.put(url, headers=headers, json=restore_data)
-
-                    print("resp", resp.status_code)
 
                     if resp.status_code in (200, 201, 204):
                         info(f"Restored baseline item: {baseline_id}")
@@ -518,32 +512,111 @@ class RollbackManager:
 
         try:
 
+            from trxo.utils.url import construct_api_url
+            from urllib.parse import quote
+
+            # Root-level IDM paths represent the full resource path
+            # so we shouldn't append the item_id to them
+            if self.command_name in ["themes", "managed", "managed_objects"]:
+                api_endpoint, _ = get_command_api_endpoint(
+                    self.command_name, self.realm
+                )
+                if api_endpoint:
+                    api_endpoint = api_endpoint.split("?")[0]
+                    return construct_api_url(base_url, api_endpoint)
+
+            # Special handling for nodes - extract node type from baseline
+            if self.command_name == "nodes":
+                baseline = self.baseline_snapshot.get(str(item_id))
+
+                if not baseline or not isinstance(baseline, dict):
+                    warning(
+                        f"Node '{item_id}' not found in baseline, cannot determine node type"
+                    )
+                    return construct_api_url(
+                        base_url,
+                        f"/am/json/realms/root/realms/{self.realm}"
+                        f"/realm-config/authentication/authenticationtrees/nodes/unknown/{quote(str(item_id), safe='')}",
+                    )
+
+                # Extract node type from _type._id field
+                node_type = (baseline.get("_type") or {}).get("_id", "unknown")
+                info(f"Building delete URL for node '{item_id}' of type '{node_type}'")
+
+                return construct_api_url(
+                    base_url,
+                    f"/am/json/realms/root/realms/{self.realm}"
+                    f"/realm-config/authentication/authenticationtrees"
+                    f"/nodes/{quote(str(node_type), safe='')}/{quote(str(item_id), safe='')}",
+                )
+
+            # Special handling for email_templates (use resource endpoint, not query endpoint)
+            if self.command_name == "email_templates":
+                # IDM base URL (strip /am if needed)
+                idm_base = base_url.rstrip("/")
+                if idm_base.endswith("/am"):
+                    idm_base = idm_base[:-3]
+
+                # item_id is the template name like "resetPassword"
+                baseline = self.baseline_snapshot.get(str(item_id))
+                if baseline:
+                    info(
+                        f"Email template '{item_id}' exists in baseline - will restore"
+                    )
+                else:
+                    warning(
+                        f"Email template '{item_id}' NOT in baseline - marking as newly created"
+                    )
+
+                return f"{idm_base}/openidm/config/emailTemplate/{quote(str(item_id), safe='')}"
+
+            # Special handling for SAML entities - determine location from baseline data
+            if self.command_name == "saml":
+                baseline = self.baseline_snapshot.get(str(item_id))
+                location = "hosted"  # default
+
+                if baseline and isinstance(baseline, dict):
+                    # Baseline structure: {"hosted": {...}} or {"remote": {...}}
+                    if "hosted" in baseline:
+                        location = "hosted"
+                        info(f"SAML entity '{item_id}' found in baseline as 'hosted'")
+                    elif "remote" in baseline:
+                        location = "remote"
+                        info(f"SAML entity '{item_id}' found in baseline as 'remote'")
+                else:
+                    warning(
+                        f"SAML entity '{item_id}' NOT found in baseline, using default location 'hosted'"
+                    )
+
+                return construct_api_url(
+                    base_url,
+                    f"/am/json/realms/root/realms/{self.realm}"
+                    f"/realm-config/federation/entityproviders/saml2/{location}/{quote(str(item_id), safe='')}",
+                )
+
+            # Standard endpoint handling for other commands
             api_endpoint, _ = get_command_api_endpoint(self.command_name, self.realm)
 
             if not api_endpoint:
                 raise RuntimeError("Unknown command API endpoint")
 
-            from trxo.utils.url import construct_api_url
-
             # remove query parameters like ?_queryFilter
             api_endpoint = api_endpoint.split("?")[0]
-
-            # Root-level IDM paths represent the full resource path
-            # so we shouldn't append the item_id to them
-            if self.command_name in ["themes", "managed", "managed_objects"]:
-                return construct_api_url(base_url, api_endpoint)
 
             if not api_endpoint.endswith("/"):
                 api_endpoint += "/"
 
-            api_endpoint = f"{api_endpoint}{item_id}"
+            # URL-encode item_id to handle special characters (e.g., nodes with special IDs)
+            encoded_id = quote(str(item_id), safe="")
+            api_endpoint = f"{api_endpoint}{encoded_id}"
 
             return construct_api_url(base_url, api_endpoint)
 
-        except Exception:
+        except Exception as e:
 
             from trxo.utils.url import construct_api_url
 
+            warning(f"Failed to build API URL for {self.command_name}/{item_id}: {e}")
             return construct_api_url(base_url, f"/{item_id}")
 
     # ---------------------------------------------------------------------

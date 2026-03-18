@@ -470,6 +470,7 @@ class JourneyImporter(BaseImporter):
         for section in [
             "trees",
             "themes",
+            "nodes",
             "saml2Entities",
             "emailTemplates",
             "scripts",
@@ -804,6 +805,18 @@ class JourneyImporter(BaseImporter):
                     error_count += 1
                     if fail_fast:
                         return False
+                else:
+                    self._track_enriched_rollback("nodes", node_id)
+
+        # # -- TEST: Inject failure for rollback testing ------------------------
+        # # Set TEST_ROLLBACK_FAIL=1 to simulate failure after nodes import
+        # import os
+
+        # if os.environ.get("TEST_ROLLBACK_FAIL") == "1":
+        #     error(
+        #         "⚠️  TEST FAILURE INJECTED: simulating import failure for rollback test"
+        #     )
+        #     return False
 
         # -- 7. Themes --------------------------------------------------------
         themes: Dict[str, Any] = data.get("themes", {})
@@ -826,9 +839,20 @@ class JourneyImporter(BaseImporter):
         if selected_tree_ids:
             trees = {k: v for k, v in trees.items() if k in selected_tree_ids}
 
+        counter_to_break_trees = 0
         if trees:
             info(f"Importing {len(trees)} journey(s)")
             for tree_id, tree_cfg in trees.items():
+                counter_to_break_trees += 1
+                if counter_to_break_trees > 6:
+                    import os
+
+                    if os.environ.get("TEST_ROLLBACK_FAIL") == "1":
+                        error(
+                            "⚠️  TEST FAILURE INJECTED: simulating import failure for rollback test"
+                        )
+                        return False
+
                 if not self.update_item(tree_cfg, token, base_url):
                     error_count += 1
                     if fail_fast:
