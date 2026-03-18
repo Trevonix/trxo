@@ -158,6 +158,70 @@ class RollbackManager:
 
                 info("Baseline snapshot created")
                 return True
+
+            # ---------------------------------------------------------
+            # NODES - BULK FETCHED COLLECTION (ALREADY FULL CONFIGS)
+            # ---------------------------------------------------------
+            if self.command_name == "nodes":
+
+                if not isinstance(data, dict):
+                    error("Unexpected response for nodes baseline snapshot")
+                    return False
+
+                # data is {"nodes": {node_id: node_config, ...}}
+                # Extract the nodes mapping
+                mapping = data.get("nodes", {})
+
+                if not mapping:
+                    warning(f"No nodes found in baseline snapshot")
+                    return False
+
+                self.baseline_snapshot = mapping
+                self.raw_baseline_data = mapping
+
+                # ------------------- Git baseline -------------------
+                if git_manager:
+
+                    self.git_manager = git_manager
+
+                    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+                    branch_name = f"baseline/{self.command_name}/{timestamp}"
+
+                    info(f"Creating baseline git branch: {branch_name}")
+                    git_manager.ensure_branch(branch_name)
+
+                    repo_path = git_manager.local_path
+                    component = self.command_name
+
+                    realm_dir = repo_path / (self.realm or "root")
+                    comp_dir = realm_dir / component
+                    comp_dir.mkdir(parents=True, exist_ok=True)
+
+                    filename = f"{(self.realm or 'root')}_{component}.json"
+                    file_path = comp_dir / filename
+
+                    baseline_file_data = {"data": mapping}
+
+                    file_path.write_text(
+                        json.dumps(baseline_file_data, indent=2),
+                        encoding="utf-8",
+                    )
+
+                    rel = file_path.relative_to(repo_path)
+
+                    commit_msg = (
+                        f"Baseline snapshot for {self.command_name} "
+                        f"({self.realm}) at {timestamp} ({len(mapping)} items)"
+                    )
+
+                    git_manager.commit_and_push(
+                        [str(rel)], commit_msg, smart_pull=False
+                    )
+
+                    self.git_branch = branch_name
+
+                info(f"Baseline snapshot created with {len(mapping)} nodes")
+                return True
             items = []
 
             def flatten_items(obj):

@@ -17,6 +17,82 @@ from trxo.constants import DEFAULT_REALM
 from trxo.utils.console import error, info, warning
 
 
+def _process_nodes_response(exporter: BaseExporter, realm: str):
+    """Build a response-filter function for nodes endpoint.
+
+    Nodes use POST action endpoint that returns all nodes.
+    We return them organized by node ID.
+    """
+
+    def _filter(response_data: Any) -> Dict[str, Any]:
+        # Extract items from response
+        if isinstance(response_data, dict) and "result" in response_data:
+            items = response_data["result"]
+        elif isinstance(response_data, list):
+            items = response_data
+        else:
+            items = []
+
+        # Build mapping by node ID
+        node_map = {}
+        for node in items:
+            if isinstance(node, dict) and "_id" in node:
+                node_map[node["_id"]] = node
+
+        return {"nodes": node_map}
+
+    return _filter
+
+
+def _fetch_nodes_direct(
+    exporter: BaseExporter,
+    realm: str,
+    base_url: str,
+    headers: Dict[str, str],
+    command_name: str = "nodes",
+) -> Optional[Dict[str, Any]]:
+    """Fetch nodes/innerNodes directly using POST action endpoint.
+
+    This bypasses export_data and makes a direct POST request to the
+    nextdescendents action endpoint which is required for nodes.
+    """
+    try:
+        # Both nodes and innerNodes use the same bulk fetch endpoint
+        # The distinction (root vs inner) is made by the journey tree structure
+        endpoint = (
+            f"/am/json/realms/root/realms/{realm}"
+            "/realm-config/authentication/authenticationtrees/nodes"
+        )
+        url = exporter._construct_api_url(base_url, endpoint)
+
+        # Make POST request with nextdescendents action
+        info(f"Fetching {command_name} via POST {url}?_action=nextdescendents")
+        resp = exporter.make_http_request(
+            url + "?_action=nextdescendents", "POST", headers, "{}"
+        )
+        data = resp.json()
+
+        # Extract items
+        if isinstance(data, dict) and "result" in data:
+            items = data.get("result", [])
+        else:
+            items = data if isinstance(data, list) else []
+
+        # Return as mapping
+        node_map = {}
+        for node in items:
+            if isinstance(node, dict) and "_id" in node:
+                node_map[node["_id"]] = node
+
+        info(f"Fetched {len(node_map)} {command_name} from nextdescendents action")
+
+        # Return with appropriate key based on command_name
+        return {command_name: node_map}
+    except Exception as exc:
+        warning(f"Could not fetch {command_name} via nextdescendents: {exc}")
+        return None
+
+
 class DataFetcher:
     """Utility to fetch current server data for diff comparison"""
 
@@ -71,6 +147,38 @@ class DataFetcher:
         try:
             info(f"Fetching current {command_name} data from server...")
 
+            # Special handling for nodes - use direct POST action fetch
+            if command_name == "nodes":
+                # Initialize auth first
+                token, api_base_url = self.exporter.initialize_auth(
+                    jwk_path=jwk_path,
+                    sa_id=sa_id,
+                    base_url=base_url,
+                    project_name=project_name,
+                    auth_mode=auth_mode,
+                    onprem_username=onprem_username,
+                    onprem_password=onprem_password,
+                    onprem_realm=onprem_realm,
+                    idm_base_url=idm_base_url,
+                    idm_username=idm_username,
+                    idm_password=idm_password,
+                    am_base_url=am_base_url,
+                )
+
+                # Build headers
+                am_headers = get_headers("protocol_1_0")
+                am_headers.update(self.exporter.build_auth_headers(token))
+
+                # Fetch nodes directly via POST action
+                result = _fetch_nodes_direct(
+                    self.exporter,
+                    realm or DEFAULT_REALM,
+                    api_base_url,
+                    am_headers,
+                    command_name=command_name,
+                )
+                return result
+
             # Use a custom data capture approach
             original_save_method = self.exporter.save_response
             captured_data = None
@@ -83,6 +191,8 @@ class DataFetcher:
 
             if command_name == "saml":
                 response_filter = process_saml_response(self.exporter, realm)
+            elif command_name == "nodes":
+                response_filter = _process_nodes_response(self.exporter, realm)
             # Temporarily replace save_response to capture data
             self.exporter.save_response = capture_data
 
@@ -369,15 +479,10 @@ def get_command_api_endpoint(
         "Environment_Secrets": ("/environment/secrets", None),
         "privileges": ('/openidm/config?_queryFilter=_id co "privilege"', None),
         "Environment_Variables": ("/environment/variables", None),
-        # Node endpoints
+        # Nodes endpoint (both root nodes and inner nodes come from same endpoint)
         "nodes": (
             f"/am/json/realms/root/realms/{realm}"
-            "/realm-config/authentication/authenticationtrees/nodes?_queryFilter=true",
-            None,
-        ),
-        "innerNodes": (
-            f"/am/json/realms/root/realms/{realm}"
-            "/realm-config/authentication/authenticationtrees/innerNodes?_queryFilter=true",
+            "/realm-config/authentication/authenticationtrees/nodes?_action=nextdescendents",
             None,
         ),
         # Agent endpoints

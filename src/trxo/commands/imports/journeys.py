@@ -431,7 +431,6 @@ class JourneyImporter(BaseImporter):
             "saml2Entities": "saml",
             "themes": "themes",
             "nodes": "nodes",
-            "innerNodes": "innerNodes",
             "trees": "journeys",
         }
 
