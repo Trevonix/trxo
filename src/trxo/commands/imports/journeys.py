@@ -430,6 +430,8 @@ class JourneyImporter(BaseImporter):
             "emailTemplates": "email_templates",
             "saml2Entities": "saml",
             "themes": "themes",
+            "nodes": "nodes",
+            "innerNodes": "innerNodes",
             "trees": "journeys",
         }
 

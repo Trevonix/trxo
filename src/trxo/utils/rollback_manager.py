@@ -178,7 +178,11 @@ class RollbackManager:
 
                     collected = []
 
-                    for value in obj.values():
+                    for key, value in obj.items():
+                        # Skip metadata and scripts from SAML response as they're
+                        # not individual fetch-able resources
+                        if key in ("metadata", "scripts"):
+                            continue
                         if isinstance(value, list):
                             collected.extend(value)
 
@@ -498,6 +502,11 @@ class RollbackManager:
                 }
 
             # AIC/SaaS mode for IDM requires Bearer token
+            return {"Authorization": f"Bearer {token}"}
+
+        # For AM endpoints: service account (cloud) uses Bearer token,
+        # on-premise uses Cookie-based auth
+        if self.auth_mode == "service-account":
             return {"Authorization": f"Bearer {token}"}
 
         return {"Cookie": f"iPlanetDirectoryPro={token}"}

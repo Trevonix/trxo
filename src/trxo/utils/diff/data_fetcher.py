@@ -369,6 +369,17 @@ def get_command_api_endpoint(
         "Environment_Secrets": ("/environment/secrets", None),
         "privileges": ('/openidm/config?_queryFilter=_id co "privilege"', None),
         "Environment_Variables": ("/environment/variables", None),
+        # Node endpoints
+        "nodes": (
+            f"/am/json/realms/root/realms/{realm}"
+            "/realm-config/authentication/authenticationtrees/nodes?_queryFilter=true",
+            None,
+        ),
+        "innerNodes": (
+            f"/am/json/realms/root/realms/{realm}"
+            "/realm-config/authentication/authenticationtrees/innerNodes?_queryFilter=true",
+            None,
+        ),
         # Agent endpoints
         "agents_gateway": (
             f"/am/json/realms/root/realms/{realm}"
