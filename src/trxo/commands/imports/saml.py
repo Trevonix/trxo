@@ -380,9 +380,13 @@ class SamlImporter(BaseImporter):
             info(f"✓ Imported script: {script_name}")
             if hasattr(self, "rollback_manager") and self.rollback_manager:
                 # check if it existed in baseline
-                baseline = self.rollback_manager.baseline_snapshot.get("scripts", {}).get(script_id)
+                baseline = self.rollback_manager.baseline_snapshot.get(
+                    "scripts", {}
+                ).get(script_id)
                 action = "updated" if baseline else "created"
-                self.rollback_manager.track_import(f"script::{script_id}", action, baseline)
+                self.rollback_manager.track_import(
+                    f"script::{script_id}", action, baseline
+                )
             return True
         except Exception as e:
             error(f"Failed to import script '{script_name}': {str(e)}")
@@ -550,7 +554,9 @@ class SamlImporter(BaseImporter):
                         info(f"✓ Created hosted entity: {entity_name}")
 
                         if hasattr(self, "rollback_manager") and self.rollback_manager:
-                            self.rollback_manager.track_import(entity_id, "created", {"_location": "hosted"})
+                            self.rollback_manager.track_import(
+                                entity_id, "created", {"_location": "hosted"}
+                            )
 
                         return True
 

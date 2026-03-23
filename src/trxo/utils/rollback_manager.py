@@ -126,6 +126,7 @@ class RollbackManager:
                     info(f"Capturing {len(script_ids)} scripts for rollback")
 
                     import httpx
+
                     from trxo.utils.url import construct_api_url
 
                     for script_id in script_ids:
@@ -581,8 +582,9 @@ class RollbackManager:
 
         info("Initiating rollback of imported items...")
 
-        import httpx
         import base64
+
+        import httpx
 
         # ------------------------------------------------------------
         # CASE 1: No tracked items → restore full baseline
