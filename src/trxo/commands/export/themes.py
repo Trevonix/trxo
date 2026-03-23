@@ -5,8 +5,6 @@ This module provides export functionality for PingOne Advanced Identity Cloud UI
 Exports from /openidm/config/ui/themerealm endpoint.
 """
 
-import typer
-
 from trxo.commands.shared.options import (
     AmBaseUrlOpt,
     AuthModeOpt,

@@ -15,8 +15,6 @@ Fix summary:
 import json
 from typing import Any, Dict, List, Optional
 
-import typer
-
 from trxo.commands.shared.options import (
     AmBaseUrlOpt,
     AuthModeOpt,
@@ -146,12 +144,20 @@ class ThemesImporter(BaseImporter):
 
             curr_list: List[Dict] = current_realms[realm_name]
 
-            # Build an index of existing themes by _id for O(1) lookup
-            curr_index: Dict[str, int] = {
-                t.get("_id"): idx
-                for idx, t in enumerate(curr_list)
-                if isinstance(t, dict) and t.get("_id")
-            }
+            # Build indices of existing themes for O(1) lookup
+            # id_index: _id -> position in curr_list
+            # name_index: name -> position in curr_list
+            id_index: Dict[str, int] = {}
+            name_index: Dict[str, int] = {}
+            for idx, t in enumerate(curr_list):
+                if not isinstance(t, dict):
+                    continue
+                tid = t.get("_id")
+                tname = t.get("name")
+                if tid:
+                    id_index[tid] = idx
+                if tname:
+                    name_index[tname] = idx
 
             for in_theme in incoming_themes:
                 if not isinstance(in_theme, dict):
@@ -161,33 +167,38 @@ class ThemesImporter(BaseImporter):
                     continue
 
                 theme_id: Optional[str] = in_theme.get("_id")
+                theme_name: Optional[str] = in_theme.get("name")
 
-                if not theme_id:
-                    # Theme has no _id — append as a brand-new theme.
-                    # AIC will assign an _id on creation if it's missing,
-                    # but warn the user since this may produce duplicates.
-                    error(
-                        f"Theme in realm '{realm_name}' has no '_id' field. "
-                        f"Appending anyway — this may create duplicates on "
-                        f"repeated imports."
+                match_idx: int = -1
+
+                # 1. Try to match by _id
+                if theme_id and theme_id in id_index:
+                    match_idx = id_index[theme_id]
+                # 2. Try to match by name (fallback if no ID match)
+                elif theme_name and theme_name in name_index:
+                    match_idx = name_index[theme_name]
+                    # If we matched by name but incoming theme has no _id (or different one),
+                    # we should ideally keep the server's existing _id to maintain identity.
+                    if not theme_id:
+                        in_theme["_id"] = curr_list[match_idx].get("_id")
+                        theme_id = in_theme["_id"]
+
+                if match_idx >= 0:
+                    # Update existing theme (preserving position)
+                    curr_list[match_idx] = in_theme
+                    match_info = (
+                        f"(_id={theme_id})" if theme_id else f"('{theme_name}')"
                     )
-                    curr_list.append(in_theme)
-                    continue
-
-                if theme_id in curr_index:
-                    # Replace the existing theme entirely (preserving position)
-                    idx = curr_index[theme_id]
-                    curr_list[idx] = in_theme
                     info(
                         f"Realm '{realm_name}': updating existing theme "
-                        f"'{in_theme.get('name', theme_id)}' (_id={theme_id})"
+                        f"'{theme_name or theme_id}' {match_info}"
                     )
                 else:
                     # New theme — append
                     curr_list.append(in_theme)
                     info(
                         f"Realm '{realm_name}': creating new theme "
-                        f"'{in_theme.get('name', theme_id)}' (_id={theme_id})"
+                        f"'{theme_name or theme_id}'"
                     )
 
             current_realms[realm_name] = curr_list

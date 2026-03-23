@@ -30,10 +30,12 @@ class RollbackManager:
             "email_templates",
             "endpoints",
             "managed",
+            "managed_objects",
+            "mappings",
             "connectors",
             "themes",
         ]:
-            self.realm = realm if realm else "root"
+            self.realm = "root"
         else:
             self.realm = realm or DEFAULT_REALM
 
@@ -159,8 +161,13 @@ class RollbackManager:
                             warning(f"Error fetching script {script_id}: {e}")
             # ---------------------------------------------------------
             # THEMES SPECIAL HANDLING (ui/themerealm)
+            # ROOT LEVEL IDM CONFIGS (ONE BIG DOCUMENT)
             # ---------------------------------------------------------
-            if self.command_name == "themes":
+            if self.command_name in [
+                "themes",
+                "managed",
+                "managed_objects",
+            ]:
 
                 if not isinstance(data, dict):
                     error("Unexpected response for ui/themerealm baseline snapshot")
@@ -168,19 +175,7 @@ class RollbackManager:
 
                 item_id = data.get("_id", "ui/themerealm")
 
-                # Filter only the requested realm
-                filtered_doc = dict(data)
-
-                if "realm" in filtered_doc and isinstance(filtered_doc["realm"], dict):
-                    if self.realm in filtered_doc["realm"]:
-                        filtered_doc["realm"] = {
-                            self.realm: filtered_doc["realm"][self.realm]
-                        }
-                    else:
-                        warning(f"Realm '{self.realm}' not found in ui/themerealm")
-                        filtered_doc["realm"] = {}
-
-                mapping = {item_id: filtered_doc}
+                mapping = {item_id: data}
 
                 self.baseline_snapshot = mapping
                 self.raw_baseline_data = mapping
@@ -227,6 +222,140 @@ class RollbackManager:
 
                 info("Baseline snapshot created")
                 return True
+
+            # ---------------------------------------------------------
+            # NODES - BULK FETCHED COLLECTION (ALREADY FULL CONFIGS)
+            # ---------------------------------------------------------
+            if self.command_name == "nodes":
+
+                if not isinstance(data, dict):
+                    error("Unexpected response for nodes baseline snapshot")
+                    return False
+
+                # data is {"nodes": {node_id: node_config, ...}}
+                # Extract the nodes mapping
+                mapping = data.get("nodes", {})
+
+                if not mapping:
+                    warning(f"No nodes found in baseline snapshot")
+                    return False
+
+                self.baseline_snapshot = mapping
+                self.raw_baseline_data = mapping
+
+                # ------------------- Git baseline -------------------
+                # ------------------- Git baseline -------------------
+                if git_manager:
+                    self._persist_baseline_to_git(git_manager, mapping)
+
+                info(f"Baseline snapshot created with {len(mapping)} nodes")
+                return True
+
+            # ---------------------------------------------------------
+            # SAML ENTITIES - preserve hosted/remote location info
+            # ---------------------------------------------------------
+            if self.command_name == "saml":
+
+                if not isinstance(data, dict):
+                    error("Unexpected response for SAML baseline snapshot")
+                    return False
+
+                # Data from process_saml_response:
+                # {"hosted": [...], "remote": [...], "metadata": [...], "scripts": [...]}
+                mapping = {}
+                for location in ("hosted", "remote"):
+                    for entity in data.get(location, []):
+                        entity_id = entity.get("_id") or entity.get("entityId")
+                        if not entity_id:
+                            continue
+                        # Tag with location so rollback URL builder knows
+                        entity_with_loc = dict(entity)
+                        entity_with_loc["_saml_location"] = location
+                        mapping[str(entity_id)] = entity_with_loc
+                        # Also index by entityId if different from _id
+                        alt_id = entity.get("entityId")
+                        if alt_id and str(alt_id) != str(entity_id):
+                            mapping[str(alt_id)] = entity_with_loc
+
+                self.baseline_snapshot = mapping
+                self.raw_baseline_data = mapping
+
+                if git_manager:
+                    self._persist_baseline_to_git(git_manager, mapping)
+
+                info(
+                    f"Baseline snapshot created with "
+                    f"{len(mapping)} SAML entity entries"
+                )
+                return True
+
+            # ---------------------------------------------------------
+            # EMAIL TEMPLATES - fetch full configs for each template
+            # ---------------------------------------------------------
+            if self.command_name == "email_templates":
+
+                email_names = []
+
+                if isinstance(data, dict):
+                    # Processed format: {"emailTemplates": {name: stub}}
+                    et_map = data.get("emailTemplates", {})
+                    if et_map and isinstance(et_map, dict):
+                        email_names = list(et_map.keys())
+                    else:
+                        # Raw query format: {"result": [{"_id": "emailTemplate/name"}]}
+                        for itm in data.get("result", []):
+                            if isinstance(itm, dict) and "_id" in itm:
+                                full_id = itm["_id"]
+                                name = (
+                                    full_id.split("/")[-1]
+                                    if "/" in full_id
+                                    else full_id
+                                )
+                                email_names.append(name)
+
+                # Fetch full config for each template
+                mapping = {}
+                idm_base = base_url.rstrip("/")
+                if idm_base.endswith("/am"):
+                    idm_base = idm_base[:-3]
+
+                import httpx
+
+                for name in email_names:
+                    url = f"{idm_base}/openidm/config/" f"emailTemplate/{name}"
+                    try:
+                        hdrs = get_headers("email_templates")
+                        hdrs = {
+                            **hdrs,
+                            **self._build_auth_headers(token, url),
+                        }
+                        with httpx.Client() as client:
+                            resp = client.get(url, headers=hdrs)
+                        if resp.status_code == 200:
+                            mapping[name] = resp.json()
+                        else:
+                            warning(
+                                f"Could not fetch email template "
+                                f"'{name}': {resp.status_code}"
+                            )
+                    except Exception as e:
+                        warning(
+                            f"Failed baseline fetch for email "
+                            f"template '{name}': {e}"
+                        )
+
+                self.baseline_snapshot = mapping
+                self.raw_baseline_data = mapping
+
+                if git_manager:
+                    self._persist_baseline_to_git(git_manager, mapping)
+
+                info(
+                    f"Baseline snapshot created with "
+                    f"{len(mapping)} email template(s)"
+                )
+                return True
+
             items = []
 
             def flatten_items(obj):
@@ -247,7 +376,11 @@ class RollbackManager:
 
                     collected = []
 
-                    for value in obj.values():
+                    for key, value in obj.items():
+                        # Skip metadata and scripts from SAML response as they're
+                        # not individual fetch-able resources
+                        if key in ("metadata", "scripts"):
+                            continue
                         if isinstance(value, list):
                             collected.extend(value)
 
@@ -356,55 +489,7 @@ class RollbackManager:
             # -----------------------------------------------------------------
 
             if git_manager:
-
-                self.git_manager = git_manager
-
-                timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-                branch_name = f"baseline/{self.command_name}/{timestamp}"
-
-                try:
-
-                    info(f"Creating baseline git branch: {branch_name}")
-
-                    git_manager.ensure_branch(branch_name)
-
-                    repo_path = git_manager.local_path
-                    component = self.command_name
-
-                    realm_dir = repo_path / (self.realm or "root")
-                    comp_dir = realm_dir / component
-                    comp_dir.mkdir(parents=True, exist_ok=True)
-
-                    filename = f"{(self.realm or 'root')}_{component}.json"
-                    file_path = comp_dir / filename
-
-                    if self.command_name == "mappings":
-                        baseline_file_data = {
-                            "data": {"_id": "sync", "mappings": list(mapping.values())}
-                        }
-                    else:
-                        baseline_file_data = {"data": self.baseline_snapshot}
-
-                    file_path.write_text(
-                        json.dumps(baseline_file_data, indent=2),
-                        encoding="utf-8",
-                    )
-
-                    rel = file_path.relative_to(repo_path)
-
-                    commit_msg = (
-                        f"Baseline snapshot for {self.command_name} "
-                        f"({self.realm}) at {timestamp}"
-                    )
-
-                    git_manager.commit_and_push(
-                        [str(rel)], commit_msg, smart_pull=False
-                    )
-
-                    self.git_branch = branch_name
-
-                except Exception as e:
-                    warning(f"Failed to persist baseline snapshot to Git: {e}")
+                self._persist_baseline_to_git(git_manager, mapping)
 
             info("Baseline snapshot created")
             return True
@@ -413,6 +498,61 @@ class RollbackManager:
 
             error(f"Baseline snapshot failed: {e}")
             return False
+
+    def _persist_baseline_to_git(
+        self, git_manager: Any, mapping: Dict[str, Any]
+    ) -> None:
+        """Helper to create a git branch and commit the baseline mapping."""
+        self.git_manager = git_manager
+
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        branch_name = f"baseline/{self.command_name}/{timestamp}"
+
+        try:
+            info(f"Creating baseline git branch: {branch_name}")
+            git_manager.ensure_branch(branch_name)
+
+            repo_path = git_manager.local_path
+            component = self.command_name
+
+                    if self.command_name == "mappings":
+                        baseline_file_data = {
+                            "data": {"_id": "sync", "mappings": list(mapping.values())}
+                        }
+                    else:
+                        baseline_file_data = {"data": self.baseline_snapshot}
+            realm_dir = repo_path / (self.realm or "root")
+            comp_dir = realm_dir / component
+            comp_dir.mkdir(parents=True, exist_ok=True)
+
+            filename = f"{(self.realm or 'root')}_{component}.json"
+            file_path = comp_dir / filename
+
+            if self.command_name == "mappings":
+                baseline_file_data = {
+                    "data": {"_id": "sync", "mappings": list(mapping.values())}
+                }
+            else:
+                baseline_file_data = {"data": mapping}
+
+            file_path.write_text(
+                json.dumps(baseline_file_data, indent=2),
+                encoding="utf-8",
+            )
+
+            rel = file_path.relative_to(repo_path)
+
+            commit_msg = (
+                f"Baseline snapshot for {self.command_name} "
+                f"({self.realm}) at {timestamp} ({len(mapping)} items)"
+            )
+
+            git_manager.commit_and_push([str(rel)], commit_msg, smart_pull=False)
+
+            self.git_branch = branch_name
+
+        except Exception as e:
+            warning(f"Failed to persist baseline snapshot to Git: {e}")
 
     def track_import(
         self, item_id: str, action: str, baseline_item: Optional[Dict[str, Any]] = None
@@ -731,8 +871,8 @@ class RollbackManager:
                         restore_data = {
                             k: v
                             for k, v in baseline.items()
-                            if k not in {"_rev", "_type"}
-                        }
+                            if k not in {"_rev", "_type", "_saml_location"}
+                        } 
 
                     with httpx.Client() as client:
                         resp = client.put(url, headers=headers, json=restore_data)
@@ -775,24 +915,120 @@ class RollbackManager:
                     f"/am/json/realms/root/realms/{self.realm}/scripts/{script_id}",
                 )
 
+            from urllib.parse import quote
+
+            # Root-level IDM paths represent the full resource path
+            # so we shouldn't append the item_id to them
+            if self.command_name in ["themes", "managed", "managed_objects"]:
+                api_endpoint, _ = get_command_api_endpoint(
+                    self.command_name, self.realm
+                )
+                if api_endpoint:
+                    api_endpoint = api_endpoint.split("?")[0]
+                    return construct_api_url(base_url, api_endpoint)
+
+            # Special handling for nodes - extract node type from baseline
+            if self.command_name == "nodes":
+                baseline = self.baseline_snapshot.get(str(item_id))
+
+                if not baseline or not isinstance(baseline, dict):
+                    warning(
+                        f"Node '{item_id}' not found in baseline, cannot determine node type"
+                    )
+                    return construct_api_url(
+                        base_url,
+                        f"/am/json/realms/root/realms/{self.realm}"
+                        f"/realm-config/authentication/authenticationtrees/nodes/unknown/{quote(str(item_id), safe='')}",
+                    )
+
+                # Extract node type from _type._id field
+                node_type = (baseline.get("_type") or {}).get("_id", "unknown")
+                info(f"Building delete URL for node '{item_id}' of type '{node_type}'")
+
+                return construct_api_url(
+                    base_url,
+                    f"/am/json/realms/root/realms/{self.realm}"
+                    f"/realm-config/authentication/authenticationtrees"
+                    f"/nodes/{quote(str(node_type), safe='')}/{quote(str(item_id), safe='')}",
+                )
+
+            # Special handling for email_templates (use resource endpoint, not query endpoint)
+            if self.command_name == "email_templates":
+                # IDM base URL (strip /am if needed)
+                idm_base = base_url.rstrip("/")
+                if idm_base.endswith("/am"):
+                    idm_base = idm_base[:-3]
+
+                # item_id is the template name like "resetPassword"
+                baseline = self.baseline_snapshot.get(str(item_id))
+                if baseline:
+                    info(
+                        f"Email template '{item_id}' exists in baseline - will restore"
+                    )
+                else:
+                    warning(
+                        f"Email template '{item_id}' NOT in baseline - marking as newly created"
+                    )
+
+                return f"{idm_base}/openidm/config/emailTemplate/{quote(str(item_id), safe='')}"
+
+            # Special handling for SAML entities - determine location from baseline data
+            if self.command_name == "saml":
+                baseline = self.baseline_snapshot.get(str(item_id))
+                location = "hosted"  # default
+                # Use _id from baseline entity for the URL path (this is
+                # what AM uses internally and what _upsert_entity sends).
+                # Falls back to item_id if _id is not available.
+                url_id = str(item_id)
+
+                if baseline and isinstance(baseline, dict):
+                    # Location tagged during baseline creation
+                    if "_saml_location" in baseline:
+                        location = baseline["_saml_location"]
+                    elif "location" in baseline:
+                        location = baseline["location"]
+
+                    # Prefer _id from entity config (AM's canonical key)
+                    if baseline.get("_id"):
+                        url_id = str(baseline["_id"])
+
+                    info(f"SAML entity '{item_id}' → " f"{location}/{url_id}")
+                else:
+                    warning(
+                        f"SAML entity '{item_id}' NOT found in "
+                        f"baseline, using default location 'hosted'"
+                    )
+
+                # Match _upsert_entity URL pattern exactly (no quote encoding)
+                return construct_api_url(
+                    base_url,
+                    f"/am/json/realms/root/realms/{self.realm}"
+                    f"/realm-config/saml2/{location}/{url_id}",
+                )
+
+            # Standard endpoint handling for other commands
             api_endpoint, _ = get_command_api_endpoint(self.command_name, self.realm)
 
             if not api_endpoint:
                 raise RuntimeError("Unknown command API endpoint")
 
+            # remove query parameters like ?_queryFilter
             api_endpoint = api_endpoint.split("?")[0]
 
             if not api_endpoint.endswith("/"):
                 api_endpoint += "/"
 
-            api_endpoint = f"{api_endpoint}{item_id}"
+            # URL-encode item_id to handle special characters (e.g., nodes with special IDs)
+            encoded_id = quote(str(item_id), safe="")
+            api_endpoint = f"{api_endpoint}{encoded_id}"
 
             return construct_api_url(base_url, api_endpoint)
 
-        except Exception:
+        except Exception as e:
 
             from trxo.utils.url import construct_api_url
 
+            warning(f"Failed to build API URL for {self.command_name}/{item_id}: {e}")
             return construct_api_url(base_url, f"/{item_id}")
 
     # ---------------------------------------------------------------------
@@ -814,6 +1050,12 @@ class RollbackManager:
                     ),
                 }
 
-            return {}
+            # AIC/SaaS mode for IDM requires Bearer token
+            return {"Authorization": f"Bearer {token}"}
+
+        # For AM endpoints: service account (cloud) uses Bearer token,
+        # on-premise uses Cookie-based auth
+        if self.auth_mode == "service-account":
+            return {"Authorization": f"Bearer {token}"}
 
         return {"Cookie": f"iPlanetDirectoryPro={token}"}
