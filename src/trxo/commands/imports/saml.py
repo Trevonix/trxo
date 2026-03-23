@@ -379,7 +379,14 @@ class SamlImporter(BaseImporter):
             self.make_http_request(url, "PUT", headers, json.dumps(payload_data))
             info(f"✓ Imported script: {script_name}")
             if hasattr(self, "rollback_manager") and self.rollback_manager:
-                self.rollback_manager.track_import(script_id, "created")
+                # check if it existed in baseline
+                baseline = self.rollback_manager.baseline_snapshot.get(
+                    "scripts", {}
+                ).get(script_id)
+                action = "updated" if baseline else "created"
+                self.rollback_manager.track_import(
+                    f"script::{script_id}", action, baseline
+                )
             return True
         except Exception as e:
             error(f"Failed to import script '{script_name}': {str(e)}")
@@ -547,7 +554,9 @@ class SamlImporter(BaseImporter):
                         info(f"✓ Created hosted entity: {entity_name}")
 
                         if hasattr(self, "rollback_manager") and self.rollback_manager:
-                            self.rollback_manager.track_import(entity_id, "created")
+                            self.rollback_manager.track_import(
+                                entity_id, "created", {"_location": "hosted"}
+                            )
 
                         return True
 
@@ -556,10 +565,12 @@ class SamlImporter(BaseImporter):
                     info(f"✓ Updated hosted entity: {entity_name}")
 
                     if hasattr(self, "rollback_manager") and self.rollback_manager:
+                        baseline_with_loc = baseline.copy() if baseline else {}
+                        baseline_with_loc["_location"] = "hosted"
                         self.rollback_manager.track_import(
                             entity_id,
                             "updated",
-                            baseline,
+                            baseline_with_loc,
                         )
 
                     return True
@@ -570,10 +581,12 @@ class SamlImporter(BaseImporter):
                 info(f"✓ Imported {location} entity: {entity_name}")
 
                 if hasattr(self, "rollback_manager") and self.rollback_manager:
+                    baseline_with_loc = baseline.copy() if baseline else {}
+                    baseline_with_loc["_location"] = "remote"
                     self.rollback_manager.track_import(
                         entity_id,
                         "updated",
-                        baseline,
+                        baseline_with_loc,
                     )
 
                 return True

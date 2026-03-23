@@ -57,6 +57,9 @@ class OAuthImporter(BaseImporter):
     def get_item_type(self) -> str:
         return "OAuth2_Clients"
 
+    def get_item_id(self, item: Dict[str, Any]) -> Optional[str]:
+        return item.get("_id")
+
     def get_api_endpoint(self, item_id: str, base_url: str) -> str:
         return self._construct_api_url(
             base_url,
@@ -75,14 +78,59 @@ class OAuthImporter(BaseImporter):
                 and "clients" in data_section
                 and "scripts" in data_section
             ):
+                # Standard list format: {"clients": [...], "scripts": [...]}
                 info("Detected OAuth export format (standard) with clients and scripts")
                 self._oauth_export_data = data_section
 
                 new_scripts = data_section.get("scripts", [])
-                if new_scripts:
-                    self._pending_scripts.extend(new_scripts)
+
+                # Normalize scripts into list
+                if isinstance(new_scripts, dict):
+                    new_scripts = list(new_scripts.values())
+
+                # Ensure it's a list
+                if not isinstance(new_scripts, list):
+                    new_scripts = []
+
+                # Filter valid script objects
+                valid_scripts = [
+                    s for s in new_scripts if isinstance(s, dict) and s.get("_id")
+                ]
+
+                if valid_scripts:
+                    info(f"Discovered {len(valid_scripts)} script(s) in export")
+                    self._pending_scripts.extend(valid_scripts)
 
                 clients = data_section.get("clients", [])
+                if isinstance(clients, dict):
+                    clients = list(clients.values())
+
+            elif (
+                isinstance(data_section, dict)
+                and "data" in data_section
+                and "scripts" in data_section
+            ):
+                # Nested dict format from git export:
+                # data.data = {client_id: client_obj}, data.scripts = {script_id: script_obj}
+                info("Detected OAuth export format (standard) with clients and scripts")
+                inner_clients = data_section.get("data", {})
+                inner_scripts = data_section.get("scripts", {})
+
+                if isinstance(inner_clients, dict):
+                    clients = list(inner_clients.values())
+                elif isinstance(inner_clients, list):
+                    clients = inner_clients
+
+                if isinstance(inner_scripts, dict):
+                    scripts_list = list(inner_scripts.values())
+                elif isinstance(inner_scripts, list):
+                    scripts_list = inner_scripts
+                else:
+                    scripts_list = []
+
+                if scripts_list:
+                    self._pending_scripts.extend(scripts_list)
+                self._oauth_export_data = data_section
 
             elif isinstance(data_section, list):
                 clients = data_section
@@ -98,10 +146,14 @@ class OAuthImporter(BaseImporter):
             self._oauth_export_data = data
 
             new_scripts = data.get("scripts", [])
+            if isinstance(new_scripts, dict):
+                new_scripts = list(new_scripts.values())
             if new_scripts:
                 self._pending_scripts.extend(new_scripts)
 
             clients = data.get("clients", [])
+            if isinstance(clients, dict):
+                clients = list(clients.values())
 
         else:
             if isinstance(data, list):
@@ -193,14 +245,23 @@ class OAuthImporter(BaseImporter):
 
             self.script_importer.auth_mode = self.auth_mode
 
+            self.script_importer.rollback_manager = rollback_manager
+
             self.script_importer.process_items(
                 self._pending_scripts,
                 token,
                 base_url,
-                rollback_manager=None,
-                rollback_on_failure=False,
+                rollback_manager=rollback_manager,
+                rollback_on_failure=rollback_on_failure,
             )
-
+        if rollback_manager and isinstance(rollback_manager.baseline_snapshot, dict):
+            if "data" in rollback_manager.baseline_snapshot:
+                flattened = {}
+                flattened.update(rollback_manager.baseline_snapshot.get("data", {}))
+                flattened["scripts"] = rollback_manager.baseline_snapshot.get(
+                    "scripts", {}
+                )
+                rollback_manager.baseline_snapshot = flattened
             self._pending_scripts = []
 
         # Process OAuth clients normally with rollback
@@ -217,6 +278,9 @@ class OAuthImporter(BaseImporter):
         item_id = item_data.get("_id")
 
         if not item_id:
+            print(
+                f"DEBUG oauth update_item: no _id found. Keys={list(item_data.keys())[:10]}"
+            )
             error("OAuth2 Client missing '_id'")
             return False
 
