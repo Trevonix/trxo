@@ -478,6 +478,12 @@ class JourneyImporter(BaseImporter):
             elif isinstance(baseline_item, dict):
                 baseline_item.setdefault("_saml_location", saml_location)
 
+        # For Nodes, store node_type if it's newly created
+        node_type = kwargs.get("node_type")
+        if section == "nodes" and node_type:
+            if baseline_item is None:
+                manager.baseline_snapshot[str(item_id)] = {"_type": {"_id": node_type}}
+
         manager.track_import(str(item_id), action, baseline_item)
 
     def _execute_enriched_rollback(self, token: str, base_url: str) -> None:
@@ -818,6 +824,9 @@ class JourneyImporter(BaseImporter):
                     error_count += 1
                     if fail_fast:
                         return False
+                else:
+                    n_type = (node_cfg.get("_type") or {}).get("_id")
+                    self._track_enriched_rollback("nodes", node_id, node_type=n_type)
 
         # -- 6. Root nodes ----------------------------------------------------
         nodes: Dict[str, Any] = data.get("nodes", {})
@@ -836,7 +845,8 @@ class JourneyImporter(BaseImporter):
                     if fail_fast:
                         return False
                 else:
-                    self._track_enriched_rollback("nodes", node_id)
+                    n_type = (node_cfg.get("_type") or {}).get("_id")
+                    self._track_enriched_rollback("nodes", node_id, node_type=n_type)
 
         # -- 7. Themes --------------------------------------------------------
         themes: Dict[str, Any] = data.get("themes", {})
@@ -859,9 +869,20 @@ class JourneyImporter(BaseImporter):
         if selected_tree_ids:
             trees = {k: v for k, v in trees.items() if k in selected_tree_ids}
 
+        counter_to_break_trees = 0
         if trees:
             info(f"Importing {len(trees)} journey(s)")
             for tree_id, tree_cfg in trees.items():
+                counter_to_break_trees += 1
+                if counter_to_break_trees > 6:
+                    import os
+
+                    if os.environ.get("TEST_ROLLBACK_FAIL") == "1":
+                        error(
+                            "⚠️  TEST FAILURE INJECTED: simulating import failure for rollback test"
+                        )
+                        return False
+
                 if not self.update_item(tree_cfg, token, base_url):
                     error_count += 1
                     if fail_fast:

@@ -479,10 +479,11 @@ class RollbackManager:
             # Preserve script entries captured earlier
             scripts_data = self.baseline_snapshot.get("scripts", {})
 
-            self.baseline_snapshot = {
-                "data": mapping,
-                "scripts": scripts_data,
-            }
+            # Flatten the baseline snapshot so get(id) works without data envelope
+            for k, v in mapping.items():
+                self.baseline_snapshot[k] = v
+            self.baseline_snapshot["scripts"] = scripts_data
+
             self.raw_baseline_data = self.baseline_snapshot
             # -----------------------------------------------------------------
             # GIT BASELINE
@@ -515,12 +516,13 @@ class RollbackManager:
             repo_path = git_manager.local_path
             component = self.command_name
 
-                    if self.command_name == "mappings":
-                        baseline_file_data = {
-                            "data": {"_id": "sync", "mappings": list(mapping.values())}
-                        }
-                    else:
-                        baseline_file_data = {"data": self.baseline_snapshot}
+            if self.command_name == "mappings":
+                baseline_file_data = {
+                    "data": {"_id": "sync", "mappings": list(mapping.values())}
+                }
+            else:
+                baseline_file_data = {"data": self.baseline_snapshot}
+
             realm_dir = repo_path / (self.realm or "root")
             comp_dir = realm_dir / component
             comp_dir.mkdir(parents=True, exist_ok=True)
@@ -589,9 +591,9 @@ class RollbackManager:
             warning("No imported items tracked. Restoring entire baseline snapshot...")
 
             # ----------- RESTORE DATA (SAML etc) -----------
-            for baseline_id, baseline_item in self.baseline_snapshot.get(
-                "data", {}
-            ).items():
+            for baseline_id, baseline_item in self.baseline_snapshot.items():
+                if baseline_id == "scripts":
+                    continue
                 try:
                     url = self._build_api_url(baseline_id, base_url)
 
@@ -602,7 +604,8 @@ class RollbackManager:
 
                             url = construct_api_url(
                                 base_url,
-                                f"/am/json/realms/root/realms/{self.realm}/realm-config/saml2/{loc}/{baseline_id}",
+                                f"/am/json/realms/root/realms/{self.realm}"
+                                f"/realm-config/saml2/{loc}/{baseline_id}",
                             )
 
                     headers = get_headers(self.command_name)
@@ -738,8 +741,8 @@ class RollbackManager:
                 baseline = self.baseline_snapshot["scripts"][lookup_id]
                 item_type = "script"
 
-            elif lookup_id in self.baseline_snapshot.get("data", {}):
-                baseline = self.baseline_snapshot["data"][lookup_id]
+            elif lookup_id in self.baseline_snapshot:
+                baseline = self.baseline_snapshot[lookup_id]
                 item_type = "data"
 
             elif baseline:
@@ -863,7 +866,7 @@ class RollbackManager:
                         restore_data = {
                             k: v
                             for k, v in baseline.items()
-                            if k not in {"_rev", "_type", "_location"}
+                            if k not in {"_rev", "_type", "_location", "_saml_location"}
                         }
 
                     # ---------------- DEFAULT ----------------
@@ -871,8 +874,8 @@ class RollbackManager:
                         restore_data = {
                             k: v
                             for k, v in baseline.items()
-                            if k not in {"_rev", "_type", "_saml_location"}
-                        } 
+                            if k not in {"_rev", "_type", "_location", "_saml_location"}
+                        }
 
                     with httpx.Client() as client:
                         resp = client.put(url, headers=headers, json=restore_data)
@@ -943,7 +946,7 @@ class RollbackManager:
 
                 # Extract node type from _type._id field
                 node_type = (baseline.get("_type") or {}).get("_id", "unknown")
-                info(f"Building delete URL for node '{item_id}' of type '{node_type}'")
+                info(f"Building API URL for node '{item_id}' of type '{node_type}'")
 
                 return construct_api_url(
                     base_url,
