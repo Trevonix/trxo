@@ -94,6 +94,70 @@ class RollbackManager:
                 return False
 
             # ---------------------------------------------------------
+            # OAUTH AND SAML: ALSO CAPTURE SCRIPTS
+            # ---------------------------------------------------------
+            if self.command_name in ("oauth", "saml"):
+
+                script_ids = set()
+
+                def find_scripts(obj):
+                    if isinstance(obj, dict):
+                        for k, v in obj.items():
+                            if (
+                                k.endswith("Script")
+                                and isinstance(v, str)
+                                and v.strip()
+                                and v.strip() != "[Empty]"
+                            ):
+                                val = v.strip()
+                                if len(val) > 10 and ("-" in val or len(val) == 36):
+                                    script_ids.add(val)
+                            elif isinstance(v, (dict, list)):
+                                find_scripts(v)
+                    elif isinstance(obj, list):
+                        for item in obj:
+                            find_scripts(item)
+
+                find_scripts(data)
+                if script_ids:
+
+                    info(f"Capturing {len(script_ids)} scripts for rollback")
+
+                    import httpx
+                    from trxo.utils.url import construct_api_url
+
+                    for script_id in script_ids:
+
+                        try:
+
+                            url = construct_api_url(
+                                base_url,
+                                f"/am/json/realms/root/realms/{self.realm}/scripts/{script_id}",
+                            )
+
+                            headers = get_headers("oauth")
+                            headers = {
+                                **headers,
+                                **self._build_auth_headers(token, url),
+                            }
+
+                            with httpx.Client() as client:
+                                resp = client.get(url, headers=headers)
+
+                            if resp.status_code == 200:
+                                if "scripts" not in self.baseline_snapshot:
+                                    self.baseline_snapshot["scripts"] = {}
+
+                                self.baseline_snapshot["scripts"][
+                                    script_id
+                                ] = resp.json()
+
+                            else:
+                                warning(f"Failed to capture script {script_id}")
+
+                        except Exception as e:
+                            warning(f"Error fetching script {script_id}: {e}")
+            # ---------------------------------------------------------
             # THEMES SPECIAL HANDLING (ui/themerealm)
             # ---------------------------------------------------------
             if self.command_name == "themes":
@@ -120,7 +184,6 @@ class RollbackManager:
 
                 self.baseline_snapshot = mapping
                 self.raw_baseline_data = mapping
-
                 # ------------------- Git baseline -------------------
                 if git_manager:
 
@@ -193,6 +256,15 @@ class RollbackManager:
 
                 return []
 
+            if self.command_name == "saml" and isinstance(data, dict):
+                # Annotate SAML entities so we know where to restore them
+                if "hosted" in data:
+                    for item in data["hosted"]:
+                        item["_location"] = "hosted"
+                if "remote" in data:
+                    for item in data["remote"]:
+                        item["_location"] = "remote"
+
             if self.command_name == "mappings" and isinstance(data, dict):
                 items = data.get("mappings", [])
             else:
@@ -217,6 +289,10 @@ class RollbackManager:
                 if not item_id:
                     continue
 
+                # Skip script items already captured
+                if isinstance(item_id, str) and item_id.startswith("script::"):
+                    continue
+
                 # Already full config
                 if isinstance(itm, dict):
 
@@ -225,7 +301,18 @@ class RollbackManager:
                     ]
 
                     if any(isinstance(itm[k], (dict, list)) for k in non_meta_keys):
+                        is_script = (
+                            isinstance(itm, dict)
+                            and itm.get("script") is not None
+                            and itm.get("context") is not None
+                        )
 
+                        if is_script:
+                            if "scripts" not in self.baseline_snapshot:
+                                self.baseline_snapshot["scripts"] = {}
+
+                            self.baseline_snapshot["scripts"][str(item_id)] = itm
+                            continue
                         mapping[str(item_id)] = itm
 
                         entity_id = itm.get("entityId")
@@ -251,16 +338,19 @@ class RollbackManager:
                     if resp.status_code == 200:
                         mapping[str(item_id)] = resp.json()
                     else:
-                        warning(
-                            f"Could not fetch full config for {item_id}: {resp.status_code}"
-                        )
+                        continue
 
                 except Exception as e:
                     warning(f"Failed baseline fetch for {item_id}: {e}")
 
-            self.baseline_snapshot = mapping
-            self.raw_baseline_data = mapping
+            # Preserve script entries captured earlier
+            scripts_data = self.baseline_snapshot.get("scripts", {})
 
+            self.baseline_snapshot = {
+                "data": mapping,
+                "scripts": scripts_data,
+            }
+            self.raw_baseline_data = self.baseline_snapshot
             # -----------------------------------------------------------------
             # GIT BASELINE
             # -----------------------------------------------------------------
@@ -293,7 +383,7 @@ class RollbackManager:
                             "data": {"_id": "sync", "mappings": list(mapping.values())}
                         }
                     else:
-                        baseline_file_data = {"data": mapping}
+                        baseline_file_data = {"data": self.baseline_snapshot}
 
                     file_path.write_text(
                         json.dumps(baseline_file_data, indent=2),
@@ -349,25 +439,59 @@ class RollbackManager:
 
         info("Initiating rollback of imported items...")
 
-        # If rollback triggered before any valid item ID was tracked
+        import httpx
+        import base64
+
+        # ------------------------------------------------------------
+        # CASE 1: No tracked items → restore full baseline
+        # ------------------------------------------------------------
         if not self.imported_items:
             warning("No imported items tracked. Restoring entire baseline snapshot...")
 
-            for baseline_id, baseline_item in self.baseline_snapshot.items():
+            # ----------- RESTORE DATA (SAML etc) -----------
+            for baseline_id, baseline_item in self.baseline_snapshot.get(
+                "data", {}
+            ).items():
                 try:
                     url = self._build_api_url(baseline_id, base_url)
 
-                    headers = get_headers(self.command_name)
+                    if self.command_name == "saml":
+                        loc = baseline_item.get("_location")
+                        if loc:
+                            from trxo.utils.url import construct_api_url
 
+                            url = construct_api_url(
+                                base_url,
+                                f"/am/json/realms/root/realms/{self.realm}/realm-config/saml2/{loc}/{baseline_id}",
+                            )
+
+                    headers = get_headers(self.command_name)
                     headers = {**headers, **self._build_auth_headers(token, url)}
 
-                    restore_data = {
-                        k: v
-                        for k, v in baseline_item.items()
-                        if k not in {"_rev", "_type"}
-                    }
+                    restore_data = {}
 
-                    import httpx
+                    for k, v in baseline_item.items():
+                        if k in {
+                            "_id",
+                            "_rev",
+                            "_type",
+                            "entityId",
+                            "name",
+                            "id",
+                            "_location",
+                        }:
+                            continue
+                        if v is None:
+                            continue
+
+                        # ✅ ONLY VALID SAML BLOCKS
+                        if isinstance(v, dict):
+                            restore_data[k] = v
+
+                        elif isinstance(v, str):
+                            v_strip = v.strip()
+                            if v_strip.startswith("<") and v_strip.endswith(">"):
+                                restore_data[k] = v
 
                     with httpx.Client() as client:
                         resp = client.put(url, headers=headers, json=restore_data)
@@ -378,15 +502,82 @@ class RollbackManager:
                             {"id": baseline_id, "action": "restored"}
                         )
                     else:
-                        report["errors"].append({"id": baseline_id, "error": resp.text})
+                        report["errors"].append(
+                            {
+                                "id": baseline_id,
+                                "error": f"{resp.status_code} - {resp.text}",
+                            }
+                        )
 
                 except Exception as e:
                     report["errors"].append({"id": baseline_id, "error": str(e)})
 
+            # ----------- RESTORE SCRIPTS -----------
+            for script_id, baseline in self.baseline_snapshot.get(
+                "scripts", {}
+            ).items():
+                try:
+                    url = self._build_api_url(f"script::{script_id}", base_url)
+
+                    headers = get_headers("oauth")  # ✅ IMPORTANT
+                    headers = {**headers, **self._build_auth_headers(token, url)}
+
+                    restore_data = {}
+
+                    for k, v in baseline.items():
+                        if k == "_rev":
+                            continue
+                        if v is None:
+                            continue
+                        restore_data[k] = v
+
+                    # ✅ ADD THIS (minimal fix, no logic change)
+                    restore_data["name"] = restore_data.get(
+                        "name", baseline.get("name")
+                    )
+                    restore_data["context"] = restore_data.get(
+                        "context", baseline.get("context")
+                    )
+                    restore_data["language"] = restore_data.get(
+                        "language", baseline.get("language", "JAVASCRIPT")
+                    )
+
+                    # ✅ encode script properly
+                    if "script" in restore_data:
+                        script_val = restore_data["script"]
+
+                        if isinstance(script_val, list):
+                            script_val = "\n".join(script_val)
+
+                        restore_data["script"] = base64.b64encode(
+                            script_val.encode("utf-8")
+                        ).decode("ascii")
+
+                    with httpx.Client() as client:
+                        resp = client.put(url, headers=headers, json=restore_data)
+
+                    if resp.status_code in (200, 201, 204):
+                        info(f"Restored script: {script_id}")
+                        report["rolled_back"].append(
+                            {"id": f"script::{script_id}", "action": "restored"}
+                        )
+                    else:
+                        report["errors"].append(
+                            {
+                                "id": script_id,
+                                "error": f"{resp.status_code} - {resp.text}",
+                            }
+                        )
+
+                except Exception as e:
+                    report["errors"].append({"id": script_id, "error": str(e)})
+
             info("Rollback completed (baseline snapshot restored)")
             return report
 
-        # Rollback previously imported items
+        # ------------------------------------------------------------
+        # CASE 2: Rollback tracked items
+        # ------------------------------------------------------------
         for record in reversed(self.imported_items):
 
             item_id = record.get("id")
@@ -395,19 +586,65 @@ class RollbackManager:
             if not item_id:
                 continue
 
-            baseline = self.baseline_snapshot.get(str(item_id))
+            if isinstance(item_id, str) and item_id.startswith("http"):
+                continue
+
+            lookup_id = str(item_id).split("::")[-1]
+
+            baseline = record.get("baseline")
+            item_type = None
+
+            if lookup_id in self.baseline_snapshot.get("scripts", {}):
+                baseline = self.baseline_snapshot["scripts"][lookup_id]
+                item_type = "script"
+
+            elif lookup_id in self.baseline_snapshot.get("data", {}):
+                baseline = self.baseline_snapshot["data"][lookup_id]
+                item_type = "data"
+
+            elif baseline:
+                # Baseline was stored at tracking time (e.g. SAML entities)
+                item_type = "data"
+
+            # Skip updated items that have no baseline data to restore from
+            if action == "updated" and not baseline:
+                continue
+
+            # For created items with no baseline – we delete them (no skip)
+            if action == "created" and item_type is None:
+                item_type = "data"
+
+            if isinstance(lookup_id, str) and lookup_id.startswith("http"):
+                continue
 
             try:
-                url = self._build_api_url(item_id, base_url)
-
-                headers = get_headers(self.command_name)
+                if item_type == "script":
+                    url = self._build_api_url(f"script::{lookup_id}", base_url)
+                    headers = get_headers("oauth")
+                else:
+                    url = self._build_api_url(lookup_id, base_url)
+                    headers = get_headers(self.command_name)
 
                 headers = {**headers, **self._build_auth_headers(token, url)}
 
-                import httpx
-
-                # If item was newly created → delete it
+                # -------- DELETE --------
                 if action == "created":
+                    if self.command_name == "saml":
+                        loc = (record.get("baseline") or {}).get("_location")
+                        if loc:
+                            from trxo.utils.url import construct_api_url
+
+                            url = construct_api_url(
+                                base_url,
+                                f"/am/json/realms/root/realms/{self.realm}"
+                                f"/realm-config/saml2/{loc}/{lookup_id}",
+                            )
+                            headers = get_headers(self.command_name)
+                            headers = {
+                                **headers,
+                                **self._build_auth_headers(token, url),
+                            }
+
                     with httpx.Client() as client:
                         resp = client.delete(url, headers=headers)
 
@@ -417,14 +654,85 @@ class RollbackManager:
                             {"id": item_id, "action": "deleted"}
                         )
                     else:
-                        report["errors"].append({"id": item_id, "error": resp.text})
+                        is_default_script_error = (
+                            resp.status_code == 403
+                            and "Default script" in resp.text
+                            and "cannot be deleted" in resp.text
+                        )
+                        if is_default_script_error:
+                            continue
+                        else:
+                            report["errors"].append(
+                                {
+                                    "id": item_id,
+                                    "error": f"{resp.status_code} - {resp.text}",
+                                }
+                            )
 
-                # If item existed before → restore baseline
+                # -------- RESTORE --------
                 elif action == "updated" and baseline:
 
-                    restore_data = {
-                        k: v for k, v in baseline.items() if k not in {"_rev", "_type"}
-                    }
+                    restore_data = {}
+
+                    # ---------------- SCRIPT ----------------
+                    if item_type == "script":
+
+                        headers = get_headers("oauth")
+                        headers = {**headers, **self._build_auth_headers(token, url)}
+
+                        for k, v in baseline.items():
+                            if k == "_rev":
+                                continue
+                            if v is None:
+                                continue
+                            restore_data[k] = v
+
+                        restore_data["name"] = baseline.get("name")
+                        restore_data["context"] = baseline.get("context")
+                        restore_data["language"] = baseline.get(
+                            "language", "JAVASCRIPT"
+                        )
+
+                        if "script" in restore_data:
+                            script_val = restore_data["script"]
+                            if isinstance(script_val, list):
+                                script_val = "\n".join(script_val)
+
+                            restore_data["script"] = base64.b64encode(
+                                script_val.encode("utf-8")
+                            ).decode("ascii")
+
+                    # ---------------- SAML ----------------
+                    elif self.command_name == "saml":
+
+                        loc = baseline.get("_location")
+                        if loc:
+                            from trxo.utils.url import construct_api_url
+
+                            url = construct_api_url(
+                                base_url,
+                                f"/am/json/realms/root/realms/{self.realm}"
+                                f"/realm-config/saml2/{loc}/{lookup_id}",
+                            )
+                            headers = get_headers(self.command_name)
+                            headers = {
+                                **headers,
+                                **self._build_auth_headers(token, url),
+                            }
+
+                        restore_data = {
+                            k: v
+                            for k, v in baseline.items()
+                            if k not in {"_rev", "_type", "_location"}
+                        }
+
+                    # ---------------- DEFAULT ----------------
+                    else:
+                        restore_data = {
+                            k: v
+                            for k, v in baseline.items()
+                            if k not in {"_rev", "_type"}
+                        }
 
                     with httpx.Client() as client:
                         resp = client.put(url, headers=headers, json=restore_data)
@@ -435,7 +743,12 @@ class RollbackManager:
                             {"id": item_id, "action": "restored"}
                         )
                     else:
-                        report["errors"].append({"id": item_id, "error": resp.text})
+                        report["errors"].append(
+                            {
+                                "id": item_id,
+                                "error": f"{resp.status_code} - {resp.text}",
+                            }
+                        )
 
             except Exception as e:
                 report["errors"].append({"id": item_id, "error": str(e)})
@@ -450,14 +763,23 @@ class RollbackManager:
 
         try:
 
+            from trxo.utils.url import construct_api_url
+
+            # Handle OAuth scripts
+            if isinstance(item_id, str) and item_id.startswith("script::"):
+
+                script_id = item_id.replace("script::", "")
+
+                return construct_api_url(
+                    base_url,
+                    f"/am/json/realms/root/realms/{self.realm}/scripts/{script_id}",
+                )
+
             api_endpoint, _ = get_command_api_endpoint(self.command_name, self.realm)
 
             if not api_endpoint:
                 raise RuntimeError("Unknown command API endpoint")
 
-            from trxo.utils.url import construct_api_url
-
-            # remove query parameters like ?_queryFilter
             api_endpoint = api_endpoint.split("?")[0]
 
             if not api_endpoint.endswith("/"):
