@@ -455,13 +455,29 @@ class JourneyImporter(BaseImporter):
 
         return self._enriched_rollback_managers
 
-    def _track_enriched_rollback(self, section: str, item_id: str) -> None:
+    def _track_enriched_rollback(self, section: str, item_id: str, **kwargs) -> None:
         manager = getattr(self, "_enriched_rollback_managers", {}).get(section)
         if not manager or not item_id:
             return
 
         baseline_item = manager.baseline_snapshot.get(str(item_id))
         action = "updated" if baseline_item is not None else "created"
+
+        # For SAML entities, ensure location is stored in baseline
+        # so rollback URL builder knows the correct endpoint path
+        saml_location = kwargs.get("saml_location")
+        saml_entity_id = kwargs.get("saml_entity_id")
+        if section == "saml2Entities" and saml_location:
+            if baseline_item is None:
+                # Newly created — store minimal entry with location
+                # and the AM _id so rollback can build the correct URL
+                entry = {"_saml_location": saml_location}
+                if saml_entity_id:
+                    entry["_id"] = saml_entity_id
+                manager.baseline_snapshot[str(item_id)] = entry
+            elif isinstance(baseline_item, dict):
+                baseline_item.setdefault("_saml_location", saml_location)
+
         manager.track_import(str(item_id), action, baseline_item)
 
     def _execute_enriched_rollback(self, token: str, base_url: str) -> None:
@@ -757,7 +773,21 @@ class JourneyImporter(BaseImporter):
                         if fail_fast:
                             return False
                     else:
-                        self._track_enriched_rollback("saml2Entities", entity_id)
+                        # Determine location and AM _id for rollback URL
+                        saml_loc = "hosted" if "hosted" in entity_entry else "remote"
+                        # Extract the AM _id from entity config
+                        provider_cfg = (
+                            entity_entry.get("hosted")
+                            or entity_entry.get("remote")
+                            or {}
+                        )
+                        saml_am_id = provider_cfg.get("_id")
+                        self._track_enriched_rollback(
+                            "saml2Entities",
+                            entity_id,
+                            saml_location=saml_loc,
+                            saml_entity_id=saml_am_id,
+                        )
 
         # -- 4. Circles of trust ----------------------------------------------
         cots: Dict[str, Any] = data.get("saml2CirclesOfTrust", {})
