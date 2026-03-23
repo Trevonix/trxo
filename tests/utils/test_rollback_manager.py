@@ -61,8 +61,10 @@ def test_execute_rollback_updated_success(mocker, manager):
 
     report = manager.execute_rollback("token", "base")
 
-    # Production code does not add updated items to rolled_back
-    assert len(report["rolled_back"]) == 0
+    # ✅ FIXED: updated items are now restored
+    assert len(report["rolled_back"]) == 1
+    assert report["rolled_back"][0]["id"] == "1"
+    assert report["rolled_back"][0]["action"] == "restored"
 
 
 def test_execute_rollback_updated_no_change(mocker, manager):
@@ -89,6 +91,7 @@ def test_execute_rollback_updated_no_change(mocker, manager):
 
     report = manager.execute_rollback("token", "base")
 
+    # ❌ Failed restore → not added to rolled_back
     assert len(report["rolled_back"]) == 0
 
 
@@ -117,8 +120,10 @@ def test_execute_rollback_managed_special_case(mocker):
 
     report = mgr.execute_rollback("token", "base")
 
-    # Production code does not add this to rolled_back
-    assert len(report["rolled_back"]) == 0
+    # ✅ FIXED: managed also restores baseline
+    assert len(report["rolled_back"]) == 1
+    assert report["rolled_back"][0]["id"] == "x"
+    assert report["rolled_back"][0]["action"] == "restored"
 
 
 def test_build_api_url_list_endpoint(mocker, manager):

@@ -169,6 +169,18 @@ class ScriptImporter(BaseImporter):
             return False
 
         info(f"Successfully processed script: {item_name} (ID: {item_id})")
+        if hasattr(self, "rollback_manager") and self.rollback_manager:
+            baseline = self.rollback_manager.baseline_snapshot.get("scripts", {}).get(
+                item_id
+            )
+
+            action = "updated" if baseline else "created"
+
+            self.rollback_manager.track_import(
+                f"script::{item_id}",
+                action,
+                baseline,
+            )
         return True
 
 
