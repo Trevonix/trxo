@@ -13,7 +13,7 @@ import typer
 from trxo.auth.on_premise import OnPremAuth
 from trxo.auth.token_manager import TokenManager
 from trxo.utils.config_store import ConfigStore
-from trxo.utils.console import console, error, info, success, warning
+from trxo.utils.console import console, error, info, warning
 
 
 class AuthManager:
@@ -341,13 +341,19 @@ class AuthManager:
         self, project_name: str, base_url_override: Optional[str] = None
     ) -> str:
         """Get AM/Primary base URL.
-        Priority: Override > config['am_base_url'] > config['base_url'].
+        Priority: Override > (am_base_url if onprem) > base_url.
         """
         if base_url_override:
             return base_url_override
 
         config = self.config_store.get_project_config(project_name) or {}
-        api_base_url = config.get("am_base_url") or config.get("base_url")
+        auth_mode = config.get("auth_mode", "service-account")
+
+        api_base_url = None
+        if auth_mode == "onprem":
+            api_base_url = config.get("am_base_url") or config.get("base_url")
+        else:
+            api_base_url = config.get("base_url")
 
         if not api_base_url:
             error(

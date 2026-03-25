@@ -135,9 +135,12 @@ def test_setup_invalid_auth_mode(mock_config_store, base_setup_mocks):
 
 
 def test_setup_existing_config_without_overrides_exits(
-    mock_config_store, base_setup_mocks
+    mock_config_store, base_setup_mocks, mocker
 ):
     mock_config_store.get_project_config.return_value = {"base_url": "https://old.com"}
+    mocker.patch(
+        "trxo.commands.config.config_manager.typer.confirm", return_value=False
+    )
 
     with pytest.raises(typer.Exit):
         setup(
@@ -145,9 +148,9 @@ def test_setup_existing_config_without_overrides_exits(
             sa_id=None,
             base_url=None,
             am_base_url=None,
-            auth_mode="service-account",
+            auth_mode=None,
             onprem_username=None,
-            onprem_realm="root",
+            onprem_realm=None,
             idm_base_url=None,
             idm_username=None,
             regions=None,

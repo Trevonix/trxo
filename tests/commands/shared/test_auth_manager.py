@@ -263,6 +263,7 @@ def test_get_base_url_falls_back_to_am_base_url(mocker):
     config_store = mocker.Mock()
     token_manager = mocker.Mock()
     config_store.get_project_config.return_value = {
+        "auth_mode": "onprem",
         "am_base_url": "http://am",
         "base_url": "http://old",
     }

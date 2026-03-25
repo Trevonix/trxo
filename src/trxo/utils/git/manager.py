@@ -306,7 +306,13 @@ def setup_git_for_import(
                     f"🌿 Using branch: {current_branch}, to change branch use --branch <branch_name>"
                 )
             else:
-                git_manager.ensure_work_branch()
+                git_manager.ensure_branch(
+                    DEFAULT_EXPORT_BRANCH,
+                    create_from_default=True,
+                    validate_clean=True,
+                    validate_sync=True,
+                    operation="import",
+                )
 
         return git_manager
     except Exception as e:
@@ -338,8 +344,14 @@ def validate_and_setup_git_repo(
     # Get or create repository (one-time setup)
     repo = git_manager.get_or_create_repo(repo_info)
 
-    # Ensure work branch exists and is checked out
-    repo = git_manager.ensure_work_branch(work_branch)
+    # Ensure work branch exists and is checked out with validation
+    repo = git_manager.ensure_branch(
+        work_branch,
+        create_from_default=True,
+        validate_clean=True,
+        validate_sync=True,
+        operation="setup",
+    )
 
     info(f"✅ Repository ready: {git_manager.local_path}")
     info(f"🌿 Active branch: {repo.active_branch.name}")

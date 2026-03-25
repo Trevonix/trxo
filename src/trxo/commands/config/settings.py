@@ -18,13 +18,23 @@ def get_credential_value(
     existing_config: dict,
     prompt_text: str,
     required: bool = True,
+    force_prompt: bool = False,
 ) -> Optional[str]:
-    """Get credential value with priority: argument > config file > prompt"""
+    """Get credential value with priority: argument > config file (if not forcing)
+    > prompt (with config as default)
+    """
     if arg_value:
         return arg_value
 
-    if existing_config and config_key in existing_config:
-        return existing_config[config_key]
+    default_value = existing_config.get(config_key) if existing_config else None
+
+    # If we have an existing value and we are NOT forced to prompt, just return it
+    if not force_prompt and default_value is not None:
+        return default_value
+
+    # If we reach here, we are prompting
+    if default_value is not None:
+        return Prompt.ask(prompt_text, default=str(default_value))
 
     if required:
         return Prompt.ask(prompt_text)
@@ -41,7 +51,7 @@ def display_config(current_project: str, config: Dict) -> None:
     # Hide sensitive information
     safe_config = config.copy()
 
-    if "jwk_path" in safe_config:
+    if safe_config.get("jwk_path"):
         safe_config["jwk_path"] = Path(safe_config["jwk_path"]).name
 
     # Never show JWK content; show only keyring status, kid, fingerprint
@@ -55,7 +65,9 @@ def display_config(current_project: str, config: Dict) -> None:
         if len(kid) > 6:
             safe_config["jwk_kid"] = kid[:3] + "*" * (len(kid) - 6) + kid[-3:]
 
-    config_text = "\n".join([f"{key}: {value}" for key, value in safe_config.items()])
+    config_text = "\n".join(
+        [f"{key}: {value}" for key, value in safe_config.items() if value is not None]
+    )
     display_panel(config_text, f"Configuration for '{current_project}'", "blue")
 
 
