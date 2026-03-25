@@ -138,6 +138,7 @@ def test_update_item_http_failure_returns_false(mocker):
 
 # ✅ FIXED TESTS BELOW
 
+
 def test_delete_item_happy_path(mocker):
     importer = ScriptImporter(realm=DEFAULT_REALM)
 
@@ -146,7 +147,7 @@ def test_delete_item_happy_path(mocker):
 
     result = importer.delete_item("s1", "token", "https://base")
 
-    assert result is True   # ✅ fixed
+    assert result is True  # ✅ fixed
 
 
 def test_delete_item_failure_returns_false(mocker):
@@ -158,7 +159,7 @@ def test_delete_item_failure_returns_false(mocker):
 
     result = importer.delete_item("s1", "token", "https://base")
 
-    assert result is False   # ✅ fixed
+    assert result is False  # ✅ fixed
 
 
 def test_create_script_import_command_calls_import_from_file(mocker):

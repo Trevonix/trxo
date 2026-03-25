@@ -124,6 +124,7 @@ def test_update_item_missing_id_returns_false(mocker):
 
 # ✅ FIXED TESTS BELOW
 
+
 def test_delete_item_happy_path(mocker):
     importer = OAuthImporter(realm=DEFAULT_REALM)
 
@@ -135,10 +136,11 @@ def test_delete_item_happy_path(mocker):
 
     result = importer.delete_item("c1", "token", "https://base")
 
-    assert result is True   # ✅ fixed
+    assert result is True  # ✅ fixed
 
 
 # ONLY showing changed part
+
 
 def test_delete_item_failure_returns_false(mocker):
     importer = OAuthImporter(realm=DEFAULT_REALM)
@@ -152,7 +154,7 @@ def test_delete_item_failure_returns_false(mocker):
 
     result = importer.delete_item("c1", "token", "https://base")
 
-    assert result is True   # ✅ FIXED (matches actual behavior)
+    assert result is True  # ✅ FIXED (matches actual behavior)
 
 
 def test_create_oauth_import_command_calls_import_from_file(mocker):
