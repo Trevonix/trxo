@@ -246,6 +246,7 @@ class MappingsImporter(BaseImporter):
         except Exception as e:
             error(f"Failed to delete sync mapping '{item_id}': {e}")
             return False
+
     def _load_mappings_file(self, file_path: str) -> Any:
         """Load mappings file with flexible format support"""
         import json

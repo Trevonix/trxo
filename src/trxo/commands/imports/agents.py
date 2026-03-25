@@ -153,8 +153,6 @@ class AgentsImporter(BaseImporter):
             return False
 
 
-
-
 def create_agents_import_command():
     """Create the agents import subcommands (gateway, java, web)."""
 

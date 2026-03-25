@@ -226,7 +226,9 @@ class DiffEngine:
             error(f"Failed to compare data: {str(e)}")
             raise
 
-    def _extract_items(self, data: Dict[str, Any], command_name: Optional[str] = None) -> List[Dict[str, Any]]:
+    def _extract_items(
+        self, data: Dict[str, Any], command_name: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """Extract items array from response data"""
         if not data:
             return []
@@ -248,7 +250,6 @@ class DiffEngine:
                 clients_dict = data.get("data", {})
                 if isinstance(clients_dict, dict) and len(clients_dict) > 0:
                     return list(clients_dict.values())
-
 
         #  Handle result wrapper
         if isinstance(data, dict) and isinstance(data.get("result"), list):
@@ -347,7 +348,7 @@ class DiffEngine:
                     # Normalize internal script names (strip platform prefix)
                     prefix = "PingOne Advanced Identity Cloud Internal: "
                     if isinstance(v, str) and v.startswith(prefix):
-                        normalized[k] = v[len(prefix):]
+                        normalized[k] = v[len(prefix) :]
                     else:
                         normalized[k] = v
                 else:
@@ -362,10 +363,12 @@ class DiffEngine:
             # Check if it's a list with a single base64 string (script content)
             if len(obj) == 1 and isinstance(obj[0], str) and self._is_base64(obj[0]):
                 return self._normalize_script_content(obj[0])
-            
+
             cleaned_list = [self._normalize_inherited_fields(i) for i in obj]
             # Strip empty-like items from the list
-            return [v for v in cleaned_list if v not in (None, "", [], {}, [""], ["null"])]
+            return [
+                v for v in cleaned_list if v not in (None, "", [], {}, [""], ["null"])
+            ]
 
         if obj == "null":
             return None

@@ -110,8 +110,6 @@ class WebhooksImporter(BaseImporter):
             return False
 
 
-
-
 def create_webhooks_import_command():
     """Create the webhooks import command function"""
 

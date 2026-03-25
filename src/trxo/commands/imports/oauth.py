@@ -250,7 +250,7 @@ class OAuthImporter(BaseImporter):
     def delete_item(self, item_id: str, token: str, base_url: str) -> bool:
         """Delete a single OAuth2 Client via API"""
         url = self.get_api_endpoint(item_id, base_url)
-        
+
         headers = get_headers("oauth")
         headers = {
             **headers,

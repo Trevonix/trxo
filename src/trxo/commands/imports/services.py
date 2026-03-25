@@ -144,14 +144,19 @@ class ServicesImporter(BaseImporter):
                         # For creation, we might need _type in the payload
                         # Some services support creation at the specific ID URL
                         create_url = f"{url}?_action=create"
-                        
+
                         creation_data = item_data.copy()
                         # Cleanup creation data (remove metadata but keep ID/Type if needed)
                         for k in ["_rev", "_lastModified", "_lastModifiedBy"]:
                             creation_data.pop(k, None)
-                        
+
                         # Use the instance-specific URL for creation (works for many AM services)
-                        self.make_http_request(create_url, "POST", headers, json.dumps(creation_data, indent=2))
+                        self.make_http_request(
+                            create_url,
+                            "POST",
+                            headers,
+                            json.dumps(creation_data, indent=2),
+                        )
                         info(f"Created realm service ({self.realm}): {item_id}")
                     except Exception as create_error:
                         raise create_error
@@ -253,10 +258,6 @@ class ServicesImporter(BaseImporter):
         except Exception as e:
             error(f"Failed to delete service '{item_id}': {e}")
             return False
-
-
-
-
 
 
 def create_services_import_command():
