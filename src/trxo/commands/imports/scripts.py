@@ -6,7 +6,7 @@ This module provides import functionality for PingOne Advanced Identity Cloud sc
 
 import base64
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import httpx
 import typer
@@ -169,7 +169,80 @@ class ScriptImporter(BaseImporter):
             return False
 
         info(f"Successfully processed script: {item_name} (ID: {item_id})")
+        if hasattr(self, "rollback_manager") and self.rollback_manager:
+            baseline = self.rollback_manager.baseline_snapshot.get("scripts", {}).get(
+                item_id
+            )
+
+            action = "updated" if baseline else "created"
+
+            self.rollback_manager.track_import(
+                f"script::{item_id}",
+                action=action,
+                baseline_item=baseline,
+            )
         return True
+
+    def delete_item(self, item_id: str, token: str, base_url: str) -> bool:
+        """Delete a single script via API"""
+        url = self.get_api_endpoint(item_id, base_url)
+        headers = get_headers("scripts")
+        headers = {**headers, **self.build_auth_headers(token)}
+
+        try:
+            self.make_http_request(url, "DELETE", headers)
+            info(f"Successfully deleted script: {item_id}")
+            return True
+        except Exception as e:
+            error(f"Error deleting script '{item_id}': {str(e)}")
+            return False
+
+    def import_from_file(
+        self,
+        file_path: Optional[str] = None,
+        realm: Optional[str] = None,
+        jwk_path: Optional[str] = None,
+        sa_id: Optional[str] = None,
+        base_url: Optional[str] = None,
+        project_name: Optional[str] = None,
+        auth_mode: Optional[str] = None,
+        onprem_username: Optional[str] = None,
+        onprem_password: Optional[str] = None,
+        onprem_realm: Optional[str] = None,
+        idm_base_url: Optional[str] = None,
+        idm_username: Optional[str] = None,
+        idm_password: Optional[str] = None,
+        am_base_url: Optional[str] = None,
+        force_import: bool = False,
+        branch: Optional[str] = None,
+        diff: bool = False,
+        rollback: bool = False,
+        sync: bool = False,
+        cherry_pick: Optional[str] = None,
+    ) -> None:
+        """Override to ensure automated sync (force=True)"""
+        super().import_from_file(
+            file_path=file_path,
+            realm=realm,
+            jwk_path=jwk_path,
+            sa_id=sa_id,
+            base_url=base_url,
+            project_name=project_name,
+            auth_mode=auth_mode,
+            onprem_username=onprem_username,
+            onprem_password=onprem_password,
+            onprem_realm=onprem_realm,
+            idm_base_url=idm_base_url,
+            idm_username=idm_username,
+            idm_password=idm_password,
+            am_base_url=am_base_url,
+            force_import=force_import,
+            branch=branch,
+            diff=diff,
+            rollback=rollback,
+            sync=sync,
+            cherry_pick=cherry_pick,
+        )
 
 
 def create_script_import_command():

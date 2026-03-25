@@ -34,6 +34,7 @@ from trxo.commands.shared.options import (
     RealmOpt,
     RollbackOpt,
     SaIdOpt,
+    SyncOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.constants import DEFAULT_REALM
@@ -118,6 +119,10 @@ class ServicesImporter(BaseImporter):
         # Extract nextDescendents before processing existing payload
         next_descendents = item_data.pop("nextDescendents", [])
 
+        # Preserve type_info for creation
+        type_info = item_data.get("_type")
+
+        # Prepare base payload (for PUT)
         payload = self._prepare_service_payload(item_data)
 
         url = self.get_api_endpoint(item_id, base_url)
@@ -126,24 +131,32 @@ class ServicesImporter(BaseImporter):
 
         try:
             try:
+                # Try PUT first (update existing)
                 self.make_http_request(url, "PUT", headers, payload)
+                if self.scope == "global":
+                    info(f"Updated global service: {item_id}")
+                else:
+                    info(f"Upserted realm service ({self.realm}): {item_id}")
             except Exception as put_error:
-                # If realm scope and PUT failed, try create
+                # If realm scope and PUT failed (probably 404), try create
                 if self.scope == "realm":
                     try:
+                        # For creation, we might need _type in the payload
+                        # Some services support creation at the specific ID URL
                         create_url = f"{url}?_action=create"
-                        self.make_http_request(create_url, "POST", headers, payload)
+                        
+                        creation_data = item_data.copy()
+                        # Cleanup creation data (remove metadata but keep ID/Type if needed)
+                        for k in ["_rev", "_lastModified", "_lastModifiedBy"]:
+                            creation_data.pop(k, None)
+                        
+                        # Use the instance-specific URL for creation (works for many AM services)
+                        self.make_http_request(create_url, "POST", headers, json.dumps(creation_data, indent=2))
                         info(f"Created realm service ({self.realm}): {item_id}")
                     except Exception as create_error:
                         raise create_error
                 else:
                     raise put_error
-
-            if self.scope == "global":
-                info(f"Updated global service: {item_id}")
-                # Note: Global services can only be updated, not created
-            else:
-                info(f"Upserted realm service ({self.realm}): {item_id}")
 
             # Process descendants if any
             if next_descendents:
@@ -228,26 +241,22 @@ class ServicesImporter(BaseImporter):
             return False
 
     def delete_item(self, item_id: str, token: str, base_url: str) -> bool:
-        """
-        Delete a service (used during rollback when service was newly created)
-        """
+        """Delete a single service configuration via API"""
         url = self.get_api_endpoint(item_id, base_url)
-
-        headers = get_headers("services_delete")
+        headers = get_headers("services")
         headers = {**headers, **self.build_auth_headers(token)}
 
         try:
             self.make_http_request(url, "DELETE", headers)
-
-            if self.scope == "global":
-                info(f"✓ Deleted global service during rollback: {item_id}")
-            else:
-                info(f"✓ Deleted realm service during rollback: {item_id}")
-
+            info(f"Deleted realm service ({self.realm}): {item_id}")
             return True
         except Exception as e:
-            error(f"Failed to delete service '{item_id}' during rollback: {e}")
+            error(f"Failed to delete service '{item_id}': {e}")
             return False
+
+
+
+
 
 
 def create_services_import_command():
@@ -257,6 +266,7 @@ def create_services_import_command():
         file: InputFileOpt = None,
         jwk_path: JwkPathOpt = None,
         sa_id: SaIdOpt = None,
+        sync: SyncOpt = False,
         base_url: BaseUrlOpt = None,
         project_name: ProjectNameOpt = None,
         auth_mode: AuthModeOpt = None,
@@ -313,6 +323,7 @@ def create_services_import_command():
             diff=diff,
             rollback=rollback,
             cherry_pick=cherry_pick,
+            sync=sync,
         )
 
     return import_services

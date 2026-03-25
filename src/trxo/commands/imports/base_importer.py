@@ -168,7 +168,7 @@ class BaseImporter(BaseCommand):
                     idm_password=idm_password,
                     am_base_url=am_base_url,
                     branch=branch,
-                    force=force_import,
+                    force=True,  # User requested direct deletion without permission prompt
                 )
 
             # Print summary

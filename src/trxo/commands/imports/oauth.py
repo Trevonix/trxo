@@ -247,6 +247,24 @@ class OAuthImporter(BaseImporter):
             error(f"Failed to process OAuth2 Client '{item_id}': {e}")
             raise
 
+    def delete_item(self, item_id: str, token: str, base_url: str) -> bool:
+        """Delete a single OAuth2 Client via API"""
+        url = self.get_api_endpoint(item_id, base_url)
+        
+        headers = get_headers("oauth")
+        headers = {
+            **headers,
+            **self.build_auth_headers(token),
+        }
+
+        try:
+            self.make_http_request(url, "DELETE", headers)
+            info(f"Successfully deleted OAuth2 Client: {item_id}")
+            return True
+        except Exception as e:
+            error(f"Failed to delete OAuth2 Client '{item_id}': {e}")
+            return False
+
 
 def create_oauth_import_command():
     """Create the OAuth import command function"""

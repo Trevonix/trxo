@@ -33,6 +33,7 @@ from trxo.commands.shared.options import (
     RealmOpt,
     RollbackOpt,
     SaIdOpt,
+    SyncOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.constants import DEFAULT_REALM
@@ -76,10 +77,11 @@ class SamlImporter(BaseImporter):
         onprem_username=None,
         onprem_password=None,
         onprem_realm=None,
-        force_import=False,
-        branch=None,
-        diff=False,
-        cherry_pick=None,
+        force_import: bool = False,
+        branch: str = None,
+        diff: bool = False,
+        sync: bool = False,
+        cherry_pick: str = None,
     ):
         """
         Override import flow for SAML only.
@@ -139,8 +141,24 @@ class SamlImporter(BaseImporter):
             cherry_pick_ids=cherry_pick,
         )
 
-        if not ok:
-            raise typer.Exit(1)
+        if ok and sync:
+            self._handle_sync_deletions(
+                token=token,
+                base_url=api_base_url,
+                file_path=file_path,
+                realm=realm,
+                jwk_path=jwk_path,
+                client_id=client_id,
+                sa_id=sa_id,
+                project_name=project_name,
+                auth_mode=auth_mode,
+                onprem_username=onprem_username,
+                onprem_password=onprem_password,
+                onprem_realm=onprem_realm,
+                force=True,
+            )
+
+        return ok
 
     def import_saml_data(
         self,
@@ -312,11 +330,12 @@ class SamlImporter(BaseImporter):
 
         def find_scripts(data: Any):
             if isinstance(data, dict):
-                if key.endswith("Script") and isinstance(value, str) and value:
-                    if len(value) > 10 and ("-" in value or len(value) == 36):
-                        script_ids.add(value)
-                elif isinstance(value, (dict, list)):
-                    find_scripts(value)
+                for key, value in data.items():
+                    if key.endswith("Script") and isinstance(value, str) and value:
+                        if len(value) > 10 and ("-" in value or len(value) == 36):
+                            script_ids.add(value)
+                    elif isinstance(value, (dict, list)):
+                        find_scripts(value)
             elif isinstance(data, list):
                 for item in data:
                     find_scripts(item)
@@ -379,7 +398,18 @@ class SamlImporter(BaseImporter):
             self.make_http_request(url, "PUT", headers, json.dumps(payload_data))
             info(f"✓ Imported script: {script_name}")
             if hasattr(self, "rollback_manager") and self.rollback_manager:
+<<<<<<< Updated upstream
                 self.rollback_manager.track_import(script_id, "created")
+=======
+                # check if it existed in baseline
+                baseline = self.rollback_manager.baseline_snapshot.get(
+                    "scripts", {}
+                ).get(script_id)
+                action = "updated" if baseline else "created"
+                self.rollback_manager.track_import(
+                    f"script::{script_id}", action, baseline
+                )
+>>>>>>> Stashed changes
             return True
         except Exception as e:
             error(f"Failed to import script '{script_name}': {str(e)}")
@@ -547,7 +577,13 @@ class SamlImporter(BaseImporter):
                         info(f"✓ Created hosted entity: {entity_name}")
 
                         if hasattr(self, "rollback_manager") and self.rollback_manager:
+<<<<<<< Updated upstream
                             self.rollback_manager.track_import(entity_id, "created")
+=======
+                            self.rollback_manager.track_import(
+                                entity_id, "created", {"_location": "hosted"}
+                            )
+>>>>>>> Stashed changes
 
                         return True
 
@@ -586,6 +622,41 @@ class SamlImporter(BaseImporter):
         """SAML import is handled by import_saml_data."""
         return True
 
+    def delete_item(self, item_id: str, token: str, base_url: str) -> bool:
+        """Delete a single SAML entity (hosted or remote) via API"""
+        # Try hosted first
+        hosted_url = self._construct_api_url(
+            base_url,
+            f"/am/json/realms/root/realms/{self.realm}/realm-config/saml2/hosted/{item_id}",
+        )
+        auth_headers = self.build_auth_headers(token)
+        saml_headers = get_headers("saml")
+
+        headers = {**saml_headers, **auth_headers}
+
+        try:
+            # Check if it's hosted
+            response = self.make_http_request(hosted_url, "GET", headers)
+            if response.status_code == 200:
+                self.make_http_request(hosted_url, "DELETE", headers)
+                info(f"Successfully deleted hosted SAML entity: {item_id}")
+                return True
+        except Exception:
+            pass
+
+        # Try remote
+        remote_url = self._construct_api_url(
+            base_url,
+            f"/am/json/realms/root/realms/{self.realm}/realm-config/saml2/remote/{item_id}",
+        )
+        try:
+            self.make_http_request(remote_url, "DELETE", headers)
+            info(f"Successfully deleted remote SAML entity: {item_id}")
+            return True
+        except Exception as e:
+            error(f"Failed to delete SAML entity '{item_id}': {e}")
+            return False
+
 
 def create_saml_import_command():
     """Create the SAML import command function"""
@@ -594,6 +665,7 @@ def create_saml_import_command():
         file: InputFileOpt = None,
         jwk_path: JwkPathOpt = None,
         sa_id: SaIdOpt = None,
+        sync: SyncOpt = False,
         base_url: BaseUrlOpt = None,
         project_name: ProjectNameOpt = None,
         auth_mode: AuthModeOpt = None,
@@ -700,6 +772,23 @@ def create_saml_import_command():
                 from trxo.utils.console import success as console_success
 
                 console_success("SAML import completed successfully!")
+
+                if sync:
+                    importer._handle_sync_deletions(
+                        token=token,
+                        base_url=api_base_url,
+                        file_path=file if storage_mode == "local" else None,
+                        realm=realm,
+                        jwk_path=jwk_path,
+                        sa_id=sa_id,
+                        project_name=project_name,
+                        auth_mode=auth_mode,
+                        onprem_username=onprem_username,
+                        onprem_password=onprem_password,
+                        onprem_realm=onprem_realm,
+                        branch=branch,
+                        force=True,
+                    )
             else:
                 error("SAML import completed with errors")
 
