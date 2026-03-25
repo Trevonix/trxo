@@ -26,9 +26,9 @@ config_store = ConfigStore()
 @app.command()
 def setup(
     auth_mode: Optional[str] = typer.Option(
-        "service-account",
+        None,
         "--auth-mode",
-        help="Authentication mode: service-account (default) or onprem",
+        help="Authentication mode: service-account or onprem",
         case_sensitive=False,
     ),
     base_url: Optional[str] = typer.Option(
@@ -45,7 +45,7 @@ def setup(
         None, "--onprem-username", help="On-Prem AM username"
     ),
     onprem_realm: Optional[str] = typer.Option(
-        "root", "--onprem-realm", help="On-Prem AM realm (default: root)"
+        None, "--onprem-realm", help="On-Prem AM realm (default: root)"
     ),
     idm_base_url: Optional[str] = typer.Option(
         None, "--idm-base-url", help="On-Prem IDM base URL (if different from AM)"
@@ -74,26 +74,76 @@ def setup(
 
     # Get existing config
     existing_config = config_store.get_project_config(current_project) or {}
+    has_existing_config = bool(existing_config.get("base_url"))
 
-    has_existing_config = existing_config.get("base_url") is not None
+    provided_args = {
+        "auth_mode": auth_mode,
+        "base_url": base_url,
+        "am_base_url": am_base_url,
+        "jwk_path": jwk_path,
+        "sa_id": sa_id,
+        "onprem_username": onprem_username,
+        "onprem_realm": onprem_realm,
+        "idm_base_url": idm_base_url,
+        "idm_username": idm_username,
+        "regions": regions,
+        "storage_mode": storage_mode,
+        "git_username": git_username,
+        "git_repo": git_repo,
+        "git_token": git_token,
+    }
 
-    # Check if configuration already exists
-    if has_existing_config and not any(
-        [jwk_path, sa_id, base_url, onprem_username, idm_username]
-    ):
+    # check if user passed ANY override
+    has_any_override = any(v is not None for v in provided_args.values())
+
+    force_interactive = False
+    if has_existing_config and not has_any_override:
         info(f"Found existing configuration for project '{current_project}'")
-        info(
-            "You can override specific values using command-line arguments, "
-            "example: --base-url https://new-url.com"
-        )
-        raise typer.Exit(1)
+        if typer.confirm(
+            "Do you want to update configuration interactively?", default=False
+        ):
+            force_interactive = True
+        else:
+            info("Use flags to override specific values, e.g. --git-token <token>")
+            raise typer.Exit(0)
+
+    # Resolve auth_mode_value (prefer argument, then existing, then default)
+    auth_mode_value = (
+        (auth_mode or existing_config.get("auth_mode", "service-account"))
+        .lower()
+        .strip()
+    )
+
+    # Resolve onprem_realm_value
+    onprem_realm_value = onprem_realm or existing_config.get("onprem_realm", "root")
+
+    # If git token not provided, try retrieving from keyring
+    if not git_token and (
+        storage_mode == "git" or existing_config.get("storage_mode") == "git"
+    ):
+        creds = config_store.get_git_credentials(current_project)
+        if creds:
+            git_token = creds.get("token")
 
     info(f"Configuring project: [bold]{current_project}[/bold]\n")
 
-    if not any([jwk_path, sa_id, base_url, onprem_username, idm_username]):
+    if (
+        not any(
+            [
+                jwk_path,
+                sa_id,
+                base_url,
+                onprem_username,
+                idm_username,
+                am_base_url,
+                idm_base_url,
+            ]
+        )
+        and not has_existing_config
+    ):
         # Explain what we're doing
         warning("No saved configuration found or arguments provided.")
-        info("Please enter your PingOne Advanced Identity Cloud credentials.")
+        info("Please enter your configuration details.")
 
     # Optional fields (Storage mode can be prompted early)
     storage_mode_value = get_credential_value(
@@ -102,6 +152,7 @@ def setup(
         existing_config,
         "\nStorage mode (git|local)",
         required=False,
+        force_prompt=force_interactive,
     )
 
     regions_value = get_credential_value(
@@ -110,10 +161,8 @@ def setup(
         existing_config,
         "\nRegions (comma-separated)",
         required=False,
+        force_prompt=force_interactive,
     )
-
-    # Save auth mode
-    auth_mode_value = (auth_mode or "service-account").lower().strip()
 
     if auth_mode_value == "service-account":
         config = setup_service_account_auth(
@@ -127,13 +176,14 @@ def setup(
             git_repo=git_repo,
             git_token=git_token,
             current_project=current_project,
+            force_prompt=force_interactive,
         )
 
     elif auth_mode_value == "onprem":
         config = setup_onprem_auth(
             existing_config=existing_config,
             onprem_username=onprem_username,
-            onprem_realm=onprem_realm,
+            onprem_realm=onprem_realm_value,
             base_url=base_url,
             storage_mode=storage_mode_value,
             git_username=git_username,
@@ -143,6 +193,7 @@ def setup(
             idm_base_url=idm_base_url,
             idm_username=idm_username,
             am_base_url=am_base_url,
+            force_prompt=force_interactive,
         )
     else:
         error("Invalid --auth-mode. Use 'service-account' or 'onprem'")

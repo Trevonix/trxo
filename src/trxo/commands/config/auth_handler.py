@@ -59,6 +59,7 @@ def setup_service_account_auth(
     git_repo: Optional[str],
     git_token: Optional[str],
     current_project: str,
+    force_prompt: bool = False,
 ) -> Dict:
     """Setup service account authentication configuration"""
     # Collect Base URL
@@ -66,13 +67,18 @@ def setup_service_account_auth(
         base_url,
         "base_url",
         existing_config,
-        "\nBase URL for PingOne Advanced Identity Cloud instance",
+        "\nBase URL (example: https://alpha.id.pingidentity.com)",
+        force_prompt=force_prompt,
     )
     base_url_value = normalize_base_url(base_url_value, "service-account")
 
     # Collect SA-only inputs
     jwk_path_value = get_credential_value(
-        jwk_path, "jwk_path", existing_config, "\nJWK private key file path"
+        jwk_path,
+        "jwk_path",
+        existing_config,
+        "\nJWK private key file path",
+        force_prompt=force_prompt,
     )
 
     # Validate JWK and get content
@@ -88,7 +94,11 @@ def setup_service_account_auth(
         keyring_ok = store_jwk_in_keyring(current_project, jwk_raw)
 
     sa_id_value = get_credential_value(
-        sa_id, "sa_id", existing_config, "\nService Account ID"
+        sa_id,
+        "sa_id",
+        existing_config,
+        "\nService Account ID",
+        force_prompt=force_prompt,
     )
 
     # Construct token URL from base URL
@@ -97,16 +107,25 @@ def setup_service_account_auth(
     # Handle git setup if needed
     if storage_mode == "git":
         git_username_value = get_credential_value(
-            git_username, "git_username", existing_config, "\nGit username"
+            git_username,
+            "git_username",
+            existing_config,
+            "\nGit username",
+            force_prompt=force_prompt,
         )
         git_repo_value = get_credential_value(
             git_repo,
             "git_repo",
             existing_config,
-            "\nGit Repository URL " "(https://github.com/owner/repo.git)",
+            "\nGit Repository URL (https://github.com/owner/repo.git)",
+            force_prompt=force_prompt,
         )
         git_token_value = get_credential_value(
-            git_token, "git_token", existing_config, "\nPersonal access token"
+            git_token,
+            "git_token",
+            existing_config,
+            "\nPersonal access token",
+            force_prompt=force_prompt,
         )
         validate_git_setup(
             git_username_value, git_repo_value, git_token_value, current_project
@@ -118,9 +137,9 @@ def setup_service_account_auth(
             jwk_path_expanded, sa_id_value, token_url, jwk_content=jwk_raw
         )
         if validate_authentication(auth):
-            success("\nAuthentication successful!")
+            success("Authentication successful!")
         else:
-            error("\nAuthentication failed")
+            error("Authentication failed")
             raise typer.Exit(1)
     except Exception as e:
         error(f"Authentication failed: {str(e)}")
@@ -161,6 +180,7 @@ def setup_onprem_auth(
     idm_base_url: Optional[str] = None,
     idm_username: Optional[str] = None,
     am_base_url: Optional[str] = None,
+    force_prompt: bool = False,
 ) -> Dict:
     """Setup on-premises authentication configuration.
 
@@ -181,6 +201,7 @@ def setup_onprem_auth(
         existing_config,
         "\nOn-Prem AM username (leave empty to skip AM)",
         required=False,
+        force_prompt=force_prompt,
     )
 
     if username_value:
@@ -190,6 +211,7 @@ def setup_onprem_auth(
             existing_config,
             "\nBase AM URL (example: http://localhost:8080/am)",
             required=True,
+            force_prompt=force_prompt,
         )
         am_base_url_value = normalize_base_url(am_base_url_value, "onprem")
 
@@ -200,6 +222,7 @@ def setup_onprem_auth(
                 existing_config,
                 "On-Prem AM realm",
                 required=False,
+                force_prompt=force_prompt,
             )
             or "root"
         )
@@ -227,6 +250,7 @@ def setup_onprem_auth(
         existing_config,
         "\nOn-Prem IDM username (leave empty to skip IDM)",
         required=False,
+        force_prompt=force_prompt,
     )
 
     idm_base_url_value = None
@@ -237,6 +261,7 @@ def setup_onprem_auth(
             existing_config,
             "\nIDM Base URL (example: http://localhost:8080)",
             required=True,
+            force_prompt=force_prompt,
         )
         effective_idm_url = idm_base_url_value
 
@@ -265,16 +290,25 @@ def setup_onprem_auth(
     # Handle git setup if needed
     if storage_mode == "git":
         git_username_value = get_credential_value(
-            git_username, "git_username", existing_config, "\nGit username"
+            git_username,
+            "git_username",
+            existing_config,
+            "\nGit username",
+            force_prompt=force_prompt,
         )
         git_repo_value = get_credential_value(
             git_repo,
             "git_repo",
             existing_config,
-            "\nGit Repository URL " "(https://github.com/owner/repo.git)",
+            "\nGit Repository URL (https://github.com/owner/repo.git)",
+            force_prompt=force_prompt,
         )
         git_token_value = get_credential_value(
-            git_token, "git_token", existing_config, "\nPersonal access token"
+            git_token,
+            "git_token",
+            existing_config,
+            "\nPersonal access token",
+            force_prompt=force_prompt,
         )
 
         validate_git_setup(

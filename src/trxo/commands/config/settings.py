@@ -18,13 +18,23 @@ def get_credential_value(
     existing_config: dict,
     prompt_text: str,
     required: bool = True,
+    force_prompt: bool = False,
 ) -> Optional[str]:
-    """Get credential value with priority: argument > config file > prompt"""
+    """Get credential value with priority: argument > config file (if not forcing)
+    > prompt (with config as default)
+    """
     if arg_value:
         return arg_value
 
-    if existing_config and config_key in existing_config:
-        return existing_config[config_key]
+    default_value = existing_config.get(config_key) if existing_config else None
+
+    # If we have an existing value and we are NOT forced to prompt, just return it
+    if not force_prompt and default_value is not None:
+        return default_value
+
+    # If we reach here, we are prompting
+    if default_value is not None:
+        return Prompt.ask(prompt_text, default=str(default_value))
 
     if required:
         return Prompt.ask(prompt_text)
