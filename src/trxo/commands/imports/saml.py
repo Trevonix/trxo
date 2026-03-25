@@ -307,30 +307,46 @@ class SamlImporter(BaseImporter):
     def _get_needed_script_ids(
         self, data: Dict[str, Any], selected_entity_ids: List[str]
     ) -> Set[str]:
-        """Extract script IDs needed by selected entities"""
+        """Extract script IDs needed by selected entities, including recursive dependencies."""
         needed_ids = set()
 
-        # Check hosted entities
-        for entity in data.get("hosted", []):
-            entity_id = entity.get("entityId") or entity.get("_id")
-            if entity_id in selected_entity_ids:
-                needed_ids.update(self._extract_script_ids_from_entity(entity))
+        # Initial set from entities
+        for location in ("hosted", "remote"):
+            for entity in data.get(location, []):
+                entity_id = entity.get("entityId") or entity.get("_id")
+                if entity_id in selected_entity_ids:
+                    needed_ids.update(self._extract_script_ids_from_config(entity))
 
-        # Check remote entities
-        for entity in data.get("remote", []):
-            entity_id = entity.get("entityId") or entity.get("_id")
-            if entity_id in selected_entity_ids:
-                needed_ids.update(self._extract_script_ids_from_entity(entity))
+        # Recursive discovery from scripts themselves
+        all_scripts = {s.get("_id"): s for s in data.get("scripts", []) if s.get("_id")}
+
+        to_check = list(needed_ids)
+        checked = set()
+
+        while to_check:
+            sid = to_check.pop(0)
+            if sid in checked:
+                continue
+            checked.add(sid)
+
+            script_obj = all_scripts.get(sid)
+            if script_obj:
+                deps = self._extract_script_ids_from_config(script_obj)
+                for dsid in deps:
+                    if dsid not in needed_ids:
+                        needed_ids.add(dsid)
+                        to_check.append(dsid)
 
         return needed_ids
 
-    def _extract_script_ids_from_entity(self, entity: Dict[str, Any]) -> Set[str]:
-        """Recursively extract script IDs from entity configuration."""
+    def _extract_script_ids_from_config(self, config: Dict[str, Any]) -> Set[str]:
+        """Recursively extract script IDs from configuration."""
         script_ids = set()
 
         def find_scripts(data: Any):
             if isinstance(data, dict):
                 for key, value in data.items():
+                    # Check keys like "attributeMapperScript", "adapterScript", etc.
                     if key.endswith("Script") and isinstance(value, str) and value:
                         if len(value) > 10 and ("-" in value or len(value) == 36):
                             script_ids.add(value)
@@ -340,7 +356,7 @@ class SamlImporter(BaseImporter):
                 for item in data:
                     find_scripts(item)
 
-        find_scripts(entity)
+        find_scripts(config)
         return script_ids
 
     def _import_single_script(
@@ -398,7 +414,6 @@ class SamlImporter(BaseImporter):
             self.make_http_request(url, "PUT", headers, json.dumps(payload_data))
             info(f"✓ Imported script: {script_name}")
             if hasattr(self, "rollback_manager") and self.rollback_manager:
-                self.rollback_manager.track_import(script_id, "created")
                 # check if it existed in baseline
                 baseline = self.rollback_manager.baseline_snapshot.get(
                     "scripts", {}

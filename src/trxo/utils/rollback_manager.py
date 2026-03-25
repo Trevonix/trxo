@@ -178,8 +178,8 @@ class RollbackManager:
 
                 mapping = {item_id: data}
 
-                self.baseline_snapshot = mapping
-                self.raw_baseline_data = mapping
+                self.baseline_snapshot.update(mapping)
+                self.raw_baseline_data = self.baseline_snapshot
                 # ------------------- Git baseline -------------------
                 if git_manager:
 
@@ -241,8 +241,8 @@ class RollbackManager:
                     warning(f"No nodes found in baseline snapshot")
                     return False
 
-                self.baseline_snapshot = mapping
-                self.raw_baseline_data = mapping
+                self.baseline_snapshot.update(mapping)
+                self.raw_baseline_data = self.baseline_snapshot
 
                 # ------------------- Git baseline -------------------
                 # ------------------- Git baseline -------------------
@@ -278,8 +278,8 @@ class RollbackManager:
                         if alt_id and str(alt_id) != str(entity_id):
                             mapping[str(alt_id)] = entity_with_loc
 
-                self.baseline_snapshot = mapping
-                self.raw_baseline_data = mapping
+                self.baseline_snapshot.update(mapping)
+                self.raw_baseline_data = self.baseline_snapshot
 
                 if git_manager:
                     self._persist_baseline_to_git(git_manager, mapping)
@@ -345,8 +345,8 @@ class RollbackManager:
                             f"template '{name}': {e}"
                         )
 
-                self.baseline_snapshot = mapping
-                self.raw_baseline_data = mapping
+                self.baseline_snapshot.update(mapping)
+                self.raw_baseline_data = self.baseline_snapshot
 
                 if git_manager:
                     self._persist_baseline_to_git(git_manager, mapping)
@@ -739,8 +739,11 @@ class RollbackManager:
             baseline = record.get("baseline")
             item_type = None
 
+            is_script = isinstance(item_id, str) and item_id.startswith("script::")
             if lookup_id in self.baseline_snapshot.get("scripts", {}):
                 baseline = self.baseline_snapshot["scripts"][lookup_id]
+                item_type = "script"
+            elif is_script:
                 item_type = "script"
 
             elif lookup_id in self.baseline_snapshot:
@@ -774,7 +777,7 @@ class RollbackManager:
 
                 # -------- DELETE --------
                 if action == "created":
-                    if self.command_name == "saml":
+                    if self.command_name == "saml" and item_type != "script":
                         loc = (record.get("baseline") or {}).get("_location")
                         if loc:
                             from trxo.utils.url import construct_api_url
