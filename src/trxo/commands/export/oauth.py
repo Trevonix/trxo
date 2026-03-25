@@ -51,24 +51,26 @@ class OAuthExporter(BaseExporter):
         """Extract script IDs from OAuth client configuration"""
         script_ids = set()
 
-        def find_scripts_in_dict(data: Dict[str, Any], path: str = ""):
-            """Recursively find script IDs in nested dictionaries"""
-            for key, value in data.items():
-                current_path = f"{path}.{key}" if path else key
+        def find_scripts(obj: Any):
+            """Recursively find script IDs"""
+            if isinstance(obj, dict):
+                for k, v in obj.items():
+                    if (
+                        k.endswith("Script")
+                        and isinstance(v, str)
+                        and v.strip()
+                        and v.strip() != "[Empty]"
+                    ):
+                        val = v.strip()
+                        if len(val) > 10 and ("-" in val or len(val) == 36):
+                            script_ids.add(val)
+                    elif isinstance(v, (dict, list)):
+                        find_scripts(v)
+            elif isinstance(obj, list):
+                for item in obj:
+                    find_scripts(item)
 
-                # Only check for fields ending with "Script"
-                if key.endswith("Script"):
-                    # Only add if value is a non-empty string
-                    if isinstance(value, str) and value.strip() != "[Empty]":
-                        script_ids.add(value.strip())
-                elif isinstance(value, dict):
-                    find_scripts_in_dict(value, current_path)
-                elif isinstance(value, list):
-                    for i, item in enumerate(value):
-                        if isinstance(item, dict):
-                            find_scripts_in_dict(item, f"{current_path}[{i}]")
-
-        find_scripts_in_dict(oauth_data)
+        find_scripts(oauth_data)
         return script_ids
 
     def fetch_script_data(
