@@ -5,7 +5,7 @@ Import functionality for PingOne Advanced Identity Cloud agents.
 """
 
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import typer
 
@@ -29,6 +29,7 @@ from trxo.commands.shared.options import (
     RealmOpt,
     RollbackOpt,
     SaIdOpt,
+    SyncOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.constants import DEFAULT_REALM
@@ -136,6 +137,21 @@ class AgentsImporter(BaseImporter):
             error(f"Failed to upsert {self.agent_type} agent '{item_id}' : {e}")
             return False
 
+    def delete_item(self, item_id: str, token: str, base_url: str) -> bool:
+        """Delete an agent via API"""
+        url = self.get_api_endpoint(item_id, base_url)
+
+        headers = get_headers("agents")
+        headers = {**headers, **self.build_auth_headers(token)}
+
+        try:
+            self.make_http_request(url, "DELETE", headers)
+            info(f"Successfully deleted {self.agent_type}: {item_id}")
+            return True
+        except Exception as e:
+            error(f"Failed to delete {self.agent_type} '{item_id}': {e}")
+            return False
+
 
 def create_agents_import_command():
     """Create the agents import subcommands (gateway, java, web)."""
@@ -144,6 +160,7 @@ def create_agents_import_command():
         file: InputFileOpt = None,
         realm: RealmOpt = DEFAULT_REALM,
         cherry_pick: CherryPickOpt = None,
+        sync: SyncOpt = False,
         jwk_path: JwkPathOpt = None,
         sa_id: SaIdOpt = None,
         base_url: BaseUrlOpt = None,
@@ -182,12 +199,14 @@ def create_agents_import_command():
             cherry_pick=cherry_pick,
             diff=diff,
             rollback=rollback,
+            sync=sync,
         )
 
     def import_java_agents(
         file: InputFileOpt = None,
         realm: RealmOpt = DEFAULT_REALM,
         cherry_pick: CherryPickOpt = None,
+        sync: SyncOpt = False,
         jwk_path: JwkPathOpt = None,
         sa_id: SaIdOpt = None,
         base_url: BaseUrlOpt = None,
@@ -226,12 +245,14 @@ def create_agents_import_command():
             cherry_pick=cherry_pick,
             diff=diff,
             rollback=rollback,
+            sync=sync,
         )
 
     def import_web_agents(
         file: InputFileOpt = None,
         realm: RealmOpt = DEFAULT_REALM,
         cherry_pick: CherryPickOpt = None,
+        sync: SyncOpt = False,
         jwk_path: JwkPathOpt = None,
         sa_id: SaIdOpt = None,
         base_url: BaseUrlOpt = None,
@@ -270,6 +291,7 @@ def create_agents_import_command():
             diff=diff,
             cherry_pick=cherry_pick,
             rollback=rollback,
+            sync=sync,
         )
 
     return (

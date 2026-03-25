@@ -59,7 +59,6 @@ class DeletionManager:
         warning(f"{'='*60}\n")
 
         if force:
-            info("Force mode enabled, skipping confirmation")
             return True
 
         confirm = typer.confirm(

@@ -61,7 +61,6 @@ def test_update_item_missing_id_returns_false(mocker):
 def test_update_item_encodes_script_list(mocker):
     importer = ScriptImporter(realm=DEFAULT_REALM)
 
-    # We mock httpx.Client directly since we bypass make_http_request for the 404 check
     mock_client = mocker.MagicMock()
     mock_response = mocker.Mock()
     mock_response.status_code = 200
@@ -122,7 +121,6 @@ def test_update_item_invalid_script_type_returns_false(mocker):
 def test_update_item_http_failure_returns_false(mocker):
     importer = ScriptImporter(realm=DEFAULT_REALM)
 
-    # Mock httpx to throw an exception
     mocker.patch("httpx.Client", side_effect=Exception("boom"))
     mocker.patch.object(importer, "build_auth_headers", return_value={})
     mocker.patch("trxo.commands.imports.scripts.error")
@@ -138,6 +136,9 @@ def test_update_item_http_failure_returns_false(mocker):
     assert result is False
 
 
+# ✅ FIXED TESTS BELOW
+
+
 def test_delete_item_happy_path(mocker):
     importer = ScriptImporter(realm=DEFAULT_REALM)
 
@@ -146,7 +147,7 @@ def test_delete_item_happy_path(mocker):
 
     result = importer.delete_item("s1", "token", "https://base")
 
-    assert result is None
+    assert result is True  # ✅ fixed
 
 
 def test_delete_item_failure_returns_false(mocker):
@@ -158,7 +159,7 @@ def test_delete_item_failure_returns_false(mocker):
 
     result = importer.delete_item("s1", "token", "https://base")
 
-    assert result is None
+    assert result is False  # ✅ fixed
 
 
 def test_create_script_import_command_calls_import_from_file(mocker):

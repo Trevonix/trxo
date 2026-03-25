@@ -8,7 +8,7 @@ Endpoint: /am/json/realms/root/realms/{realm}/realm-config/webhooks/{_id}
 """
 
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import typer
 
@@ -32,6 +32,7 @@ from trxo.commands.shared.options import (
     RealmOpt,
     RollbackOpt,
     SaIdOpt,
+    SyncOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.constants import DEFAULT_REALM
@@ -94,6 +95,20 @@ class WebhooksImporter(BaseImporter):
             )
             return False
 
+    def delete_item(self, item_id: str, token: str, base_url: str) -> bool:
+        """Delete a single Webhook via API"""
+        url = self.get_api_endpoint(item_id, base_url)
+        headers = get_headers("webhooks")
+        headers = {**headers, **self.build_auth_headers(token)}
+
+        try:
+            self.make_http_request(url, "DELETE", headers)
+            info(f"Successfully deleted Webhook: {item_id}")
+            return True
+        except Exception as e:
+            error(f"Failed to delete Webhook '{item_id}': {e}")
+            return False
+
 
 def create_webhooks_import_command():
     """Create the webhooks import command function"""
@@ -101,6 +116,7 @@ def create_webhooks_import_command():
     def import_webhooks(
         realm: RealmOpt = DEFAULT_REALM,
         cherry_pick: CherryPickOpt = None,
+        sync: SyncOpt = False,
         diff: DiffOpt = False,
         file: InputFileOpt = None,
         force_import: ForceImportOpt = False,
@@ -140,6 +156,7 @@ def create_webhooks_import_command():
             branch=branch,
             diff=diff,
             rollback=rollback,
+            sync=sync,
         )
 
     return import_webhooks

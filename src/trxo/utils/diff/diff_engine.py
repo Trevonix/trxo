@@ -5,6 +5,8 @@ Efficient comparison of nested data structures using deepdiff
 for configurations.
 """
 
+import base64
+import re
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional
@@ -51,7 +53,9 @@ class DiffResult:
     removed_items: List[DiffItem]
     unchanged_items: List[DiffItem]
     raw_diff: Dict[str, Any]
-    key_insights: List[str] = None  # Human-readable insights about the changes
+    key_insights: Optional[List[str]] = (
+        None  # Human-readable insights about the changes
+    )
 
     def __post_init__(self):
         """Initialize key_insights as empty list if not provided"""
@@ -68,10 +72,17 @@ class DiffEngine:
             "_rev",
             "_type",
             "lastModified",
+            "lastModifiedDate",
+            "lastModifiedBy",
             "createdDate",
+            "createdBy",
             "modifiedDate",
             "userpassword",
             "secretLabelIdentifier",
+            "repositoryLocation",
+            "disableJwtAudit",
+            "jwtAuditWhitelist",
+            "agentgroup",
         ]
 
     def _fetch_current_services(self, realm: Optional[str]):
@@ -125,8 +136,8 @@ class DiffEngine:
             # Auto-fetch current data if not provided
 
             # Extract data arrays from the response structure
-            current_items = self._extract_items(current_data)
-            new_items = self._extract_items(new_data)
+            current_items = self._extract_items(current_data, command_name)
+            new_items = self._extract_items(new_data, command_name)
 
             # Create ID-based mappings
             current_map = self._create_id_map(current_items)
@@ -215,7 +226,9 @@ class DiffEngine:
             error(f"Failed to compare data: {str(e)}")
             raise
 
-    def _extract_items(self, data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _extract_items(
+        self, data: Dict[str, Any], command_name: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """Extract items array from response data"""
         if not data:
             return []
@@ -231,6 +244,12 @@ class DiffEngine:
                 and isinstance(data.get("remote"), list)
             ):
                 return data.get("hosted", []) + data.get("remote", [])
+
+            # OAuth: data.data is a dict of clients (keyed by id)
+            if command_name == "oauth" and isinstance(data, dict) and "data" in data:
+                clients_dict = data.get("data", {})
+                if isinstance(clients_dict, dict) and len(clients_dict) > 0:
+                    return list(clients_dict.values())
 
         #  Handle result wrapper
         if isinstance(data, dict) and isinstance(data.get("result"), list):
@@ -318,23 +337,84 @@ class DiffEngine:
             if "inherited" in obj and "value" not in obj and len(obj) == 1:
                 return None
 
-            normalized = {}
+            normalized: Dict[str, Any] = {}
             for k, v in obj.items():
                 if k in self.ignore_fields:
                     continue
                 if k == "script":
-                    normalized[k] = v
+                    # Normalize script (can be string or list of lines or base64)
+                    normalized[k] = self._normalize_script_content(v)
+                elif k == "name":
+                    # Normalize internal script names (strip platform prefix)
+                    prefix = "PingOne Advanced Identity Cloud Internal: "
+                    if isinstance(v, str) and v.startswith(prefix):
+                        normalized[k] = v[len(prefix) :]
+                    else:
+                        normalized[k] = v
                 else:
-                    normalized[k] = self._normalize_inherited_fields(v)
+                    normalized_v = self._normalize_inherited_fields(v)
+                    # Strip null, empty list, and empty object values (matches Agent clean logic)
+                    # Also strip lists containing only empty strings/null which are functionally empty in AM configuration
+                    if normalized_v not in (None, "", [], {}, [""], ["null"]):
+                        normalized[k] = normalized_v
             return normalized
 
         if isinstance(obj, list):
-            return [self._normalize_inherited_fields(i) for i in obj]
+            # Check if it's a list with a single base64 string (script content)
+            if len(obj) == 1 and isinstance(obj[0], str) and self._is_base64(obj[0]):
+                return self._normalize_script_content(obj[0])
+
+            cleaned_list = [self._normalize_inherited_fields(i) for i in obj]
+            # Strip empty-like items from the list
+            return [
+                v for v in cleaned_list if v not in (None, "", [], {}, [""], ["null"])
+            ]
 
         if obj == "null":
             return None
 
         return obj
+
+    def _is_base64(self, s: Any) -> bool:
+        """Check if a string is a base64 encoded script."""
+        if not isinstance(s, str) or not s or len(s) < 20:
+            return False
+        if len(s) % 4 != 0:
+            return False
+        if not re.match(r"^[A-Za-z0-9+/=]+$", s):
+            return False
+        try:
+            # Check if it actually decodes and is valid UTF-8
+            decoded = base64.b64decode(s, validate=True)
+            decoded.decode("utf-8")
+            return True
+        except Exception:
+            return False
+
+    def _normalize_script_content(self, v: Any) -> str:
+        """Normalize script content from various formats into a single string."""
+        if isinstance(v, list):
+            # Handle list with single base64 string
+            if len(v) == 1 and isinstance(v[0], str) and self._is_base64(v[0]):
+                try:
+                    v = base64.b64decode(v[0]).decode("utf-8")
+                except Exception:
+                    pass
+            else:
+                # Standard list of lines
+                return "\n".join([str(line).rstrip() for line in v]).strip()
+
+        if isinstance(v, str):
+            # Check if the string itself is base64
+            if self._is_base64(v):
+                try:
+                    v = base64.b64decode(v).decode("utf-8")
+                except Exception:
+                    pass
+
+            return "\n".join([line.rstrip() for line in v.splitlines()]).strip()
+
+        return str(v).strip() if v is not None else ""
 
     def _strip_ignored_fields(self, obj):
         if isinstance(obj, dict):
@@ -360,6 +440,7 @@ class DiffEngine:
         diff = DeepDiff(clean_current, clean_new, ignore_order=False, verbose_level=2)
 
         has_changes = bool(diff)
+
         changes_count = 0
 
         if has_changes:
@@ -383,7 +464,19 @@ class DiffEngine:
 
         if "values_changed" in diff:
             count = len(diff["values_changed"])
-            summary_parts.append(f"{count} field{'s' if count != 1 else ''} modified")
+            if count <= 2:
+                # include field names for small number of changes
+                fields = []
+                for path in diff["values_changed"]:
+                    # extract field name from path like root['field'] or root['prop']['field']
+                    m = re.findall(r"\['([^']+)'\]", path)
+                    if m:
+                        fields.append(m[-1])
+                    else:
+                        fields.append(path)
+                summary_parts.append(f"{', '.join(fields)} modified")
+            else:
+                summary_parts.append(f"{count} fields modified")
 
         if "dictionary_item_added" in diff:
             count = len(diff["dictionary_item_added"])

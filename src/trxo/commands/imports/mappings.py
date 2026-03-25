@@ -8,7 +8,7 @@ Import functionality for PingIDM sync mappings with smart upsert logic:
 """
 
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import typer
 
@@ -31,9 +31,10 @@ from trxo.commands.shared.options import (
     ProjectNameOpt,
     RollbackOpt,
     SaIdOpt,
+    SyncOpt,
 )
 from trxo.config.api_headers import get_headers
-from trxo.utils.console import error, info
+from trxo.utils.console import error, info, warning
 
 from .base_importer import BaseImporter
 
@@ -209,6 +210,42 @@ class MappingsImporter(BaseImporter):
             except Exception as e:
                 error(f"Failed to add sync mapping '{mapping_name}': {e}")
                 return False
+
+    def delete_item(self, item_id: str, token: str, base_url: str) -> bool:
+        """
+        Delete a sync mapping by removing it from the sync configuration.
+        """
+        # Get current configuration
+        current_config = self._get_current_sync_config(token, base_url)
+        if not current_config:
+            error("Could not retrieve current sync configuration for deletion")
+            return False
+
+        current_mappings = current_config.get("mappings", [])
+
+        # Find if mapping exists
+        index, _ = self._find_mapping_by_name(current_mappings, item_id)
+
+        if index < 0:
+            warning(f"Sync mapping '{item_id}' not found; nothing to delete")
+            return True
+
+        # Remove the mapping
+        updated_mappings = current_mappings[:index] + current_mappings[index + 1 :]
+        updated_config = {**current_config, "mappings": updated_mappings}
+        payload = json.dumps(updated_config)
+
+        url = self.get_api_endpoint("", base_url)
+        headers = get_headers("mappings")
+        headers = {**headers, **self.build_auth_headers(token)}
+
+        try:
+            self.make_http_request(url, "PUT", headers, payload)
+            info(f"Successfully deleted sync mapping: {item_id}")
+            return True
+        except Exception as e:
+            error(f"Failed to delete sync mapping '{item_id}': {e}")
+            return False
 
     def _load_mappings_file(self, file_path: str) -> Any:
         """Load mappings file with flexible format support"""
@@ -513,6 +550,7 @@ def create_mappings_import_command():
         force_import: ForceImportOpt = False,
         diff: DiffOpt = False,
         branch: BranchOpt = None,
+        sync: SyncOpt = False,
         rollback: RollbackOpt = False,
     ):
         """Import sync mappings from JSON file (local mode) or Git repository (Git mode).
@@ -540,6 +578,7 @@ def create_mappings_import_command():
             diff=diff,
             cherry_pick=cherry_pick,
             rollback=rollback,
+            sync=sync,
         )
 
     return import_mappings
