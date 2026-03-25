@@ -51,7 +51,7 @@ def display_config(current_project: str, config: Dict) -> None:
     # Hide sensitive information
     safe_config = config.copy()
 
-    if "jwk_path" in safe_config:
+    if safe_config.get("jwk_path"):
         safe_config["jwk_path"] = Path(safe_config["jwk_path"]).name
 
     # Never show JWK content; show only keyring status, kid, fingerprint
@@ -65,7 +65,9 @@ def display_config(current_project: str, config: Dict) -> None:
         if len(kid) > 6:
             safe_config["jwk_kid"] = kid[:3] + "*" * (len(kid) - 6) + kid[-3:]
 
-    config_text = "\n".join([f"{key}: {value}" for key, value in safe_config.items()])
+    config_text = "\n".join(
+        [f"{key}: {value}" for key, value in safe_config.items() if value is not None]
+    )
     display_panel(config_text, f"Configuration for '{current_project}'", "blue")
 
 

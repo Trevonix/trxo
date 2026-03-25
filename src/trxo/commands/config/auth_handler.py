@@ -145,7 +145,7 @@ def setup_service_account_auth(
         error(f"Authentication failed: {str(e)}")
         raise typer.Exit(1)
 
-    # Build configuration
+    # Build configuration - explicitly clear onprem keys
     config = {
         "auth_mode": "service-account",
         "base_url": base_url_value,
@@ -156,6 +156,13 @@ def setup_service_account_auth(
         "token_url": token_url,
         "regions": process_regions_value(regions),
         "storage_mode": storage_mode,
+        # Clear onprem keys
+        "am_base_url": None,
+        "idm_base_url": None,
+        "onprem_username": None,
+        "onprem_realm": None,
+        "onprem_products": None,
+        "idm_username": None,
     }
     if storage_mode == "git":
         config.update(
@@ -220,7 +227,7 @@ def setup_onprem_auth(
                 onprem_realm,
                 "onprem_realm",
                 existing_config,
-                "On-Prem AM realm",
+                "\nOn-Prem AM realm",
                 required=False,
                 force_prompt=force_prompt,
             )
@@ -315,15 +322,22 @@ def setup_onprem_auth(
             git_username_value, git_repo_value, git_token_value, current_project
         )
 
-    # Build configuration
+    # Build configuration - explicitly clear service account keys
     config = {
         "auth_mode": "onprem",
         "am_base_url": am_base_url_value if am_configured else None,
         "idm_base_url": effective_idm_url if idm_configured else None,
-        # Keep base_url as primary for the project (prefer AM, fallback to IDM)
-        "base_url": am_base_url_value or effective_idm_url,
+        # Force clear base_url since on-prem uses am_base_url/idm_base_url.
+        # This keeps config show clean and prevents confusion when switching back to SA mode.
+        "base_url": None,
         "onprem_products": products,
         "storage_mode": storage_mode,
+        # Clear SA-specific keys
+        "sa_id": None,
+        "jwk_path": None,
+        "jwk_keyring": None,
+        "jwk_fingerprint": None,
+        "token_url": None,
     }
 
     if am_configured:

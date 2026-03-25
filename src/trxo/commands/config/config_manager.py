@@ -45,7 +45,7 @@ def setup(
         None, "--onprem-username", help="On-Prem AM username"
     ),
     onprem_realm: Optional[str] = typer.Option(
-        None, "--onprem-realm", help="On-Prem AM realm (default: root)"
+        "root", "--onprem-realm", help="On-Prem AM realm (default: root)"
     ),
     idm_base_url: Optional[str] = typer.Option(
         None, "--idm-base-url", help="On-Prem IDM base URL (if different from AM)"
@@ -74,7 +74,9 @@ def setup(
 
     # Get existing config
     existing_config = config_store.get_project_config(current_project) or {}
-    has_existing_config = bool(existing_config.get("base_url"))
+    has_existing_config = bool(
+        existing_config.get("base_url") or existing_config.get("am_base_url")
+    )
 
     provided_args = {
         "auth_mode": auth_mode,
@@ -113,9 +115,6 @@ def setup(
         .lower()
         .strip()
     )
-
-    # Resolve onprem_realm_value
-    onprem_realm_value = onprem_realm or existing_config.get("onprem_realm", "root")
 
     # If git token not provided, try retrieving from keyring
     if not git_token and (
@@ -183,7 +182,7 @@ def setup(
         config = setup_onprem_auth(
             existing_config=existing_config,
             onprem_username=onprem_username,
-            onprem_realm=onprem_realm_value,
+            onprem_realm=onprem_realm,
             base_url=base_url,
             storage_mode=storage_mode_value,
             git_username=git_username,
