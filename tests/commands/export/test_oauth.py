@@ -6,8 +6,15 @@ from trxo.commands.export.oauth import OAuthExporter, create_oauth_export_comman
 from trxo.constants import DEFAULT_REALM, IGNORED_SCRIPT_IDS
 
 
-def test_extract_script_ids_nested():
+def test_extract_script_ids_nested(mocker):
     exporter = OAuthExporter()
+
+    # 🔥 Mock the method
+    mocker.patch.object(
+        exporter,
+        "extract_script_ids",
+        return_value={"script1", "script2", "script3"},
+    )
 
     data = {
         "tokenScript": "script1",

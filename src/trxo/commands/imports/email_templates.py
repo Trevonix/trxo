@@ -10,8 +10,6 @@ Import functionality for PingIDM Email Templates.
 import json
 from typing import Any, Dict, List
 
-import typer
-
 from trxo.commands.shared.options import (
     AmBaseUrlOpt,
     AuthModeOpt,
