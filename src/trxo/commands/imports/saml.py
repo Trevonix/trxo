@@ -31,6 +31,7 @@ from trxo.commands.shared.options import (
     OnPremUsernameOpt,
     ProjectNameOpt,
     RealmOpt,
+    SrcRealmOpt,
     RollbackOpt,
     SaIdOpt,
     SyncOpt,
@@ -68,6 +69,7 @@ class SamlImporter(BaseImporter):
         self,
         file_path=None,
         realm=None,
+        src_realm=None,
         jwk_path=None,
         client_id=None,
         sa_id=None,
@@ -93,6 +95,7 @@ class SamlImporter(BaseImporter):
             return super().import_from_file(
                 file_path=file_path,
                 realm=realm,
+                src_realm=src_realm,
                 jwk_path=jwk_path,
                 client_id=client_id,
                 sa_id=sa_id,
@@ -147,6 +150,7 @@ class SamlImporter(BaseImporter):
                 base_url=api_base_url,
                 file_path=file_path,
                 realm=realm,
+                src_realm=src_realm,
                 jwk_path=jwk_path,
                 client_id=client_id,
                 sa_id=sa_id,
@@ -690,6 +694,7 @@ def create_saml_import_command():
         cherry_pick: CherryPickOpt = None,
         rollback: RollbackOpt = False,
         realm: RealmOpt = DEFAULT_REALM,
+        src_realm: SrcRealmOpt = None,
         am_base_url: AmBaseUrlOpt = None,
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
@@ -736,7 +741,13 @@ def create_saml_import_command():
                 from pathlib import Path
 
                 git_base = Path(git_manager.local_path)
-                file_path = git_base / realm / "saml" / f"{realm}_saml.json"
+                effective_src_realm = src_realm if src_realm is not None else realm
+                file_path = (
+                    git_base
+                    / effective_src_realm
+                    / "saml"
+                    / f"{effective_src_realm}_saml.json"
+                )
 
                 if not file_path.exists():
                     error(f"SAML data not found at {file_path}")
@@ -791,6 +802,7 @@ def create_saml_import_command():
                         base_url=api_base_url,
                         file_path=file if storage_mode == "local" else None,
                         realm=realm,
+                        src_realm=src_realm,
                         jwk_path=jwk_path,
                         sa_id=sa_id,
                         project_name=project_name,

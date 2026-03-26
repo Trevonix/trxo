@@ -32,6 +32,7 @@ from trxo.commands.shared.options import (
     OnPremUsernameOpt,
     ProjectNameOpt,
     RealmOpt,
+    SrcRealmOpt,
     RollbackOpt,
     SaIdOpt,
     SyncOpt,
@@ -289,6 +290,7 @@ def create_services_import_command():
             help="Service scope: 'global' (update only) or 'realm' (upsert)",
         ),
         realm: RealmOpt = DEFAULT_REALM,
+        src_realm: SrcRealmOpt = None,
     ):
         """Import services from JSON file or Git repository."""
 

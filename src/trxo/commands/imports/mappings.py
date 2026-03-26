@@ -10,8 +10,6 @@ Import functionality for PingIDM sync mappings with smart upsert logic:
 import json
 from typing import Any, Dict, List, Optional
 
-import typer
-
 from trxo.commands.shared.options import (
     AmBaseUrlOpt,
     AuthModeOpt,
@@ -373,7 +371,7 @@ class MappingsImporter(BaseImporter):
         return normalized
 
     def _import_from_git(
-        self, realm: str, force_import: bool, branch: str = None
+        self, realm: str = "root", force_import: bool = False, branch: str = None
     ) -> List[Dict[str, Any]]:
         """
         Override Git loading to unwrap the IDM sync wrapper
@@ -398,8 +396,7 @@ class MappingsImporter(BaseImporter):
 
     def import_from_file(
         self,
-        file_path: str,
-        realm: str = None,
+        file_path: str = None,
         jwk_path: str = None,
         sa_id: str = None,
         base_url: str = None,
@@ -427,7 +424,8 @@ class MappingsImporter(BaseImporter):
             self._diff_adapter = self._wrap_for_diff
             super().import_from_file(
                 file_path=file_path,
-                realm=realm,
+                realm="root",
+                src_realm=None,
                 jwk_path=jwk_path,
                 sa_id=sa_id,
                 base_url=base_url,
@@ -452,7 +450,8 @@ class MappingsImporter(BaseImporter):
             # Use parent class Git mode logic
             super().import_from_file(
                 file_path=file_path,
-                realm=realm,
+                realm="root",
+                src_realm=None,
                 jwk_path=jwk_path,
                 sa_id=sa_id,
                 base_url=base_url,
@@ -493,7 +492,6 @@ class MappingsImporter(BaseImporter):
 
             # Load and parse file with flexible format support
             data = self._load_mappings_file(file_path)
-            # mappings_to_process = self._normalize_mappings(data)
             # Handle different input formats
             mappings_to_process = self._normalize_mappings(data)
 
@@ -560,7 +558,6 @@ def create_mappings_import_command():
         importer = MappingsImporter()
         importer.import_from_file(
             file_path=file,
-            realm=None,  # Root-level config
             jwk_path=jwk_path,
             sa_id=sa_id,
             base_url=base_url,

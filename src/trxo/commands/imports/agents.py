@@ -27,6 +27,7 @@ from trxo.commands.shared.options import (
     OnPremUsernameOpt,
     ProjectNameOpt,
     RealmOpt,
+    SrcRealmOpt,
     RollbackOpt,
     SaIdOpt,
     SyncOpt,
@@ -159,6 +160,7 @@ def create_agents_import_command():
     def import_identity_gateway_agents(
         file: InputFileOpt = None,
         realm: RealmOpt = DEFAULT_REALM,
+        src_realm: SrcRealmOpt = None,
         cherry_pick: CherryPickOpt = None,
         sync: SyncOpt = False,
         jwk_path: JwkPathOpt = None,
@@ -182,6 +184,7 @@ def create_agents_import_command():
         importer.import_from_file(
             file_path=file,
             realm=realm,
+            src_realm=src_realm,
             jwk_path=jwk_path,
             sa_id=sa_id,
             base_url=base_url,
@@ -205,6 +208,7 @@ def create_agents_import_command():
     def import_java_agents(
         file: InputFileOpt = None,
         realm: RealmOpt = DEFAULT_REALM,
+        src_realm: SrcRealmOpt = None,
         cherry_pick: CherryPickOpt = None,
         sync: SyncOpt = False,
         jwk_path: JwkPathOpt = None,
@@ -228,6 +232,7 @@ def create_agents_import_command():
         importer.import_from_file(
             file_path=file,
             realm=realm,
+            src_realm=src_realm,
             jwk_path=jwk_path,
             sa_id=sa_id,
             base_url=base_url,
@@ -251,6 +256,7 @@ def create_agents_import_command():
     def import_web_agents(
         file: InputFileOpt = None,
         realm: RealmOpt = DEFAULT_REALM,
+        src_realm: SrcRealmOpt = None,
         cherry_pick: CherryPickOpt = None,
         sync: SyncOpt = False,
         jwk_path: JwkPathOpt = None,
@@ -274,6 +280,7 @@ def create_agents_import_command():
         importer.import_from_file(
             file_path=file,
             realm=realm,
+            src_realm=src_realm,
             jwk_path=jwk_path,
             sa_id=sa_id,
             base_url=base_url,

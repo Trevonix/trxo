@@ -29,6 +29,7 @@ from trxo.commands.shared.options import (
     OnPremUsernameOpt,
     ProjectNameOpt,
     RealmOpt,
+    SrcRealmOpt,
     RollbackOpt,
     SaIdOpt,
     SyncOpt,
@@ -201,6 +202,7 @@ class ScriptImporter(BaseImporter):
         self,
         file_path: Optional[str] = None,
         realm: Optional[str] = None,
+        src_realm: Optional[str] = None,
         jwk_path: Optional[str] = None,
         sa_id: Optional[str] = None,
         base_url: Optional[str] = None,
@@ -224,6 +226,7 @@ class ScriptImporter(BaseImporter):
         super().import_from_file(
             file_path=file_path,
             realm=realm,
+            src_realm=src_realm,
             jwk_path=jwk_path,
             sa_id=sa_id,
             base_url=base_url,
@@ -250,6 +253,7 @@ def create_script_import_command():
 
     def import_scripts(
         realm: RealmOpt = DEFAULT_REALM,
+        src_realm: SrcRealmOpt = None,
         cherry_pick: CherryPickOpt = None,
         sync: SyncOpt = False,
         diff: DiffOpt = False,
@@ -275,6 +279,7 @@ def create_script_import_command():
         importer.import_from_file(
             file_path=file,
             realm=realm,
+            src_realm=src_realm,
             jwk_path=jwk_path,
             sa_id=sa_id,
             base_url=base_url,

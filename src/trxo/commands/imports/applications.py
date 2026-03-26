@@ -26,6 +26,7 @@ from trxo.commands.shared.options import (
     OnPremUsernameOpt,
     ProjectNameOpt,
     RealmOpt,
+    SrcRealmOpt,
     RollbackOpt,
     SaIdOpt,
 )
@@ -82,6 +83,7 @@ def create_applications_import_command():
     def import_applications(
         file: InputFileOpt = None,
         realm: RealmOpt = DEFAULT_REALM,
+        src_realm: SrcRealmOpt = None,
         force_import: ForceImportOpt = False,
         diff: DiffOpt = False,
         rollback: RollbackOpt = False,
@@ -104,6 +106,7 @@ def create_applications_import_command():
         importer.import_from_file(
             file_path=file,
             realm=realm,
+            src_realm=src_realm,
             jwk_path=jwk_path,
             sa_id=sa_id,
             base_url=base_url,

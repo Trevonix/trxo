@@ -29,6 +29,7 @@ from trxo.commands.shared.options import (
     OnPremUsernameOpt,
     ProjectNameOpt,
     RealmOpt,
+    SrcRealmOpt,
     SaIdOpt,
 )
 from trxo.config.api_headers import get_headers
@@ -103,12 +104,14 @@ def create_policies_import_command():
         diff: DiffOpt = False,
         branch: BranchOpt = None,
         realm: RealmOpt = DEFAULT_REALM,
+        src_realm: SrcRealmOpt = None,
     ):
         """Import policies from JSON file (local mode) or Git repository (Git mode)"""
         importer = PoliciesImporter(realm=realm)
         importer.import_from_file(
             file_path=file,
             realm=realm,
+            src_realm=src_realm,
             jwk_path=jwk_path,
             sa_id=sa_id,
             base_url=base_url,

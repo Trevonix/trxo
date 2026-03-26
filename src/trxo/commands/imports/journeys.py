@@ -43,6 +43,7 @@ from trxo.commands.shared.options import (
     OnPremUsernameOpt,
     ProjectNameOpt,
     RealmOpt,
+    SrcRealmOpt,
     RollbackOpt,
     SaIdOpt,
 )
@@ -144,6 +145,7 @@ class JourneyImporter(BaseImporter):
         self,
         file_path=None,
         realm=None,
+        src_realm=None,
         jwk_path=None,
         sa_id=None,
         base_url=None,
@@ -218,6 +220,7 @@ class JourneyImporter(BaseImporter):
                 return super().import_from_file(
                     file_path=str(git_file_path),
                     realm=realm,
+                    src_realm=src_realm,
                     jwk_path=jwk_path,
                     sa_id=sa_id,
                     base_url=base_url,
@@ -263,6 +266,7 @@ class JourneyImporter(BaseImporter):
                     self._perform_enriched_journey_diff(
                         payload=payload,
                         realm=realm,
+                        src_realm=src_realm,
                         jwk_path=jwk_path,
                         sa_id=sa_id,
                         base_url=base_url,
@@ -325,6 +329,7 @@ class JourneyImporter(BaseImporter):
             return super().import_from_file(
                 file_path=file_path,
                 realm=realm,
+                src_realm=src_realm,
                 jwk_path=jwk_path,
                 sa_id=sa_id,
                 base_url=base_url,
@@ -373,6 +378,7 @@ class JourneyImporter(BaseImporter):
                 self._perform_enriched_journey_diff(
                     payload=payload,
                     realm=realm,
+                    src_realm=src_realm,
                     jwk_path=jwk_path,
                     sa_id=sa_id,
                     base_url=base_url,
@@ -552,6 +558,7 @@ class JourneyImporter(BaseImporter):
             api_endpoint=api_endpoint,
             response_filter=response_filter,
             realm=realm,
+            src_realm=src_realm,
             jwk_path=jwk_path,
             sa_id=sa_id,
             base_url=base_url,
@@ -597,6 +604,7 @@ class JourneyImporter(BaseImporter):
                 new_data=new_data,
                 command_name="journeys",
                 realm=realm,
+                src_realm=src_realm,
             )
 
             # ── Step 4: Display rich diff report ──────────────────────────
@@ -1381,6 +1389,7 @@ def create_journey_import_command():
     def import_journeys(
         file: InputFileOpt = None,
         realm: RealmOpt = DEFAULT_REALM,
+        src_realm: SrcRealmOpt = None,
         cherry_pick: CherryPickOpt = None,
         force_import: ForceImportOpt = False,
         rollback: RollbackOpt = False,
@@ -1404,6 +1413,7 @@ def create_journey_import_command():
         importer.import_from_file(
             file_path=file,
             realm=realm,
+            src_realm=src_realm,
             jwk_path=jwk_path,
             sa_id=sa_id,
             base_url=base_url,
