@@ -29,6 +29,7 @@ from trxo.commands.shared.options import (
     ProjectNameOpt,
     RollbackOpt,
     SaIdOpt,
+    SyncOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.utils.console import error, info
@@ -78,12 +79,27 @@ class EmailTemplatesImporter(BaseImporter):
             error(f"Failed to upsert Email Template '{item_id}': {e}")
             return False
 
+    def delete_item(self, item_id: str, token: str, base_url: str) -> bool:
+        """Delete an Email Template via API"""
+        url = self.get_api_endpoint(item_id, base_url)
+        headers = get_headers("email_templates")
+        headers = {**headers, **self.build_auth_headers(token)}
+
+        try:
+            self.make_http_request(url, "DELETE", headers)
+            info(f"Deleted Email Template: {item_id}")
+            return True
+        except Exception as e:
+            error(f"Failed to delete Email Template '{item_id}': {e}")
+            return False
+
 
 def create_email_templates_import_command():
     """Create the Email Templates import command function"""
 
     def import_email_templates(
         cherry_pick: CherryPickOpt = None,
+        sync: SyncOpt = False,
         diff: DiffOpt = False,
         file: InputFileOpt = None,
         force_import: ForceImportOpt = False,
@@ -126,6 +142,7 @@ def create_email_templates_import_command():
             diff=diff,
             rollback=rollback,
             cherry_pick=cherry_pick,
+            sync=sync,
         )
 
     return import_email_templates

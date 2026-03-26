@@ -60,6 +60,29 @@ def test_update_item_http_error(mocker):
     importer.make_http_request.assert_called_once()
 
 
+def test_delete_item_success(mocker):
+    importer = EmailTemplatesImporter()
+    importer.make_http_request = mocker.Mock()
+    mocker.patch("trxo.commands.imports.email_templates.info")
+
+    result = importer.delete_item("emailTemplate/test", "t", "http://x")
+
+    assert result is True
+    importer.make_http_request.assert_called_with(
+        "http://x/openidm/config/emailTemplate/test", "DELETE", mocker.ANY
+    )
+
+
+def test_delete_item_failure(mocker):
+    importer = EmailTemplatesImporter()
+    importer.make_http_request = mocker.Mock(side_effect=Exception("boom"))
+    mocker.patch("trxo.commands.imports.email_templates.error")
+
+    result = importer.delete_item("emailTemplate/test", "t", "http://x")
+
+    assert result is False
+
+
 def test_create_email_templates_import_command_calls_import_from_file(mocker):
     importer = mocker.Mock()
     mocker.patch(
@@ -83,6 +106,7 @@ def test_create_email_templates_import_command_calls_import_from_file(mocker):
         onprem_password="p",
         onprem_realm="root",
         am_base_url="am",
+        sync=True,
     )
 
     importer.import_from_file.assert_called_once()
@@ -93,3 +117,4 @@ def test_create_email_templates_import_command_calls_import_from_file(mocker):
     assert kwargs["diff"] is False
     assert kwargs["branch"] == "main"
     assert kwargs["cherry_pick"] == "id1,id2"
+    assert kwargs["sync"] is True

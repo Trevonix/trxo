@@ -31,6 +31,7 @@ from trxo.commands.shared.options import (
     ProjectNameOpt,
     RollbackOpt,
     SaIdOpt,
+    SyncOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.utils.console import error, success
@@ -53,6 +54,19 @@ class ConnectorsImporter(BaseImporter):
 
     def get_api_endpoint(self, item_id: str, base_url: str) -> str:
         return f"{base_url}/openidm/config/{item_id}"
+
+    def delete_item(self, item_id: str, token: str, base_url: str) -> bool:
+        """Delete a connector using DELETE /openidm/config/{item_id}"""
+        url = self.get_api_endpoint(item_id, base_url)
+        headers = get_headers("connectors")
+        headers = {**headers, **self.build_auth_headers(token)}
+
+        try:
+            self.make_http_request(url, "DELETE", headers)
+            return True
+        except Exception as e:
+            error(f"Failed to delete connector '{item_id}': {e}")
+            return False
 
     def load_data_from_git(self, git_manager, item_type, realm, branch):
         """
@@ -197,6 +211,7 @@ def create_connectors_import_command():
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
         rollback: RollbackOpt = False,
+        sync: SyncOpt = False,
     ):
         """Import IDM connectors from JSON file (local mode) or Git repository (Git mode).
 
@@ -224,6 +239,7 @@ def create_connectors_import_command():
             diff=diff,
             cherry_pick=cherry_pick,
             rollback=rollback,
+            sync=sync,
         )
 
     return import_connectors
