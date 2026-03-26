@@ -35,6 +35,7 @@ from trxo.commands.shared.options import (
     RealmOpt,
     RollbackOpt,
     SaIdOpt,
+    SyncOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.constants import DEFAULT_REALM
@@ -315,6 +316,55 @@ class ThemesImporter(BaseImporter):
             error(f"Failed to PUT ui/themerealm: {e}")
             return False
 
+    def delete_item(self, item_id: str, token: str, base_url: str) -> bool:
+        """
+        Delete a single theme by its _id from ui/themerealm.
+
+        Strategy:
+          1. GET the current themerealm document.
+          2. Scan all realm arrays and remove the theme matching item_id.
+          3. PUT the modified document back.
+        """
+        current = self._fetch_current(token, base_url)
+        if not current:
+            error(f"Could not fetch current themerealm document to delete theme '{item_id}'")
+            return False
+
+        rev: Optional[str] = current.get("_rev")
+        realms: Dict[str, List] = current.get("realm", {}) or {}
+        found = False
+
+        for realm_name, themes in realms.items():
+            if not isinstance(themes, list):
+                continue
+            original_len = len(themes)
+            realms[realm_name] = [
+                t for t in themes if isinstance(t, dict) and t.get("_id") != item_id
+            ]
+            if len(realms[realm_name]) < original_len:
+                found = True
+                info(f"Removing theme '{item_id}' from realm '{realm_name}'")
+
+        if not found:
+            error(f"Theme '{item_id}' not found in any realm of ui/themerealm")
+            return False
+
+        current["realm"] = realms
+        body = {k: v for k, v in current.items() if k != "_rev"}
+
+        url = self.get_api_endpoint("", base_url)
+        headers = get_headers("themes")
+        headers = {**headers, **self.build_auth_headers(token)}
+        if rev:
+            headers["If-Match"] = rev
+
+        try:
+            self.make_http_request(url, "PUT", headers, json.dumps(body))
+            return True
+        except Exception as e:
+            error(f"Failed to delete theme '{item_id}': {e}")
+            return False
+
 
 def create_themes_import_command():
     """Create the themes import command function."""
@@ -339,6 +389,7 @@ def create_themes_import_command():
         diff: DiffOpt = False,
         branch: BranchOpt = None,
         rollback: RollbackOpt = False,
+        sync: SyncOpt = False,
     ):
         """Import themes from JSON file or Git repository."""
         importer = ThemesImporter()
@@ -362,6 +413,7 @@ def create_themes_import_command():
             diff=diff,
             rollback=rollback,
             cherry_pick=cherry_pick,
+            sync=sync,
         )
 
     return import_themes
