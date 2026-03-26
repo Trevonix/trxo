@@ -100,6 +100,18 @@ RollbackOpt = Annotated[
     ),
 ]
 
+WithDepsOpt = Annotated[
+    bool,
+    typer.Option(
+        ...,
+        "--with-deps",
+        help=(
+            "Include AM OAuth2 clients (ssoEntities.oidcId) and their script dependencies "
+            "in export/import (applications only)"
+        ),
+    ),
+]
+
 SyncOpt = Annotated[
     bool,
     typer.Option(

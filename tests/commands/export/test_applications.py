@@ -104,3 +104,81 @@ def test_export_applications_custom_values(mock_exporter):
     assert kwargs["onprem_password"] == "pass"
     assert kwargs["onprem_realm"] == "custom_root"
     assert kwargs["am_base_url"] == "http://am"
+
+
+def test_export_applications_with_deps_invokes_bundle(mocker):
+    mock_run = mocker.patch(
+        "trxo.commands.export.applications._export_applications_with_deps",
+    )
+    mock_exporter_cls = mocker.patch(
+        "trxo.commands.export.applications.BaseExporter",
+    )
+    export_applications = create_applications_export_command()
+
+    export_applications(
+        realm=DEFAULT_REALM,
+        view=False,
+        view_columns=None,
+        version=None,
+        no_version=False,
+        branch=None,
+        commit=None,
+        jwk_path=None,
+        sa_id=None,
+        base_url=None,
+        project_name=None,
+        output_dir=None,
+        output_file=None,
+        auth_mode=None,
+        onprem_username=None,
+        onprem_password=None,
+        onprem_realm="root",
+        am_base_url=None,
+        idm_base_url=None,
+        idm_username=None,
+        idm_password=None,
+        with_deps=True,
+    )
+
+    mock_run.assert_called_once()
+    mock_exporter_cls.assert_not_called()
+
+
+def test_export_applications_with_deps_ignored_when_view(mocker):
+    mock_run = mocker.patch(
+        "trxo.commands.export.applications._export_applications_with_deps",
+    )
+    mock_exporter = mocker.Mock()
+    mocker.patch(
+        "trxo.commands.export.applications.BaseExporter",
+        return_value=mock_exporter,
+    )
+    export_applications = create_applications_export_command()
+
+    export_applications(
+        realm=DEFAULT_REALM,
+        view=True,
+        view_columns=None,
+        version=None,
+        no_version=False,
+        branch=None,
+        commit=None,
+        jwk_path=None,
+        sa_id=None,
+        base_url=None,
+        project_name=None,
+        output_dir=None,
+        output_file=None,
+        auth_mode=None,
+        onprem_username=None,
+        onprem_password=None,
+        onprem_realm="root",
+        am_base_url=None,
+        idm_base_url=None,
+        idm_username=None,
+        idm_password=None,
+        with_deps=True,
+    )
+
+    mock_run.assert_not_called()
+    mock_exporter.export_data.assert_called_once()
