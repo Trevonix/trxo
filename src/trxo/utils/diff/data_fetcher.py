@@ -47,8 +47,7 @@ def _process_nodes_response(exporter: BaseExporter, realm: str):
 def _process_email_templates_response(exporter: BaseExporter, realm: str):
     """Build a response-filter function for email_templates.
 
-    Email templates query returns items with full _id like "config/emailTemplate/resetPassword".
-    We extract just the template name (last part after /templateName).
+    Ensures the response is a list of items for the DiffEngine.
     """
 
     def _filter(response_data: Any) -> Dict[str, Any]:
@@ -60,16 +59,8 @@ def _process_email_templates_response(exporter: BaseExporter, realm: str):
         else:
             items = []
 
-        # Build mapping by template NAME (extract from full _id)
-        template_map = {}
-        for tmpl in items:
-            if isinstance(tmpl, dict) and "_id" in tmpl:
-                full_id = tmpl["_id"]  # e.g., "config/emailTemplate/resetPassword"
-                # Extract just the template name (last part)
-                template_name = full_id.split("/")[-1] if "/" in full_id else full_id
-                template_map[template_name] = tmpl
-
-        return {"emailTemplates": template_map}
+        # Return as a list under 'result' key so DiffEngine can extract it correctly
+        return {"result": items}
 
     return _filter
 

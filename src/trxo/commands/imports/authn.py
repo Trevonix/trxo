@@ -28,6 +28,7 @@ from trxo.commands.shared.options import (
     RealmOpt,
     RollbackOpt,
     SaIdOpt,
+    SrcRealmOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.constants import DEFAULT_REALM
@@ -89,6 +90,7 @@ class AuthnImporter(BaseImporter):
 def create_authn_import_command():
     def import_authn(
         realm: RealmOpt = DEFAULT_REALM,
+        src_realm: SrcRealmOpt = None,
         diff: DiffOpt = False,
         file: InputFileOpt = None,
         force_import: ForceImportOpt = False,
@@ -112,6 +114,7 @@ def create_authn_import_command():
         importer.import_from_file(
             file_path=file,
             realm=realm,
+            src_realm=src_realm,
             jwk_path=jwk_path,
             sa_id=sa_id,
             base_url=base_url,

@@ -31,6 +31,7 @@ from trxo.commands.shared.options import (
     ProjectNameOpt,
     RollbackOpt,
     SaIdOpt,
+    SyncOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.utils.console import error, info
@@ -53,6 +54,19 @@ class PrivilegesImporter(BaseImporter):
 
     def get_api_endpoint(self, item_id: str, base_url: str) -> str:
         return f"{base_url}/openidm/config/{item_id}"
+
+    def delete_item(self, item_id: str, token: str, base_url: str) -> bool:
+        """Delete a Privilege using DELETE /openidm/config/{item_id}"""
+        url = self.get_api_endpoint(item_id, base_url)
+        headers = get_headers("privileges")
+        headers = {**headers, **self.build_auth_headers(token)}
+
+        try:
+            self.make_http_request(url, "DELETE", headers)
+            return True
+        except Exception as e:
+            error(f"Failed to delete Privilege '{item_id}': {e}")
+            return False
 
     def update_item(self, item_data: Dict[str, Any], token: str, base_url: str) -> bool:
         """Upsert Privilege using PUT"""
@@ -99,6 +113,7 @@ def create_privileges_import_command():
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
         rollback: RollbackOpt = False,
+        sync: SyncOpt = False,
     ):
         """Import Privileges from JSON file (local mode) or Git repository (Git mode)"""
         importer = PrivilegesImporter()
@@ -122,6 +137,7 @@ def create_privileges_import_command():
             diff=diff,
             rollback=rollback,
             cherry_pick=cherry_pick,
+            sync=sync,
         )
 
     return import_privileges

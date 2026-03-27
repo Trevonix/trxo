@@ -252,8 +252,28 @@ class DiffEngine:
                     return list(clients_dict.values())
 
         #  Handle result wrapper
-        if isinstance(data, dict) and isinstance(data.get("result"), list):
-            return data["result"]
+        if isinstance(data, dict):
+            if isinstance(data.get("result"), list):
+                return data["result"]
+
+            # Try command name or common variations as keys
+            keys_to_try = [command_name] if command_name else []
+            keys_to_try.append("objects")  # Used by managed objects
+            if command_name and "_" in command_name:
+                # e.g. email_templates -> emailTemplates
+                parts = command_name.split("_")
+                camel_case = parts[0] + "".join(p.capitalize() for p in parts[1:])
+                keys_to_try.append(camel_case)
+
+            for key in keys_to_try:
+                if key in data:
+                    val = data[key]
+                    if isinstance(val, list):
+                        return val
+                    if isinstance(val, dict):
+                        return list(val.values())
+
+        #  OAuth: data.clients
 
         #  OAuth: data.clients
         if isinstance(data, dict) and isinstance(data.get("clients"), list):

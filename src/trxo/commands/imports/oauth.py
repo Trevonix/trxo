@@ -31,6 +31,7 @@ from trxo.commands.shared.options import (
     RealmOpt,
     RollbackOpt,
     SaIdOpt,
+    SrcRealmOpt,
     SyncOpt,
 )
 from trxo.config.api_headers import get_headers
@@ -419,6 +420,7 @@ def create_oauth_import_command():
 
     def import_oauth(
         realm: RealmOpt = DEFAULT_REALM,
+        src_realm: SrcRealmOpt = None,
         cherry_pick: CherryPickOpt = None,
         sync: SyncOpt = False,
         diff: DiffOpt = False,
@@ -444,6 +446,7 @@ def create_oauth_import_command():
         importer.import_from_file(
             file_path=file,
             realm=realm,
+            src_realm=src_realm,
             jwk_path=jwk_path,
             sa_id=sa_id,
             base_url=base_url,
