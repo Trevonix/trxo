@@ -266,7 +266,6 @@ class JourneyImporter(BaseImporter):
                     self._perform_enriched_journey_diff(
                         payload=payload,
                         realm=realm,
-                        src_realm=src_realm,
                         jwk_path=jwk_path,
                         sa_id=sa_id,
                         base_url=base_url,
@@ -378,7 +377,6 @@ class JourneyImporter(BaseImporter):
                 self._perform_enriched_journey_diff(
                     payload=payload,
                     realm=realm,
-                    src_realm=src_realm,
                     jwk_path=jwk_path,
                     sa_id=sa_id,
                     base_url=base_url,
@@ -558,7 +556,6 @@ class JourneyImporter(BaseImporter):
             api_endpoint=api_endpoint,
             response_filter=response_filter,
             realm=realm,
-            src_realm=src_realm,
             jwk_path=jwk_path,
             sa_id=sa_id,
             base_url=base_url,
@@ -581,7 +578,6 @@ class JourneyImporter(BaseImporter):
         local_trees_list = list(local_trees.values())
         new_data = {"result": local_trees_list}
 
-        server_tree_count = 0
         diff_result = None
 
         if current_data is None:
@@ -592,9 +588,8 @@ class JourneyImporter(BaseImporter):
             # current_data already comes back as {"result": [...]} from
             # DataFetcher (it unwraps the AM response wrapper for us).
             if isinstance(current_data, dict) and "result" in current_data:
-                server_tree_count = len(current_data["result"])
+                pass
             elif isinstance(current_data, list):
-                server_tree_count = len(current_data)
                 current_data = {"result": current_data}
 
             # ── Step 3: Run diff engine ───────────────────────────────────
@@ -604,7 +599,6 @@ class JourneyImporter(BaseImporter):
                 new_data=new_data,
                 command_name="journeys",
                 realm=realm,
-                src_realm=src_realm,
             )
 
             # ── Step 4: Display rich diff report ──────────────────────────
