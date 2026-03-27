@@ -18,6 +18,7 @@ from trxo.commands.shared.options import (
     AuthModeOpt,
     BaseUrlOpt,
     BranchOpt,
+    CherryPickOpt,
     DiffOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
@@ -127,7 +128,11 @@ class ApplicationsImporter(BaseImporter):
                     unique_providers.append(provider)
                 self._pending_providers = unique_providers
 
-            if self.include_am_dependencies and not self._pending_clients and not self._pending_scripts:
+            if (
+                self.include_am_dependencies
+                and not self._pending_clients
+                and not self._pending_scripts
+            ):
                 warning(
                     "No OAuth2 clients or scripts found under data.clients / data.scripts; "
                     "importing applications only."
@@ -171,7 +176,9 @@ class ApplicationsImporter(BaseImporter):
             oauth_imp = OAuthImporter(realm=self.realm)
             oauth_imp.auth_mode = self.auth_mode
             for provider in self._pending_providers:
-                pid = provider.get("_id") if isinstance(provider, dict) else "<provider>"
+                pid = (
+                    provider.get("_id") if isinstance(provider, dict) else "<provider>"
+                )
                 try:
                     oauth_imp.update_provider(provider, token, base_url)
                     extra_ok += 1
@@ -253,6 +260,7 @@ def create_applications_import_command():
         diff: DiffOpt = False,
         rollback: RollbackOpt = False,
         branch: BranchOpt = None,
+        cherry_pick: CherryPickOpt = None,
         jwk_path: JwkPathOpt = None,
         sa_id: SaIdOpt = None,
         base_url: BaseUrlOpt = None,
@@ -290,6 +298,7 @@ def create_applications_import_command():
             branch=branch,
             diff=diff,
             rollback=rollback,
+            cherry_pick=cherry_pick,
         )
 
     return import_applications

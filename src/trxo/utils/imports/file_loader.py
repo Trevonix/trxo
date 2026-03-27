@@ -62,6 +62,12 @@ class FileLoader:
                     raise ValueError(
                         "Invalid JSON structure: 'data.result' should be an array"
                     )
+            elif "applications" in data["data"]:
+                items = data["data"]["applications"]
+                if not isinstance(items, list):
+                    raise ValueError(
+                        "Invalid JSON structure: 'data.applications' should be an array"
+                    )
             else:
                 # No 'result' array; accept a single object and wrap it
                 if isinstance(data["data"], dict):
@@ -148,7 +154,6 @@ class FileLoader:
             realm_component_dir = repo_path / realm / component
             if realm_component_dir.exists():
                 for json_file in realm_component_dir.glob("*.json"):
-
                     # Only load the main export file
                     if not json_file.name.endswith(f"{component}.json"):
                         continue

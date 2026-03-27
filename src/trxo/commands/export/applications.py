@@ -122,15 +122,22 @@ def _export_applications_with_deps(
         if base.auth_mode == "onprem" and base.product == "idm" and base._idm_base_url:
             idm_api_url = base._idm_base_url
 
-        idm_headers = {**get_headers("applications"), **base.build_auth_headers(token_idm, product="idm")}
+        idm_headers = {
+            **get_headers("applications"),
+            **base.build_auth_headers(token_idm, product="idm"),
+        }
         idm_url = base._construct_api_url(idm_api_url, api_endpoint)
         response = base.make_http_request(idm_url, "GET", idm_headers)
         raw_data = response.json()
-        aggregated = base._handle_pagination(raw_data, api_endpoint, idm_headers, idm_api_url)
+        aggregated = base._handle_pagination(
+            raw_data, api_endpoint, idm_headers, idm_api_url
+        )
         filtered_data = base.remove_rev_fields(aggregated)
 
         applications_list: List[Dict[str, Any]] = []
-        if isinstance(filtered_data, dict) and isinstance(filtered_data.get("result"), list):
+        if isinstance(filtered_data, dict) and isinstance(
+            filtered_data.get("result"), list
+        ):
             applications_list = [
                 x for x in filtered_data["result"] if isinstance(x, dict)
             ]
@@ -163,7 +170,9 @@ def _export_applications_with_deps(
         provider_data: Dict[str, Any] = {}
 
         for cid in client_ids:
-            client_obj = oauth_helper.fetch_oauth_client_data(cid, am_token, am_api_base)
+            client_obj = oauth_helper.fetch_oauth_client_data(
+                cid, am_token, am_api_base
+            )
             if client_obj:
                 complete_clients.append(client_obj)
                 all_script_ids.update(oauth_helper.extract_script_ids(client_obj))
@@ -177,12 +186,16 @@ def _export_applications_with_deps(
         for script_id in all_script_ids:
             if script_id in IGNORED_SCRIPT_IDS:
                 continue
-            script_obj = oauth_helper.fetch_script_data(script_id, am_token, am_api_base)
+            script_obj = oauth_helper.fetch_script_data(
+                script_id, am_token, am_api_base
+            )
             if script_obj:
                 scripts_data.append(script_obj)
 
         if not isinstance(filtered_data, dict):
-            filtered_data = {"result": applications_list}
+            filtered_data = {"applications": applications_list}
+        elif "result" in filtered_data:
+            filtered_data["applications"] = filtered_data.pop("result")
 
         combined_data = {
             **filtered_data,
