@@ -35,6 +35,7 @@ from trxo.commands.shared.options import (
     SaIdOpt,
     WithDepsOpt,
     SrcRealmOpt,
+    SyncOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.constants import DEFAULT_REALM
@@ -248,6 +249,20 @@ class ApplicationsImporter(BaseImporter):
             error(f"Failed to upsert application '{item_id}': {e}")
             return False
 
+    def delete_item(self, item_id: str, token: str, base_url: str) -> bool:
+        """Delete an Application via API"""
+        url = self.get_api_endpoint(item_id, base_url)
+        headers = get_headers("applications")
+        headers = {**headers, **self.build_auth_headers(token)}
+
+        try:
+            self.make_http_request(url, "DELETE", headers)
+            info(f"Deleted application: {item_id}")
+            return True
+        except Exception as e:
+            error(f"Failed to delete application '{item_id}': {e}")
+            return False
+
 
 def create_applications_import_command():
     """Create the Applications import command function"""
@@ -261,6 +276,7 @@ def create_applications_import_command():
         rollback: RollbackOpt = False,
         branch: BranchOpt = None,
         cherry_pick: CherryPickOpt = None,
+        sync: SyncOpt = False,
         jwk_path: JwkPathOpt = None,
         sa_id: SaIdOpt = None,
         base_url: BaseUrlOpt = None,
@@ -299,6 +315,7 @@ def create_applications_import_command():
             diff=diff,
             rollback=rollback,
             cherry_pick=cherry_pick,
+            sync=sync,
         )
 
     return import_applications
