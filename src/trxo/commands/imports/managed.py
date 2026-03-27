@@ -30,6 +30,7 @@ from trxo.commands.shared.options import (
     ProjectNameOpt,
     RollbackOpt,
     SaIdOpt,
+    SyncOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.utils.console import error, info, warning
@@ -50,8 +51,48 @@ class ManagedObjectsImporter(BaseImporter):
     def get_item_type(self) -> str:
         return "managed_objects"
 
+    def get_item_id(self, item: Dict[str, Any]) -> str:
+        """Use managed object name as identifier"""
+        return item.get("name")
+
     def get_api_endpoint(self, item_id: str, base_url: str) -> str:
         return f"{base_url}/openidm/config/managed"
+
+    def delete_item(self, item_id: str, token: str, base_url: str) -> bool:
+        """
+        Delete a managed object by removing it from the managed configuration.
+        """
+        # Get current configuration
+        current_config = self._get_current_managed_config(token, base_url)
+        if not current_config:
+            error("Could not retrieve current managed configuration for deletion")
+            return False
+
+        current_objects = current_config.get("objects", [])
+
+        # Find if object exists
+        index, _ = self._find_object_by_name(current_objects, item_id)
+
+        if index < 0:
+            warning(f"Managed object '{item_id}' not found; nothing to delete")
+            return True
+
+        # Remove the object
+        updated_objects = current_objects[:index] + current_objects[index + 1 :]
+        updated_config = {**current_config, "objects": updated_objects}
+        payload = json.dumps(updated_config)
+
+        url = self.get_api_endpoint("", base_url)
+        headers = get_headers("managed")
+        headers = {**headers, **self.build_auth_headers(token)}
+
+        try:
+            self.make_http_request(url, "PUT", headers, payload)
+            info(f"Successfully deleted managed object: {item_id}")
+            return True
+        except Exception as e:
+            error(f"Failed to delete managed object '{item_id}': {e}")
+            return False
 
     def _get_current_managed_config(self, token: str, base_url: str) -> Dict[str, Any]:
         """Fetch current managed objects configuration"""
@@ -734,6 +775,7 @@ def create_managed_import_command():
         force_import: ForceImportOpt = False,
         diff: DiffOpt = False,
         rollback: RollbackOpt = False,
+        sync: SyncOpt = False,
     ):
         """Import managed objects from JSON file (local mode) or Git repository (Git mode).
 
@@ -760,6 +802,7 @@ def create_managed_import_command():
             diff=diff,
             rollback=rollback,
             cherry_pick=cherry_pick,
+            sync=sync,
         )
 
     return import_managed

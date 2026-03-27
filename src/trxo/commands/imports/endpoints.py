@@ -31,6 +31,7 @@ from trxo.commands.shared.options import (
     ProjectNameOpt,
     RollbackOpt,
     SaIdOpt,
+    SyncOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.utils.console import error, info
@@ -76,6 +77,20 @@ class EndpointsImporter(BaseImporter):
             error(f"Failed to upsert custom endpoint '{item_id}': {e}")
             return False
 
+    def delete_item(self, item_id: str, token: str, base_url: str) -> bool:
+        """Delete a custom endpoint via API"""
+        url = self.get_api_endpoint(item_id, base_url)
+        headers = get_headers("endpoints")
+        headers = {**headers, **self.build_auth_headers(token)}
+
+        try:
+            self.make_http_request(url, "DELETE", headers)
+            info(f"Deleted custom endpoint: {item_id}")
+            return True
+        except Exception as e:
+            error(f"Failed to delete custom endpoint '{item_id}': {e}")
+            return False
+
 
 def create_endpoints_import_command():
     """Create the endpoints import command function"""
@@ -99,6 +114,7 @@ def create_endpoints_import_command():
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
         rollback: RollbackOpt = False,
+        sync: SyncOpt = False,
     ):
         """Import custom endpoints from JSON file (local mode) or Git repository (Git mode)"""
         importer = EndpointsImporter()
@@ -122,6 +138,7 @@ def create_endpoints_import_command():
             diff=diff,
             cherry_pick=cherry_pick,
             rollback=rollback,
+            sync=sync,
         )
 
     return import_endpoints
