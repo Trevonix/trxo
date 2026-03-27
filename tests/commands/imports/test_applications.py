@@ -1,3 +1,5 @@
+import json
+
 import pytest
 import typer
 
@@ -134,3 +136,68 @@ def test_import_applications_custom_args(mocker):
     assert kwargs["onprem_password"] == "op"
     assert kwargs["onprem_realm"] == "or"
     assert kwargs["am_base_url"] == "am"
+
+
+def test_applications_importer_load_data_with_deps(tmp_path):
+    path = tmp_path / "apps.json"
+    path.write_text(
+        json.dumps(
+            {
+                "metadata": {},
+                "data": {
+                    "result": [{"_id": "app-1", "name": "App"}],
+                    "clients": [{"_id": "oauth-1"}],
+                    "scripts": [{"_id": "scr-1", "name": "Script"}],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    importer = ApplicationsImporter()
+    importer.include_am_dependencies = True
+    items = importer.load_data_from_file(str(path))
+
+    assert len(items) == 1
+    assert items[0]["_id"] == "app-1"
+    assert len(importer._pending_clients) == 1
+    assert importer._pending_clients[0]["_id"] == "oauth-1"
+    assert len(importer._pending_scripts) == 1
+    assert importer._pending_scripts[0]["_id"] == "scr-1"
+
+
+def test_applications_importer_load_data_without_deps_skips_pending(tmp_path):
+    path = tmp_path / "apps.json"
+    path.write_text(
+        json.dumps(
+            {
+                "metadata": {},
+                "data": {
+                    "result": [{"_id": "app-1", "name": "App"}],
+                    "clients": [{"_id": "oauth-1"}],
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    importer = ApplicationsImporter()
+    importer.include_am_dependencies = False
+    importer.load_data_from_file(str(path))
+
+    assert importer._pending_clients == []
+    assert importer._pending_scripts == []
+
+
+def test_import_applications_sets_include_am_dependencies(mocker):
+    importer = mocker.Mock()
+    mocker.patch(
+        "trxo.commands.imports.applications.ApplicationsImporter",
+        return_value=importer,
+    )
+
+    import_applications = create_applications_import_command()
+    import_applications(with_deps=True)
+
+    assert importer.include_am_dependencies is True
+    importer.import_from_file.assert_called_once()

@@ -67,6 +67,15 @@ class OAuthImporter(BaseImporter):
             f"/am/json/realms/root/realms/{self.realm}/realm-config/agents/OAuth2Client/{item_id}",
         )
 
+    def get_provider_api_endpoint(self, base_url: str) -> str:
+        return self._construct_api_url(
+            base_url,
+            f"/am/json/realms/root/realms/{self.realm}/realm-config/oauth-oidc",
+        )
+
+    def get_provider_api_endpoints(self, base_url: str) -> List[str]:
+        return []
+
     def _parse_oauth_data(self, data: Any) -> List[Dict[str, Any]]:
         """Helper to parse OAuth data structure from file content"""
         clients = []
@@ -293,7 +302,9 @@ class OAuthImporter(BaseImporter):
             **self.build_auth_headers(token),
         }
 
-        filtered_data = {k: v for k, v in item_data.items() if k not in {"_id", "_rev"}}
+        filtered_data = {
+            k: v for k, v in item_data.items() if k not in {"_id", "_rev", "_provider"}
+        }
 
         payload = json.dumps(filtered_data, indent=2)
 
@@ -311,6 +322,79 @@ class OAuthImporter(BaseImporter):
         except Exception as e:
             error(f"Failed to process OAuth2 Client '{item_id}': {e}")
             raise
+
+    def update_provider(
+        self, provider_data: Dict[str, Any], token: str, base_url: str
+    ) -> bool:
+        """Upsert OAuth/OIDC provider config."""
+        if not isinstance(provider_data, dict):
+            error("OAuth2 Provider payload must be an object")
+            return False
+
+        headers = get_headers("oauth")
+        headers = {**headers, **self.build_auth_headers(token)}
+
+        filtered_data = {k: v for k, v in provider_data.items() if k not in {"_id", "_rev"}}
+        payload = json.dumps(filtered_data, indent=2)
+
+        # Discover OAuth/OIDC-like service IDs and only target those endpoints.
+        dynamic_urls: List[str] = []
+        try:
+            list_url = self._construct_api_url(
+                base_url,
+                f"/am/json/realms/root/realms/{self.realm}/realm-config/services?_queryFilter=true",
+            )
+            list_response = self.make_http_request(list_url, "GET", headers)
+            list_data = list_response.json()
+            if isinstance(list_data, dict) and isinstance(list_data.get("result"), list):
+                for item in list_data["result"]:
+                    if not isinstance(item, dict):
+                        continue
+                    sid = item.get("_id")
+                    if not isinstance(sid, str):
+                        continue
+                    lower = sid.lower()
+                    if "oauth" in lower or "oidc" in lower or "openid" in lower:
+                        dynamic_urls.append(
+                            self._construct_api_url(
+                                base_url,
+                                f"/am/json/realms/root/realms/{self.realm}/realm-config/services/{sid}",
+                            )
+                        )
+        except Exception:
+            pass
+
+        if not dynamic_urls:
+            warning(
+                "No OAuth/OIDC provider service endpoint discovered in realm services; "
+                "skipping provider import."
+            )
+            return True
+
+        last_error = ""
+        tried = set()
+        for url in [*self.get_provider_api_endpoints(base_url), *dynamic_urls]:
+            if url in tried:
+                continue
+            tried.add(url)
+            try:
+                response = self.make_http_request(url, "PUT", headers, payload)
+                if hasattr(response, "status_code") and response.status_code >= 400:
+                    raise Exception(
+                        "Failed to process OAuth2 Provider: "
+                        f"{response.status_code}"
+                    )
+                info("Successfully processed OAuth2 Provider configuration")
+                return True
+            except Exception as e:
+                last_error = str(e)
+                continue
+
+        error(
+            "Failed to process OAuth2 Provider using known endpoints"
+            + (f": {last_error}" if last_error else "")
+        )
+        raise Exception(last_error or "Unknown provider import error")
 
     def delete_item(self, item_id: str, token: str, base_url: str) -> bool:
         """Delete a single OAuth2 Client via API"""

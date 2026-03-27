@@ -153,8 +153,23 @@ class HashManager:
             return data
 
         if isinstance(data, dict):
-            # Check for standard API response format with 'result' array
+            # Applications export with AM deps: same payload as IDM list plus clients/scripts
             if "result" in data and isinstance(data["result"], list):
+                if "clients" in data or "scripts" in data:
+                    merged: List[Dict[str, Any]] = list(data["result"])
+                    for key in ("clients", "scripts"):
+                        block = data.get(key)
+                        if isinstance(block, list):
+                            merged.extend(
+                                x for x in block if isinstance(x, dict)
+                            )
+                        elif isinstance(block, dict):
+                            merged.extend(
+                                x
+                                for x in block.values()
+                                if isinstance(x, dict)
+                            )
+                    return merged
                 return data["result"]
 
             # Check for 'data' field (our export format)
