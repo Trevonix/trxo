@@ -45,6 +45,7 @@ from trxo.commands.shared.options import (
     RealmOpt,
     RollbackOpt,
     SaIdOpt,
+    SrcRealmOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.constants import DEFAULT_REALM
@@ -144,6 +145,7 @@ class JourneyImporter(BaseImporter):
         self,
         file_path=None,
         realm=None,
+        src_realm=None,
         jwk_path=None,
         sa_id=None,
         base_url=None,
@@ -218,6 +220,7 @@ class JourneyImporter(BaseImporter):
                 return super().import_from_file(
                     file_path=str(git_file_path),
                     realm=realm,
+                    src_realm=src_realm,
                     jwk_path=jwk_path,
                     sa_id=sa_id,
                     base_url=base_url,
@@ -325,6 +328,7 @@ class JourneyImporter(BaseImporter):
             return super().import_from_file(
                 file_path=file_path,
                 realm=realm,
+                src_realm=src_realm,
                 jwk_path=jwk_path,
                 sa_id=sa_id,
                 base_url=base_url,
@@ -574,7 +578,6 @@ class JourneyImporter(BaseImporter):
         local_trees_list = list(local_trees.values())
         new_data = {"result": local_trees_list}
 
-        server_tree_count = 0
         diff_result = None
 
         if current_data is None:
@@ -585,9 +588,8 @@ class JourneyImporter(BaseImporter):
             # current_data already comes back as {"result": [...]} from
             # DataFetcher (it unwraps the AM response wrapper for us).
             if isinstance(current_data, dict) and "result" in current_data:
-                server_tree_count = len(current_data["result"])
+                pass
             elif isinstance(current_data, list):
-                server_tree_count = len(current_data)
                 current_data = {"result": current_data}
 
             # ── Step 3: Run diff engine ───────────────────────────────────
@@ -1381,6 +1383,7 @@ def create_journey_import_command():
     def import_journeys(
         file: InputFileOpt = None,
         realm: RealmOpt = DEFAULT_REALM,
+        src_realm: SrcRealmOpt = None,
         cherry_pick: CherryPickOpt = None,
         force_import: ForceImportOpt = False,
         rollback: RollbackOpt = False,
@@ -1404,6 +1407,7 @@ def create_journey_import_command():
         importer.import_from_file(
             file_path=file,
             realm=realm,
+            src_realm=src_realm,
             jwk_path=jwk_path,
             sa_id=sa_id,
             base_url=base_url,

@@ -43,6 +43,7 @@ class BaseImporter(BaseCommand):
         self,
         file_path: Optional[str] = None,
         realm: Optional[str] = None,
+        src_realm: Optional[str] = None,
         jwk_path: Optional[str] = None,
         sa_id: Optional[str] = None,
         base_url: Optional[str] = None,
@@ -112,7 +113,10 @@ class BaseImporter(BaseCommand):
             item_type = self.get_item_type()
 
             if storage_mode == "git":
-                items_to_process = self._import_from_git(realm, force_import, branch)
+                effective_src_realm = src_realm if src_realm is not None else realm
+                items_to_process = self._import_from_git(
+                    effective_src_realm, force_import, branch
+                )
             else:
                 if not file_path:
                     error("File path is required for local storage mode")
