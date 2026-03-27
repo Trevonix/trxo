@@ -8,8 +8,6 @@ PingOne Advanced Identity Cloud OAuth2 clients with script dependencies.
 import base64
 from typing import Any, Dict, Set
 
-import typer
-
 from trxo.commands.shared.options import (
     AmBaseUrlOpt,
     AuthModeOpt,
@@ -35,9 +33,66 @@ from trxo.commands.shared.options import (
 )
 from trxo.config.api_headers import get_headers
 from trxo.constants import DEFAULT_REALM, IGNORED_SCRIPT_IDS
-from trxo.utils.console import error, info, success, warning
+from trxo.utils.console import error, info, warning
 
 from .base_exporter import BaseExporter
+
+
+def process_oauth_response(exporter_instance: "OAuthExporter", realm: str):
+    """
+    Process OAuth response to fetch complete client data and scripts.
+
+    Args:
+        exporter_instance: The OAuthExporter instance
+        realm: The realm name
+
+    Returns:
+        Function that processes the initial API response
+    """
+
+    def filter_function(response_data: Any, **kwargs) -> Dict[str, Any]:
+        if not isinstance(response_data, dict) or "result" not in response_data:
+            error("Invalid response format from OAuth clients list")
+            return {"clients": [], "scripts": []}
+
+        oauth_clients = response_data["result"]
+        token, api_base_url = exporter_instance.get_current_auth()
+
+        info("Fetching OAuth2 clients data...\n")
+        complete_clients = []
+        all_script_ids = set()
+
+        for client in oauth_clients:
+            client_id = client.get("_id")
+            if not client_id:
+                warning("Skipping client without _id")
+                continue
+
+            complete_client = exporter_instance.fetch_oauth_client_data(
+                client_id, token, api_base_url
+            )
+
+            if complete_client:
+                complete_clients.append(complete_client)
+                # Extract script dependencies
+                script_ids = exporter_instance.extract_script_ids(complete_client)
+                all_script_ids.update(script_ids)
+
+        # Fetch all dependent scripts
+        scripts_data = []
+        if all_script_ids:
+            for script_id in all_script_ids:
+                if script_id in IGNORED_SCRIPT_IDS:
+                    continue
+                script_data = exporter_instance.fetch_script_data(
+                    script_id, token, api_base_url
+                )
+                if script_data:
+                    scripts_data.append(script_data)
+
+        return {"clients": complete_clients, "scripts": scripts_data}
+
+    return filter_function
 
 
 class OAuthExporter(BaseExporter):
@@ -131,7 +186,6 @@ class OAuthExporter(BaseExporter):
 
 def create_oauth_export_command():
     """Create the OAuth export command function"""
-    # Use global IGNORED_SCRIPT_IDS from constants
 
     def export_oauth(
         realm: RealmOpt = DEFAULT_REALM,
@@ -157,133 +211,38 @@ def create_oauth_export_command():
         idm_password: IdmPasswordOpt = None,
     ):
         """Export OAuth2 clients configuration with script dependencies"""
-        oauth_exporter = OAuthExporter(realm=realm)
+        exporter = OAuthExporter(realm=realm)
 
-        try:
-            # Initialize authentication
-            token, api_base_url = oauth_exporter.initialize_auth(
-                jwk_path=jwk_path,
-                sa_id=sa_id,
-                base_url=base_url,
-                project_name=project_name,
-                auth_mode=auth_mode,
-                onprem_username=onprem_username,
-                onprem_password=onprem_password,
-                onprem_realm=onprem_realm,
-                idm_base_url=idm_base_url,
-                idm_username=idm_username,
-                idm_password=idm_password,
-                am_base_url=am_base_url,
-            )
+        headers = get_headers("oauth")
 
-            # First, get list of OAuth clients using query filter
-            list_url = oauth_exporter._construct_api_url(
-                api_base_url,
-                (
-                    f"/am/json/realms/root/realms/{realm}/realm-config/"
-                    "agents/OAuth2Client?_queryFilter=true"
-                ),
-            )
-            headers = get_headers("oauth")
-            headers = {**headers, **oauth_exporter.build_auth_headers(token)}
-
-            response = oauth_exporter.make_http_request(list_url, "GET", headers)
-            list_data = response.json()
-
-            if not isinstance(list_data, dict) or "result" not in list_data:
-                error("Invalid response format from OAuth clients list")
-                return
-
-            oauth_clients = list_data["result"]
-
-            info("Fetching OAuth2 clients data...\n")
-            # Fetch complete data for each client and collect script dependencies
-            complete_clients = []
-            all_script_ids = set()
-
-            for client in oauth_clients:
-                client_id = client.get("_id")
-                if not client_id:
-                    warning("Skipping client without _id")
-                    continue
-
-                complete_client = oauth_exporter.fetch_oauth_client_data(
-                    client_id, token, api_base_url
-                )
-
-                if complete_client:
-                    complete_clients.append(complete_client)
-                    # Extract script dependencies
-                    script_ids = oauth_exporter.extract_script_ids(complete_client)
-                    all_script_ids.update(script_ids)
-
-            # Fetch all dependent scripts
-            scripts_data = []
-            # print("\nscript ids: ", all_script_ids)
-            if all_script_ids:
-                for script_id in all_script_ids:
-                    if script_id in IGNORED_SCRIPT_IDS:
-                        continue
-                    script_data = oauth_exporter.fetch_script_data(
-                        script_id, token, api_base_url
-                    )
-                    if script_data:
-                        scripts_data.append(script_data)
-
-            # Create combined export data structure following standard format
-            combined_data = {"clients": complete_clients, "scripts": scripts_data}
-
-            # Create standard export structure with metadata
-            from datetime import datetime, timezone
-
-            total_items = len(complete_clients)
-
-            export_data = {
-                "metadata": {
-                    "export_type": "oauth",
-                    "realm": realm,
-                    "timestamp": datetime.now(timezone.utc).strftime(
-                        "%Y-%m-%dT%H:%M:%SZ"
-                    ),
-                    "version": None,  # Will be filled during save_response
-                    "total_items": total_items,
-                },
-                "data": combined_data,
-            }
-
-            # Handle view mode
-            if view:
-                # oauth_exporter._display_table_view(export_data, "oauth", view_columns)
-                oauth_exporter._handle_view_mode(export_data, "oauth", view_columns)
-                return
-
-            # Save to file using the base exporter's file handling
-            file_path = oauth_exporter.save_response(
-                data=export_data,
-                command_name="oauth",
-                output_dir=output_dir,
-                output_file=output_file,
-                version=version,
-                no_version=no_version,
-                branch=branch,
-                commit_message=commit,
-            )
-
-            # Create and save hash for data integrity (only for local storage mode)
-            storage_mode = oauth_exporter._get_storage_mode()
-            if storage_mode == "local" and file_path:
-                # Hash the raw data (combined_data) just like standard exports hash filtered_data
-                hash_value = oauth_exporter.hash_manager.create_hash(
-                    combined_data, "oauth"
-                )
-                oauth_exporter.hash_manager.save_export_hash(
-                    "oauth", hash_value, file_path
-                )
-
-            print()
-            success("OAuth2 clients exported successfully")
-        except Exception as e:
-            error(f"OAuth export failed: {str(e)}")
-            raise
+        exporter.export_data(
+            command_name="oauth",
+            api_endpoint=(
+                f"/am/json/realms/root/realms/{realm}/realm-config/"
+                "agents/OAuth2Client?_queryFilter=true"
+            ),
+            headers=headers,
+            view=view,
+            view_columns=view_columns,
+            jwk_path=jwk_path,
+            sa_id=sa_id,
+            base_url=base_url,
+            project_name=project_name,
+            output_dir=output_dir,
+            output_file=output_file,
+            auth_mode=auth_mode,
+            onprem_username=onprem_username,
+            onprem_password=onprem_password,
+            onprem_realm=onprem_realm,
+            idm_base_url=idm_base_url,
+            idm_username=idm_username,
+            idm_password=idm_password,
+            am_base_url=am_base_url,
+            version=version,
+            no_version=no_version,
+            branch=branch,
+            commit_message=commit,
+            response_filter=process_oauth_response(exporter, realm),
+        )
 
     return export_oauth

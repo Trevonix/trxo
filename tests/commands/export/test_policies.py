@@ -8,7 +8,7 @@ from trxo.constants import DEFAULT_REALM
 def mock_exporter(mocker):
     exporter = mocker.Mock()
     mocker.patch(
-        "trxo.commands.export.policies.BaseExporter",
+        "trxo.commands.export.policies.PoliciesExporter",
         return_value=exporter,
     )
     return exporter

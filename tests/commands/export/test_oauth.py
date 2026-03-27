@@ -89,43 +89,24 @@ def test_export_oauth_happy_path(mocker):
     mock_exporter = mocker.Mock(spec=OAuthExporter)
     mocker.patch("trxo.commands.export.oauth.OAuthExporter", return_value=mock_exporter)
 
-    mock_exporter.initialize_auth.return_value = ("token", "https://base")
-    mock_exporter._construct_api_url.return_value = "https://base/list"
-    mock_exporter.build_auth_headers.return_value = {}
-    mock_exporter._get_storage_mode.return_value = "local"
-
-    response = mocker.Mock()
-    response.json.return_value = {"result": [{"_id": "client1", "scriptA": "script1"}]}
-
-    mock_exporter.make_http_request.return_value = response
-
-    mock_exporter.fetch_oauth_client_data.return_value = {
-        "_id": "client1",
-        "scriptA": "script1",
-    }
-
-    mock_exporter.extract_script_ids.return_value = {"script1"}
-
-    mock_exporter.fetch_script_data.return_value = {
-        "_id": "script1",
-        "script": "ZXhhbXBsZQ==",
-    }
-
-    mock_exporter.save_response.return_value = "/tmp/file.json"
-
-    mock_exporter.hash_manager = mocker.Mock()
-    mock_exporter.hash_manager.create_hash.return_value = "hash"
-    mock_exporter.hash_manager.save_export_hash.return_value = None
-
-    export_oauth(view=False)
-
-    mock_exporter.initialize_auth.assert_called_once()
-    mock_exporter.fetch_oauth_client_data.assert_called_once_with(
-        "client1", "token", "https://base"
+    export_oauth(
+        realm="gamma",
+        view=True,
+        view_columns="_id,name",
+        base_url="https://example.com",
     )
-    mock_exporter.fetch_script_data.assert_called_once_with(
-        "script1", "token", "https://base"
+
+    # Verify export_data was called with correct arguments
+    mock_exporter.export_data.assert_called_once()
+    kwargs = mock_exporter.export_data.call_args.kwargs
+
+    assert kwargs["command_name"] == "oauth"
+    assert (
+        "/realm-config/agents/OAuth2Client?_queryFilter=true" in kwargs["api_endpoint"]
     )
-    mock_exporter.save_response.assert_called_once()
-    mock_exporter.hash_manager.create_hash.assert_called_once()
-    mock_exporter.hash_manager.save_export_hash.assert_called_once()
+    assert "gamma" in kwargs["api_endpoint"]
+    assert kwargs["view"] is True
+    assert kwargs["view_columns"] == "_id,name"
+    assert kwargs["base_url"] == "https://example.com"
+    assert "response_filter" in kwargs
+    assert kwargs["response_filter"] is not None

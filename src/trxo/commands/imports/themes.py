@@ -35,8 +35,8 @@ from trxo.commands.shared.options import (
     RealmOpt,
     RollbackOpt,
     SaIdOpt,
-    SyncOpt,
     SrcRealmOpt,
+    SyncOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.constants import DEFAULT_REALM
