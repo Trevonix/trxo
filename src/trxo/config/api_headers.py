@@ -77,6 +77,10 @@ API_HEADERS = {
         **BASE_HEADERS,
         "Accept-API-Version": "protocol=2.1,resource=1.0",
     },
+    "policy_sets": {
+        **BASE_HEADERS,
+        "Accept-API-Version": "protocol=2.1,resource=1.0",
+    },
     "privileges": {
         **BASE_HEADERS,
         "Accept-API-Version": "protocol=2.1,resource=1.0",

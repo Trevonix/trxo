@@ -1,5 +1,3 @@
-import json
-
 from trxo.commands.imports.policies import (
     PoliciesImporter,
     create_policies_import_command,
@@ -70,3 +68,49 @@ def test_create_policies_import_command(mocker):
     cmd(file="x.json", realm="beta")
 
     importer.import_from_file.assert_called_once()
+
+
+def test_policies_get_item_id():
+    importer = PoliciesImporter(realm="alpha")
+    assert importer.get_item_id({"_id": "my-policy"}) == "my-policy"
+    assert importer.get_item_id({}) is None
+
+
+def test_delete_item_success(mocker):
+    importer = PoliciesImporter(realm="alpha")
+    importer.make_http_request = mocker.Mock()
+    mocker.patch("trxo.commands.imports.policies.info")
+
+    result = importer.delete_item("p1", "tok", "http://x")
+
+    assert result is True
+    importer.make_http_request.assert_called_once_with(
+        importer.get_api_endpoint("p1", "http://x"), "DELETE", mocker.ANY
+    )
+
+
+def test_delete_item_failure(mocker):
+    importer = PoliciesImporter(realm="alpha")
+    importer.make_http_request = mocker.Mock(side_effect=Exception("403 Forbidden"))
+    mocker.patch("trxo.commands.imports.policies.error")
+
+    result = importer.delete_item("p1", "tok", "http://x")
+
+    assert result is False
+
+
+def test_create_policies_import_command_sync(mocker):
+    """Verify sync, rollback, cherry_pick are forwarded to import_from_file."""
+    importer = mocker.Mock()
+    mocker.patch(
+        "trxo.commands.imports.policies.PoliciesImporter",
+        return_value=importer,
+    )
+
+    cmd = create_policies_import_command()
+    cmd(file="x.json", realm="alpha", sync=True, rollback=True, cherry_pick="p1")
+
+    call_kwargs = importer.import_from_file.call_args.kwargs
+    assert call_kwargs.get("sync") is True
+    assert call_kwargs.get("rollback") is True
+    assert call_kwargs.get("cherry_pick") == "p1"

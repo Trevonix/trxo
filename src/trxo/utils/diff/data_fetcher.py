@@ -10,6 +10,8 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from trxo.commands.export.base_exporter import BaseExporter
+from trxo.commands.export.oauth import OAuthExporter, process_oauth_response
+from trxo.commands.export.policies import process_policies_response
 from trxo.commands.export.saml import process_saml_response
 from trxo.commands.export.scripts import decode_script_response
 from trxo.config.api_headers import get_headers
@@ -217,6 +219,20 @@ class DataFetcher:
             elif command_name == "email_templates":
                 response_filter = _process_email_templates_response(
                     self.exporter, realm
+                )
+            elif command_name == "policies":
+                from trxo.commands.export.policies import PoliciesExporter
+
+                exporter = PoliciesExporter(realm=realm or DEFAULT_REALM)
+                self.exporter = exporter
+                response_filter = process_policies_response(
+                    self.exporter, realm or DEFAULT_REALM
+                )
+            elif command_name == "oauth":
+                exporter = OAuthExporter(realm=realm or DEFAULT_REALM)
+                self.exporter = exporter
+                response_filter = process_oauth_response(
+                    self.exporter, realm or DEFAULT_REALM
                 )
             # Temporarily replace save_response to capture data
             self.exporter.save_response = capture_data

@@ -809,13 +809,39 @@ class RollbackManager:
                         )
                         if is_default_script_error:
                             continue
-                        else:
-                            report["errors"].append(
-                                {
-                                    "id": item_id,
-                                    "error": f"{resp.status_code} - {resp.text}",
-                                }
+                        elif (
+                            self.command_name == "policies" and resp.status_code == 404
+                        ):
+                            # Fallback to policy set deletion (Application)
+                            fallback_url = construct_api_url(
+                                base_url,
+                                f"/am/json/realms/root/realms/{self.realm}/applications/{lookup_id}",
                             )
+                            # Update headers for policy_sets
+                            fallback_headers = get_headers("policy_sets")
+                            fallback_headers = {
+                                **fallback_headers,
+                                **self._build_auth_headers(token, fallback_url),
+                            }
+
+                            with httpx.Client() as client:
+                                resp = client.delete(
+                                    fallback_url, headers=fallback_headers
+                                )
+
+                            if resp.status_code in (200, 204):
+                                info(f"Deleted created policy set: {item_id}")
+                                report["rolled_back"].append(
+                                    {"id": item_id, "action": "deleted"}
+                                )
+                                continue
+
+                        report["errors"].append(
+                            {
+                                "id": item_id,
+                                "error": f"{resp.status_code} - {resp.text}",
+                            }
+                        )
 
                 # -------- RESTORE --------
                 elif action == "updated" and baseline:
@@ -1012,6 +1038,24 @@ class RollbackManager:
                     base_url,
                     f"/am/json/realms/root/realms/{self.realm}"
                     f"/realm-config/saml2/{location}/{url_id}",
+                )
+
+            # Special handling for policies vs policy sets (applications)
+            if self.command_name == "policies":
+                baseline = self.baseline_snapshot.get(str(item_id))
+                # If it's in baseline, use the applicationName heuristic
+                if baseline and isinstance(baseline, dict):
+                    is_policy_set = "applicationName" not in baseline
+                    if is_policy_set:
+                        return construct_api_url(
+                            base_url,
+                            f"/am/json/realms/root/realms/{self.realm}/applications/{quote(str(item_id), safe='')}",
+                        )
+                # If not in baseline (created item) or heuristic says it's a policy,
+                # default to policies endpoint (execute_rollback handles fallback)
+                return construct_api_url(
+                    base_url,
+                    f"/am/json/realms/root/realms/{self.realm}/policies/{quote(str(item_id), safe='')}",
                 )
 
             # Standard endpoint handling for other commands
