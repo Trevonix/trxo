@@ -4,6 +4,7 @@ Applications import command.
 Import functionality for PingOne Advanced Identity Cloud Applications.
 """
 
+import copy
 import json
 import os
 from typing import Any, Dict, List, Optional
@@ -49,6 +50,17 @@ def _normalize_dep_block(value: Any) -> List[Dict[str, Any]]:
     return []
 
 
+def _normalize_provider_block(value: Any) -> List[Dict[str, Any]]:
+    """Normalize provider dependency blocks into a provider list."""
+    if isinstance(value, list):
+        return [x for x in value if isinstance(x, dict)]
+    if isinstance(value, dict):
+        if "_type" in value or "coreOAuth2Config" in value or "pluginsConfig" in value:
+            return [value]
+        return [x for x in value.values() if isinstance(x, dict)]
+    return []
+
+
 class ApplicationsImporter(BaseImporter):
     """Importer for PingOne Advanced Identity Cloud Applications"""
 
@@ -59,6 +71,7 @@ class ApplicationsImporter(BaseImporter):
         self.include_am_dependencies: bool = False
         self._pending_clients: List[Dict[str, Any]] = []
         self._pending_scripts: List[Dict[str, Any]] = []
+        self._pending_providers: List[Dict[str, Any]] = []
 
     def get_required_fields(self) -> List[str]:
         return ["_id"]
@@ -73,6 +86,7 @@ class ApplicationsImporter(BaseImporter):
         """Load applications; optionally pick up clients/scripts from the same export."""
         self._pending_clients = []
         self._pending_scripts = []
+        self._pending_providers = []
 
         path = os.path.abspath(file_path) if not os.path.isabs(file_path) else file_path
 
@@ -83,6 +97,35 @@ class ApplicationsImporter(BaseImporter):
             if isinstance(data, dict):
                 self._pending_clients = _normalize_dep_block(data.get("clients"))
                 self._pending_scripts = _normalize_dep_block(data.get("scripts"))
+                self._pending_providers = _normalize_provider_block(
+                    data.get("providers") or data.get("provider")
+                )
+
+                # Frodo format compatibility: extract provider from each client._provider
+                for client in self._pending_clients:
+                    provider = client.get("_provider")
+                    if isinstance(provider, dict):
+                        self._pending_providers.append(provider)
+
+                # De-duplicate provider payloads while preserving order
+                unique_providers: List[Dict[str, Any]] = []
+                seen_provider_keys: set[str] = set()
+                for provider in self._pending_providers:
+                    key = (
+                        provider.get("_id")
+                        or (
+                            provider.get("_type", {}).get("_id")
+                            if isinstance(provider.get("_type"), dict)
+                            else ""
+                        )
+                        or json.dumps(provider, sort_keys=True, default=str)
+                    )
+                    if key in seen_provider_keys:
+                        continue
+                    seen_provider_keys.add(key)
+                    unique_providers.append(provider)
+                self._pending_providers = unique_providers
+
             if self.include_am_dependencies and not self._pending_clients and not self._pending_scripts:
                 warning(
                     "No OAuth2 clients or scripts found under data.clients / data.scripts; "
@@ -119,6 +162,28 @@ class ApplicationsImporter(BaseImporter):
             extra_ok += script_imp.successful_updates
             extra_fail += script_imp.failed_updates
 
+        if self.include_am_dependencies and self._pending_providers:
+            info(
+                f"Importing {len(self._pending_providers)} OAuth2 provider "
+                "dependency(ies) before OAuth2 clients..."
+            )
+            oauth_imp = OAuthImporter(realm=self.realm)
+            oauth_imp.auth_mode = self.auth_mode
+            for provider in self._pending_providers:
+                pid = provider.get("_id") if isinstance(provider, dict) else "<provider>"
+                try:
+                    oauth_imp.update_provider(provider, token, base_url)
+                    extra_ok += 1
+                except typer.Exit:
+                    raise
+                except Exception:
+                    extra_fail += 1
+                    if rollback_on_failure and rollback_manager:
+                        self._execute_rollback_and_exit(
+                            rollback_manager, token, base_url, pid
+                        )
+                    raise typer.Exit(1)
+
         if self.include_am_dependencies and self._pending_clients:
             info(
                 f"Importing {len(self._pending_clients)} OAuth2 client dependency(ies) "
@@ -127,9 +192,11 @@ class ApplicationsImporter(BaseImporter):
             oauth_imp = OAuthImporter(realm=self.realm)
             oauth_imp.auth_mode = self.auth_mode
             for client in self._pending_clients:
-                cid = client.get("_id")
+                client_payload = copy.deepcopy(client)
+                cid = client_payload.get("_id")
+                client_payload.pop("_provider", None)
                 try:
-                    oauth_imp.update_item(client, token, base_url)
+                    oauth_imp.update_item(client_payload, token, base_url)
                     extra_ok += 1
                 except typer.Exit:
                     raise

@@ -63,6 +63,19 @@ def _collect_oidc_client_ids(applications: List[Dict[str, Any]]) -> List[str]:
     return out
 
 
+def _normalize_provider_export(provider_obj: Dict[str, Any]) -> Dict[str, Any]:
+    """Normalize provider object for export shape compatibility."""
+    if not isinstance(provider_obj, dict):
+        return {}
+    normalized = dict(provider_obj)
+    normalized.setdefault(
+        "_type",
+        {"_id": "oauth-oidc", "collection": False, "name": "OAuth2 Provider"},
+    )
+    normalized.setdefault("_id", "")
+    return normalized
+
+
 def _export_applications_with_deps(
     realm: str,
     version: str | None,
@@ -84,7 +97,7 @@ def _export_applications_with_deps(
     idm_username: str | None,
     idm_password: str | None,
 ) -> None:
-    """Export managed applications plus referenced OAuth2 clients and scripts."""
+    """Export managed applications plus referenced OAuth2 clients/provider/scripts."""
     base = BaseExporter()
     oauth_gate: OAuthExporter | None = None
     api_endpoint = f"/openidm/managed/{realm}_application?_queryFilter=true"
@@ -147,12 +160,18 @@ def _export_applications_with_deps(
         client_ids = _collect_oidc_client_ids(applications_list)
         complete_clients: List[Dict[str, Any]] = []
         all_script_ids: set[str] = set()
+        provider_data: Dict[str, Any] = {}
 
         for cid in client_ids:
             client_obj = oauth_helper.fetch_oauth_client_data(cid, am_token, am_api_base)
             if client_obj:
                 complete_clients.append(client_obj)
                 all_script_ids.update(oauth_helper.extract_script_ids(client_obj))
+
+        provider_obj = oauth_helper.fetch_oauth_provider_data(am_token, am_api_base)
+        if provider_obj:
+            provider_data = _normalize_provider_export(provider_obj)
+            all_script_ids.update(oauth_helper.extract_script_ids(provider_data))
 
         scripts_data: List[Dict[str, Any]] = []
         for script_id in all_script_ids:
@@ -165,7 +184,12 @@ def _export_applications_with_deps(
         if not isinstance(filtered_data, dict):
             filtered_data = {"result": applications_list}
 
-        combined_data = {**filtered_data, "clients": complete_clients, "scripts": scripts_data}
+        combined_data = {
+            **filtered_data,
+            "clients": complete_clients,
+            "providers": [provider_data] if provider_data else [],
+            "scripts": scripts_data,
+        }
 
         metadata = MetadataBuilder.build_metadata(
             command_name="applications",
