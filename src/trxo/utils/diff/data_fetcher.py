@@ -299,7 +299,7 @@ class DataFetcher:
             if storage_mode == "git":
                 return self._fetch_from_git(command_name, branch, project_name, realm)
             else:
-                return self._fetch_from_local_file(file_path)
+                return self._fetch_from_local_file(file_path, command_name)
 
         except Exception as e:
             error(f"Failed to fetch data from file/git: {str(e)}")
@@ -322,7 +322,9 @@ class DataFetcher:
         except Exception:
             return "local"
 
-    def _fetch_from_local_file(self, file_path: str) -> Optional[Dict[str, Any]]:
+    def _fetch_from_local_file(
+        self, file_path: str, command_name: str = ""
+    ) -> Optional[Dict[str, Any]]:
         """Fetch data from local JSON file"""
         try:
             if not file_path or not Path(file_path).exists():
@@ -333,6 +335,12 @@ class DataFetcher:
                 data = json.load(f)
                 if isinstance(data, dict) and isinstance(data.get("data"), dict):
                     inner = data["data"]
+
+                    if command_name == "applications":
+                        if isinstance(inner.get("applications"), list):
+                            return {"result": inner["applications"]}
+                        if isinstance(inner.get("result"), list):
+                            return {"result": inner["result"]}
 
                     if isinstance(inner.get("clients"), list):
                         return {"result": inner["clients"]}
@@ -487,7 +495,7 @@ def get_command_api_endpoint(
         ),
         # Root-level endpoints (no realm)
         "realms": ("/am/json/realms?_queryFilter=true", None),
-        "Applications": (
+        "applications": (
             f"/openidm/managed/{realm}_application?_queryFilter=true",
             None,
         ),

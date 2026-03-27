@@ -18,6 +18,7 @@ from trxo.commands.shared.options import (
     AuthModeOpt,
     BaseUrlOpt,
     BranchOpt,
+    CherryPickOpt,
     DiffOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
@@ -32,13 +33,13 @@ from trxo.commands.shared.options import (
     RealmOpt,
     RollbackOpt,
     SaIdOpt,
-    WithDepsOpt,
     SrcRealmOpt,
+    SyncOpt,
+    WithDepsOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.constants import DEFAULT_REALM
 from trxo.utils.console import error, info, warning
-from trxo.utils.imports.file_loader import FileLoader
 
 from .base_importer import BaseImporter
 
@@ -85,55 +86,123 @@ class ApplicationsImporter(BaseImporter):
 
     def load_data_from_file(self, file_path: str) -> List[Dict[str, Any]]:
         """Load applications; optionally pick up clients/scripts from the same export."""
+        path = os.path.abspath(file_path) if not os.path.isabs(file_path) else file_path
+
+        with open(path, encoding="utf-8") as f:
+            raw = json.load(f)
+
+        data = raw.get("data") if isinstance(raw, dict) else raw
+
+        if self.include_am_dependencies and isinstance(data, dict):
+            new_clients = _normalize_dep_block(data.get("clients"))
+            self._pending_clients.extend(new_clients)
+            self._pending_scripts.extend(_normalize_dep_block(data.get("scripts")))
+            self._pending_providers.extend(
+                _normalize_provider_block(data.get("providers") or data.get("provider"))
+            )
+
+            # Frodo format compatibility: extract provider from each client._provider
+            for client in new_clients:
+                provider = client.get("_provider")
+                if isinstance(provider, dict):
+                    self._pending_providers.append(provider)
+
+            # De-duplicate provider payloads while preserving order
+            unique_providers: List[Dict[str, Any]] = []
+            seen_provider_keys: set[str] = set()
+            for provider in self._pending_providers:
+                key = (
+                    provider.get("_id")
+                    or (
+                        provider.get("_type", {}).get("_id")
+                        if isinstance(provider.get("_type"), dict)
+                        else ""
+                    )
+                    or json.dumps(provider, sort_keys=True, default=str)
+                )
+                if key in seen_provider_keys:
+                    continue
+                seen_provider_keys.add(key)
+                unique_providers.append(provider)
+            self._pending_providers = unique_providers
+
+        # Parse local vs backwards compatible data formats without FileLoader
+        if isinstance(raw, dict) and "data" in raw:
+            inner = raw["data"]
+            if isinstance(inner, dict):
+                if "applications" in inner:
+                    items = inner["applications"]
+                    return items if isinstance(items, list) else [items]
+                elif "result" in inner:
+                    items = inner["result"]
+                    return items if isinstance(items, list) else [items]
+            return [inner] if inner else []
+
+        if isinstance(raw, dict):
+            return [raw]
+        elif isinstance(raw, list):
+            return raw
+        return []
+
+    def _import_from_local(
+        self, file_path: str, force_import: bool
+    ) -> List[Dict[str, Any]]:
+        """Intercept local import to reset pending dependencies."""
+        self._pending_clients = []
+        self._pending_scripts = []
+        self._pending_providers = []
+        return super()._import_from_local(file_path, force_import)
+
+    def _import_from_git(
+        self, realm: Optional[str], force_import: bool, branch: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Intercept git import to use applications loader directly over all discovered files."""
         self._pending_clients = []
         self._pending_scripts = []
         self._pending_providers = []
 
-        path = os.path.abspath(file_path) if not os.path.isabs(file_path) else file_path
+        from pathlib import Path
 
-        if self.include_am_dependencies:
-            with open(path, encoding="utf-8") as f:
-                raw = json.load(f)
-            data = raw.get("data") if isinstance(raw, dict) else None
-            if isinstance(data, dict):
-                self._pending_clients = _normalize_dep_block(data.get("clients"))
-                self._pending_scripts = _normalize_dep_block(data.get("scripts"))
-                self._pending_providers = _normalize_provider_block(
-                    data.get("providers") or data.get("provider")
-                )
+        item_type = self.get_item_type()
+        effective_realm = self._determine_effective_realm(realm, item_type, branch)
+        git_manager = self._setup_git_manager(branch)
+        repo_path = Path(git_manager.local_path)
 
-                # Frodo format compatibility: extract provider from each client._provider
-                for client in self._pending_clients:
-                    provider = client.get("_provider")
-                    if isinstance(provider, dict):
-                        self._pending_providers.append(provider)
+        discovered_files = self.file_loader.discover_git_files(
+            repo_path, item_type, effective_realm
+        )
 
-                # De-duplicate provider payloads while preserving order
-                unique_providers: List[Dict[str, Any]] = []
-                seen_provider_keys: set[str] = set()
-                for provider in self._pending_providers:
-                    key = (
-                        provider.get("_id")
-                        or (
-                            provider.get("_type", {}).get("_id")
-                            if isinstance(provider.get("_type"), dict)
-                            else ""
-                        )
-                        or json.dumps(provider, sort_keys=True, default=str)
-                    )
-                    if key in seen_provider_keys:
-                        continue
-                    seen_provider_keys.add(key)
-                    unique_providers.append(provider)
-                self._pending_providers = unique_providers
+        if not discovered_files:
+            self._handle_no_git_files_found(item_type, effective_realm, realm)
+            return []
 
-            if self.include_am_dependencies and not self._pending_clients and not self._pending_scripts:
-                warning(
-                    "No OAuth2 clients or scripts found under data.clients / data.scripts; "
-                    "importing applications only."
-                )
+        all_items = []
+        for file_path in discovered_files:
+            try:
+                info(f"Loading from: {file_path.relative_to(repo_path)}")
+                items = self.load_data_from_file(str(file_path))
+                all_items.extend(items)
+            except Exception as e:
+                warning(f"Failed to load {file_path.name}: {e}")
+                continue
 
-        return FileLoader.load_from_local_file(file_path)
+        if (
+            self.include_am_dependencies
+            and not self._pending_clients
+            and not self._pending_scripts
+        ):
+            warning(
+                "No OAuth2 clients or scripts found in Git payload; "
+                "importing applications only."
+            )
+
+        normalized_items = []
+        for item in all_items:
+            if not isinstance(item, dict) or self._get_item_identifier(item) is None:
+                continue
+            normalized_items.append(item)
+
+        return normalized_items
 
     def process_items(
         self,
@@ -171,7 +240,9 @@ class ApplicationsImporter(BaseImporter):
             oauth_imp = OAuthImporter(realm=self.realm)
             oauth_imp.auth_mode = self.auth_mode
             for provider in self._pending_providers:
-                pid = provider.get("_id") if isinstance(provider, dict) else "<provider>"
+                pid = (
+                    provider.get("_id") if isinstance(provider, dict) else "<provider>"
+                )
                 try:
                     oauth_imp.update_provider(provider, token, base_url)
                     extra_ok += 1
@@ -241,6 +312,20 @@ class ApplicationsImporter(BaseImporter):
             error(f"Failed to upsert application '{item_id}': {e}")
             return False
 
+    def delete_item(self, item_id: str, token: str, base_url: str) -> bool:
+        """Delete an Application via API"""
+        url = self.get_api_endpoint(item_id, base_url)
+        headers = get_headers("applications")
+        headers = {**headers, **self.build_auth_headers(token)}
+
+        try:
+            self.make_http_request(url, "DELETE", headers)
+            info(f"Deleted application: {item_id}")
+            return True
+        except Exception as e:
+            error(f"Failed to delete application '{item_id}': {e}")
+            return False
+
 
 def create_applications_import_command():
     """Create the Applications import command function"""
@@ -253,6 +338,8 @@ def create_applications_import_command():
         diff: DiffOpt = False,
         rollback: RollbackOpt = False,
         branch: BranchOpt = None,
+        cherry_pick: CherryPickOpt = None,
+        sync: SyncOpt = False,
         jwk_path: JwkPathOpt = None,
         sa_id: SaIdOpt = None,
         base_url: BaseUrlOpt = None,
@@ -290,6 +377,8 @@ def create_applications_import_command():
             branch=branch,
             diff=diff,
             rollback=rollback,
+            cherry_pick=cherry_pick,
+            sync=sync,
         )
 
     return import_applications

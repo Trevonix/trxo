@@ -49,7 +49,7 @@ class DeletionManager:
             info("No items to delete")
             return True
 
-        warning(f"\n{'='*60}")
+        warning(f"{'='*60}")
         warning(f"SYNC MODE: {len(items_to_delete)} {item_type} will be DELETED")
         warning(f"{'='*60}")
 
@@ -116,7 +116,7 @@ class DeletionManager:
     def print_summary(self, summary: Dict[str, Any]) -> None:
         """Print deletion summary"""
         if summary["deleted_count"] > 0:
-            success(f"\n✓ Successfully deleted {summary['deleted_count']} item(s)")
+            print(f"\n✓ Successfully deleted {summary['deleted_count']} item(s)")
 
         if summary["failed_count"] > 0:
             error(f"\n✗ Failed to delete {summary['failed_count']} item(s)")

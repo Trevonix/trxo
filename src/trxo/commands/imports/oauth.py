@@ -334,7 +334,9 @@ class OAuthImporter(BaseImporter):
         headers = get_headers("oauth")
         headers = {**headers, **self.build_auth_headers(token)}
 
-        filtered_data = {k: v for k, v in provider_data.items() if k not in {"_id", "_rev"}}
+        filtered_data = {
+            k: v for k, v in provider_data.items() if k not in {"_id", "_rev"}
+        }
         payload = json.dumps(filtered_data, indent=2)
 
         # Discover OAuth/OIDC-like service IDs and only target those endpoints.
@@ -346,7 +348,9 @@ class OAuthImporter(BaseImporter):
             )
             list_response = self.make_http_request(list_url, "GET", headers)
             list_data = list_response.json()
-            if isinstance(list_data, dict) and isinstance(list_data.get("result"), list):
+            if isinstance(list_data, dict) and isinstance(
+                list_data.get("result"), list
+            ):
                 for item in list_data["result"]:
                     if not isinstance(item, dict):
                         continue
@@ -381,8 +385,7 @@ class OAuthImporter(BaseImporter):
                 response = self.make_http_request(url, "PUT", headers, payload)
                 if hasattr(response, "status_code") and response.status_code >= 400:
                     raise Exception(
-                        "Failed to process OAuth2 Provider: "
-                        f"{response.status_code}"
+                        "Failed to process OAuth2 Provider: " f"{response.status_code}"
                     )
                 info("Successfully processed OAuth2 Provider configuration")
                 return True
