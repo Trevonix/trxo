@@ -1,7 +1,5 @@
 from unittest.mock import MagicMock
 
-import pytest
-
 from trxo.utils.deletion_manager import DeletionManager
 
 
@@ -127,7 +125,7 @@ def test_execute_deletions_exception(mocker):
 
 
 def test_print_summary_only_success(mocker):
-    success_mock = mocker.patch("trxo.utils.deletion_manager.success")
+    print_mock = mocker.patch("builtins.print")
     error_mock = mocker.patch("trxo.utils.deletion_manager.error")
 
     mgr = DeletionManager()
@@ -140,12 +138,12 @@ def test_print_summary_only_success(mocker):
         }
     )
 
-    success_mock.assert_called_once()
+    print_mock.assert_called_once()
     error_mock.assert_not_called()
 
 
 def test_print_summary_only_failures(mocker):
-    success_mock = mocker.patch("trxo.utils.deletion_manager.success")
+    print_mock = mocker.patch("builtins.print")
     error_mock = mocker.patch("trxo.utils.deletion_manager.error")
 
     mgr = DeletionManager()
@@ -158,12 +156,12 @@ def test_print_summary_only_failures(mocker):
         }
     )
 
-    success_mock.assert_not_called()
+    print_mock.assert_not_called()
     assert error_mock.call_count >= 2
 
 
 def test_print_summary_mixed(mocker):
-    success_mock = mocker.patch("trxo.utils.deletion_manager.success")
+    print_mock = mocker.patch("builtins.print")
     error_mock = mocker.patch("trxo.utils.deletion_manager.error")
 
     mgr = DeletionManager()
@@ -176,5 +174,5 @@ def test_print_summary_mixed(mocker):
         }
     )
 
-    success_mock.assert_called_once()
+    print_mock.assert_called_once()
     assert error_mock.call_count >= 2
