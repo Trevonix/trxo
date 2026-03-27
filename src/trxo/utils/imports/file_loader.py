@@ -62,12 +62,6 @@ class FileLoader:
                     raise ValueError(
                         "Invalid JSON structure: 'data.result' should be an array"
                     )
-            elif "applications" in data["data"]:
-                items = data["data"]["applications"]
-                if not isinstance(items, list):
-                    raise ValueError(
-                        "Invalid JSON structure: 'data.applications' should be an array"
-                    )
             else:
                 # No 'result' array; accept a single object and wrap it
                 if isinstance(data["data"], dict):
