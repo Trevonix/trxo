@@ -14,7 +14,16 @@ RealmOpt = Annotated[
     typer.Option(
         ...,
         "--realm",
-        help=f"Target realm name (default: {DEFAULT_REALM})",
+        help=f"Target realm where you want to import (default: {DEFAULT_REALM})",
+    ),
+]
+
+SrcRealmOpt = Annotated[
+    Optional[str],
+    typer.Option(
+        ...,
+        "--src-realm",
+        help="The realm path in the directory to select for the import as src (git mode only). Defaults to target realm.",
     ),
 ]
 
