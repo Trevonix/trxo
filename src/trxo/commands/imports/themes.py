@@ -327,7 +327,9 @@ class ThemesImporter(BaseImporter):
         """
         current = self._fetch_current(token, base_url)
         if not current:
-            error(f"Could not fetch current themerealm document to delete theme '{item_id}'")
+            error(
+                f"Could not fetch current themerealm document to delete theme '{item_id}'"
+            )
             return False
 
         rev: Optional[str] = current.get("_rev")
