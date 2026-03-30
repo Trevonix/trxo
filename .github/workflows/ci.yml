@@ -44,7 +44,9 @@ jobs:
         run: bandit -r src/ -ll || true
 
       - name: Dependency vulnerability check with safety
-        run: safety check --json || true
+        run: safety scan --key $SAFETY_API_KEY --json
+        env:
+          SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
 
 
   test:

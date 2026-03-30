@@ -56,23 +56,24 @@ jobs:
         run: |
           python -m build
 
-      - name: Create GitHub Release
+      - name: Extract release notes
         if: steps.check_tag.outputs.tag_exists == 'false'
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ steps.get_version.outputs.version }}
-          release_name: Release ${{ steps.get_version.outputs.version }}
-          draft: false
-          prerelease: false
+        id: extract_notes
+        run: |
+          VERSION="${{ steps.get_version.outputs.version }}"
+          awk -v ver="^## \\[$VERSION\\]" '
+            $0 ~ ver { found=1; next }
+            /^---$/ { if(found) { exit } }
+            { if(found) { print } }
+          ' CHANGELOG.md > release_notes.md
 
-      - name: Upload artifacts to release
+      - name: Create GitHub Release
         if: steps.check_tag.outputs.tag_exists == 'false'
         uses: softprops/action-gh-release@v1
         with:
+          name: Release ${{ steps.get_version.outputs.version }}
           tag_name: v${{ steps.get_version.outputs.version }}
+          body_path: release_notes.md
           files: dist/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "trxo"
-version = "0.1.0"
+version = "1.0.0"
 description = "PingOne Advanced Identity Cloud Configuration Management Tool"
 readme = "README.md"
 license = {text = "MIT"}
@@ -30,7 +30,7 @@ dependencies = [
     "typer>=0.9.0",
     "rich>=13.0.0",
     "httpx>=0.23.0",
-    "pyjwt==2.10.1",
+    "pyjwt==2.12.0",
     "jwcrypto==1.5.6",
     "tqdm==4.67.1",
     "py-file-versioning>=0.10.0",

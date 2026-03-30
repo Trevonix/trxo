@@ -10,6 +10,29 @@ The format is based on Keep a Changelog and the project follows Semantic Version
 
 ---
 
+## [1.0.0] - 2026-03-30
+
+### Added
+- Extended sync functionality to support all configurations.
+- Added support for **Application Import/Export** with full dependency resolution.
+- Enabled dependency handling for **Policies** and related features.
+
+### Changed
+- Refactored codebase by moving API headers into a dedicated configuration module.
+- Improved CLI options for better usability and flexibility.
+- Enhanced rollback capability with improved handling of configuration dependencies.
+
+### Improved
+- Improved Git storage mode handling with better realm scope support.
+- Optimized pipeline execution arguments for improved stability and performance.
+
+### Fixed
+- Updated batch operations documentation with missing methods for batch import.
+- Corrected `CONTRIBUTING.md` with updated Python version requirements.
+- Cleanup projects after argument mode execution was not working
+
+---
+
 ## [0.1.0] - 2026-03-11
 
 ### Added
