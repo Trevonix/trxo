@@ -28,9 +28,22 @@ trxo batch export realms services themes --stop-on-error
 
 ## Batch Import
 
-Batch import works by defining a configuration plan (Manifest) to ensure dependencies and order are respected.
+There are two styles available for batch import:
 
-### Step 1: Generate Configuration Template
+### 1. Autodetection from Directory
+
+This simple and basic method automatically checks the configuration files available in the directory and imports them.
+
+```bash
+# Autodetect configurations from the directory and import them
+trxo batch import --dir batch-exports/ services scripts authn oauth
+```
+
+### 2. Based on a Configuration File
+
+This method uses a configuration file (Manifest) which has already been given correctly to ensure dependencies and order are respected.
+
+#### Step 1: Generate Configuration Template
 
 ```bash
 # Generate import config template
