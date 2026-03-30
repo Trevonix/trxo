@@ -199,6 +199,9 @@ class AuthManager:
                     if self.config_store.current_project_file.exists():
                         self.config_store.current_project_file.unlink()
 
+                # Actually delete the temporary project configuration and directory
+                self.config_store.delete_project(self._temp_project)
+
                 info(f"Cleaned up temporary project: {self._temp_project}")
             except Exception as e:
                 warning(f"Failed to cleanup temporary project: {str(e)}")
