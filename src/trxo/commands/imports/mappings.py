@@ -413,118 +413,40 @@ class MappingsImporter(BaseImporter):
         branch: str = None,
         diff: bool = False,
         cherry_pick: str = None,
+        sync: bool = False,
         **kwargs,
     ) -> None:
-        """Override to handle both single mappings and arrays of mappings"""
+        """Delegate to BaseImporter so sync/diff/rollback machinery runs correctly."""
 
-        # Check if we should use Git mode or local mode
-        storage_mode = self._get_storage_mode()
+        # For diff mode, adapt mappings to the shape expected by DiffEngine
         if diff:
-            # Tell BaseImporter to adapt mappings to default diff shape
             self._diff_adapter = self._wrap_for_diff
-            super().import_from_file(
-                file_path=file_path,
-                realm="root",
-                src_realm=None,
-                jwk_path=jwk_path,
-                sa_id=sa_id,
-                base_url=base_url,
-                project_name=project_name,
-                auth_mode=auth_mode,
-                onprem_username=onprem_username,
-                onprem_password=onprem_password,
-                onprem_realm=onprem_realm,
-                idm_base_url=idm_base_url,
-                idm_username=idm_username,
-                idm_password=idm_password,
-                am_base_url=am_base_url,
-                force_import=force_import,
-                branch=branch,
-                diff=diff,
-                cherry_pick=cherry_pick,
-                **kwargs,
-            )
-            return
 
-        if storage_mode == "git" or file_path is None:
-            # Use parent class Git mode logic
-            super().import_from_file(
-                file_path=file_path,
-                realm="root",
-                src_realm=None,
-                jwk_path=jwk_path,
-                sa_id=sa_id,
-                base_url=base_url,
-                project_name=project_name,
-                auth_mode=auth_mode,
-                onprem_username=onprem_username,
-                onprem_password=onprem_password,
-                onprem_realm=onprem_realm,
-                idm_base_url=idm_base_url,
-                idm_username=idm_username,
-                idm_password=idm_password,
-                am_base_url=am_base_url,
-                force_import=force_import,
-                branch=branch,
-                diff=diff,
-                cherry_pick=cherry_pick,
-                **kwargs,
-            )
-            return
-
-        # Local mode - use custom logic for flexible format support
-        try:
-            # Initialize authentication
-            token, api_base_url = self.initialize_auth(
-                jwk_path=jwk_path,
-                sa_id=sa_id,
-                base_url=base_url,
-                project_name=project_name,
-                auth_mode=auth_mode,
-                onprem_username=onprem_username,
-                onprem_password=onprem_password,
-                onprem_realm=onprem_realm,
-                idm_base_url=idm_base_url,
-                idm_username=idm_username,
-                idm_password=idm_password,
-                am_base_url=am_base_url,
-            )
-
-            # Load and parse file with flexible format support
-            data = self._load_mappings_file(file_path)
-            # Handle different input formats
-            mappings_to_process = self._normalize_mappings(data)
-
-            if not mappings_to_process:
-                error("No sync mappings found in file")
-                return
-
-            info_msg = "from normalized input"
-
-            if cherry_pick:
-                mappings_to_process = self.cherry_pick_filter.apply_filter(
-                    mappings_to_process, cherry_pick
-                )
-                if not mappings_to_process:
-                    return
-
-            if info_msg == "single sync mapping":
-                info("Processing single sync mapping")
-            else:
-                info(f"Processing {len(mappings_to_process)} sync mappings {info_msg}")
-
-            # Process each mapping
-            success_count = 0
-            for mapping in mappings_to_process:
-                if self.update_item(mapping, token, api_base_url):
-                    success_count += 1
-
-            info(
-                f"Successfully processed {success_count}/{len(mappings_to_process)} sync mappings"
-            )
-
-        except Exception as e:
-            error(f"Import failed: {str(e)}")
+        # All modes (local, git, diff) go through super() so that
+        # _handle_sync_deletions is invoked when sync=True.
+        super().import_from_file(
+            file_path=file_path,
+            realm="root",
+            src_realm=None,
+            jwk_path=jwk_path,
+            sa_id=sa_id,
+            base_url=base_url,
+            project_name=project_name,
+            auth_mode=auth_mode,
+            onprem_username=onprem_username,
+            onprem_password=onprem_password,
+            onprem_realm=onprem_realm,
+            idm_base_url=idm_base_url,
+            idm_username=idm_username,
+            idm_password=idm_password,
+            am_base_url=am_base_url,
+            force_import=force_import,
+            branch=branch,
+            diff=diff,
+            cherry_pick=cherry_pick,
+            sync=sync,
+            **kwargs,
+        )
 
 
 def create_mappings_import_command():
