@@ -44,7 +44,7 @@ jobs:
         run: bandit -r src/ -ll || true
 
       - name: Dependency vulnerability check with safety
-        run: safety check --json || true
+        run: safety scan --json || true
 
 
   test:
