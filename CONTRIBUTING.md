@@ -14,7 +14,7 @@ Thank you for your interest in contributing to TRXO! Contributions are welcome a
 
 ### Prerequisites
 
-- Python 3.8+  
+- Python 3.10+  
 - `git`  
 - A GitHub account (for submitting issues and pull requests)
 
