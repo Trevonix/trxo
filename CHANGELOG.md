@@ -29,6 +29,7 @@ The format is based on Keep a Changelog and the project follows Semantic Version
 ### Fixed
 - Updated batch operations documentation with missing methods for batch import.
 - Corrected `CONTRIBUTING.md` with updated Python version requirements.
+- Cleanup projects after argument mode execution was not working
 
 ---
 
