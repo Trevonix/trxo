@@ -11,18 +11,18 @@ from typing import Any, Callable, Dict, Optional
 
 import typer
 
-from trxo.config.api_headers import get_headers
-from trxo.utils.console import error, info, success, warning
-from trxo.utils.export import (
+from trxo_lib.config.api_headers import get_headers
+from trxo_lib.utils.console import error, info, success, warning
+from trxo_lib.utils.export import (
     FileSaver,
     GitExportHandler,
     MetadataBuilder,
     PaginationHandler,
     ViewRenderer,
 )
-from trxo.utils.hash_manager import HashManager
+from trxo_lib.utils.hash_manager import HashManager
 
-from ..shared.base_command import BaseCommand
+from trxo_lib.operations.base_command import BaseCommand
 
 
 class BaseExporter(BaseCommand):
@@ -223,7 +223,7 @@ class BaseExporter(BaseCommand):
     ):
         """Handle view mode display"""
         # from .view_config import suggest_columns
-        from trxo.utils.export.view_config import suggest_columns
+        from trxo_lib.utils.export.view_config import suggest_columns
 
         effective_columns = suggest_columns(command_name, view_columns)
         ViewRenderer.display_table_view(result, command_name, effective_columns)

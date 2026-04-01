@@ -31,11 +31,11 @@ from trxo.commands.shared.options import (
     ViewColumnsOpt,
     ViewOpt,
 )
-from trxo.config.api_headers import get_headers
-from trxo.constants import DEFAULT_REALM, IGNORED_SCRIPT_IDS
-from trxo.utils.console import error, info, warning
+from trxo_lib.config.api_headers import get_headers
+from trxo_lib.constants import DEFAULT_REALM, IGNORED_SCRIPT_IDS
+from trxo_lib.utils.console import error, info, warning
 
-from .base_exporter import BaseExporter
+from trxo_lib.operations.export.base_exporter import BaseExporter
 
 
 def process_oauth_response(exporter_instance: "OAuthExporter", realm: str):

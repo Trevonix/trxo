@@ -13,9 +13,9 @@ from typing import Any, Dict, List, Optional
 
 from deepdiff import DeepDiff
 
-from trxo.commands.export.saml import SamlExporter
+from trxo_lib.operations.export.saml import SamlExporter
 from trxo.commands.export.services import ServicesExporter
-from trxo.utils.console import error, info
+from trxo_lib.utils.console import error, info
 
 
 class ChangeType(Enum):
@@ -199,7 +199,7 @@ class DiffEngine:
             )
 
             # Generate key insights
-            from trxo.utils.diff.insights_generator import InsightsGenerator
+            from trxo_lib.utils.diff.insights_generator import InsightsGenerator
 
             insights_gen = InsightsGenerator()
             key_insights = insights_gen.generate_key_insights(

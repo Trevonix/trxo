@@ -30,9 +30,9 @@ from trxo.commands.shared.options import (
     ViewColumnsOpt,
     ViewOpt,
 )
-from trxo.config.api_headers import get_headers
+from trxo_lib.config.api_headers import get_headers
 
-from .base_exporter import BaseExporter
+from trxo_lib.operations.export.base_exporter import BaseExporter
 
 
 def create_email_export_command():

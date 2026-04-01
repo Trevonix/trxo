@@ -12,8 +12,8 @@ from urllib.parse import urlparse
 
 import typer
 
-from trxo.auth.service_account import ServiceAccountAuth
-from trxo.utils.console import error, info, success
+from trxo_lib.auth.service_account import ServiceAccountAuth
+from trxo_lib.utils.console import error, info, success
 
 from .settings import get_credential_value, process_regions_value
 from .validation import (

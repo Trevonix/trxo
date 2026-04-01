@@ -47,11 +47,11 @@ from trxo.commands.shared.options import (
     SaIdOpt,
     SrcRealmOpt,
 )
-from trxo.config.api_headers import get_headers
-from trxo.constants import DEFAULT_REALM
-from trxo.utils.console import error, info, success, warning
+from trxo_lib.config.api_headers import get_headers
+from trxo_lib.constants import DEFAULT_REALM
+from trxo_lib.utils.console import error, info, success, warning
 
-from .base_importer import BaseImporter
+from trxo_lib.operations.imports.base_importer import BaseImporter
 
 
 # Lazy-imported to avoid circular-dependency at module load time
@@ -180,7 +180,7 @@ class JourneyImporter(BaseImporter):
             # so we can probe it for the enriched format before deciding how to route.
             from pathlib import Path as _Path
 
-            from trxo.utils.imports.file_loader import FileLoader
+            from trxo_lib.utils.imports.file_loader import FileLoader
 
             git_manager = self._setup_git_manager(branch)
             effective_realm = self._determine_effective_realm(
@@ -424,7 +424,7 @@ class JourneyImporter(BaseImporter):
         if not rollback:
             return self._enriched_rollback_managers
 
-        from trxo.utils.rollback_manager import RollbackManager
+        from trxo_lib.utils.rollback_manager import RollbackManager
 
         storage_mode = self._get_storage_mode()
         git_mgr = self._setup_git_manager(branch) if storage_mode == "git" else None
@@ -540,9 +540,9 @@ class JourneyImporter(BaseImporter):
         """
         from pathlib import Path
 
-        from trxo.utils.diff.data_fetcher import DataFetcher, get_command_api_endpoint
-        from trxo.utils.diff.diff_engine import DiffEngine
-        from trxo.utils.diff.diff_reporter import DiffReporter
+        from trxo_lib.utils.diff.data_fetcher import DataFetcher, get_command_api_endpoint
+        from trxo_lib.utils.diff.diff_engine import DiffEngine
+        from trxo_lib.utils.diff.diff_reporter import DiffReporter
 
         info("Diff mode: comparing journey trees against live environment...")
 
@@ -581,7 +581,7 @@ class JourneyImporter(BaseImporter):
         diff_result = None
 
         if current_data is None:
-            from trxo.utils.console import warning as _warning
+            from trxo_lib.utils.console import warning as _warning
 
             _warning("Could not fetch live data — showing file counts only")
         else:
@@ -620,14 +620,14 @@ class JourneyImporter(BaseImporter):
                 + len(diff_result.removed_items)
             )
             if total > 0:
-                from trxo.utils.console import warning as _warning
+                from trxo_lib.utils.console import warning as _warning
 
                 _warning(
                     f"Journey diff: {total} change(s) found — "
                     "run without --diff to import"
                 )
             else:
-                from trxo.utils.console import success as _success
+                from trxo_lib.utils.console import success as _success
 
                 _success("Journey diff: no changes — journeys are already up to date")
 

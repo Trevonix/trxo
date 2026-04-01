@@ -11,8 +11,8 @@ from typing import Any, Dict, List, Optional
 
 import typer
 
-from trxo.commands.imports.oauth import OAuthImporter
-from trxo.commands.imports.scripts import ScriptImporter
+from trxo_lib.operations.imports.oauth import OAuthImporter
+from trxo_lib.operations.imports.scripts import ScriptImporter
 from trxo.commands.shared.options import (
     AmBaseUrlOpt,
     AuthModeOpt,
@@ -37,11 +37,11 @@ from trxo.commands.shared.options import (
     SyncOpt,
     WithDepsOpt,
 )
-from trxo.config.api_headers import get_headers
-from trxo.constants import DEFAULT_REALM
-from trxo.utils.console import error, info, warning
+from trxo_lib.config.api_headers import get_headers
+from trxo_lib.constants import DEFAULT_REALM
+from trxo_lib.utils.console import error, info, warning
 
-from .base_importer import BaseImporter
+from trxo_lib.operations.imports.base_importer import BaseImporter
 
 
 def _normalize_dep_block(value: Any) -> List[Dict[str, Any]]:

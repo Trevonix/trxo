@@ -29,10 +29,10 @@ from trxo.commands.shared.options import (
     ViewColumnsOpt,
     ViewOpt,
 )
-from trxo.config.api_headers import get_headers
-from trxo.utils.console import console, info, warning
+from trxo_lib.config.api_headers import get_headers
+from trxo_lib.utils.console import console, info, warning
 
-from .base_exporter import BaseExporter
+from trxo_lib.operations.export.base_exporter import BaseExporter
 
 
 def create_esv_commands():

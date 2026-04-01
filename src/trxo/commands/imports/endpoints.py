@@ -33,10 +33,10 @@ from trxo.commands.shared.options import (
     SaIdOpt,
     SyncOpt,
 )
-from trxo.config.api_headers import get_headers
-from trxo.utils.console import error, info
+from trxo_lib.config.api_headers import get_headers
+from trxo_lib.utils.console import error, info
 
-from .base_importer import BaseImporter
+from trxo_lib.operations.imports.base_importer import BaseImporter
 
 
 class EndpointsImporter(BaseImporter):

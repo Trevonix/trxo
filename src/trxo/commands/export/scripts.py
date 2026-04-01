@@ -33,11 +33,11 @@ from trxo.commands.shared.options import (
     ViewColumnsOpt,
     ViewOpt,
 )
-from trxo.config.api_headers import get_headers
-from trxo.constants import DEFAULT_REALM
-from trxo.utils.console import warning
+from trxo_lib.config.api_headers import get_headers
+from trxo_lib.constants import DEFAULT_REALM
+from trxo_lib.utils.console import warning
 
-from .base_exporter import BaseExporter
+from trxo_lib.operations.export.base_exporter import BaseExporter
 
 
 def decode_script_response(response_data: Any) -> Any:

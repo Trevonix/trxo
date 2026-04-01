@@ -32,11 +32,11 @@ from trxo.commands.shared.options import (
     SrcRealmOpt,
     SyncOpt,
 )
-from trxo.config.api_headers import get_headers
-from trxo.constants import DEFAULT_REALM
-from trxo.utils.console import error, info
+from trxo_lib.config.api_headers import get_headers
+from trxo_lib.constants import DEFAULT_REALM
+from trxo_lib.utils.console import error, info
 
-from .base_importer import BaseImporter
+from trxo_lib.operations.imports.base_importer import BaseImporter
 
 # Base path template
 AGENTS_BASE = "/am/json/realms/root/realms/{realm}/realm-config/agents"
@@ -313,7 +313,7 @@ def create_agents_callback():
 
     def agents_callback(ctx: typer.Context):
         if ctx.invoked_subcommand is None:
-            from trxo.utils.console import console, info, warning
+            from trxo_lib.utils.console import console, info, warning
 
             console.print()
             warning("No agents subcommand selected.")

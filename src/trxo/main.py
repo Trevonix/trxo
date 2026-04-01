@@ -4,7 +4,7 @@ from trxo.commands import config, logs, project
 from trxo.commands.batch import app as batch_app
 from trxo.commands.export import app as export_app
 from trxo.commands.imports import app as import_app
-from trxo.logging import get_logger, setup_logging
+from trxo_lib.logging import get_logger, setup_logging
 
 app = typer.Typer(
     help="[bold blue]TRXO[/bold blue] - PingOne Advanced Identity Cloud "

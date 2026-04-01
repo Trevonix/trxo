@@ -11,7 +11,7 @@ from typing import Any, Dict, List
 
 import typer
 
-from trxo.commands.export.oauth import OAuthExporter
+from trxo_lib.operations.export.oauth import OAuthExporter
 from trxo.commands.shared.options import (
     AmBaseUrlOpt,
     AuthModeOpt,
@@ -36,12 +36,12 @@ from trxo.commands.shared.options import (
     ViewOpt,
     WithDepsOpt,
 )
-from trxo.config.api_headers import get_headers
-from trxo.constants import DEFAULT_REALM, IGNORED_SCRIPT_IDS
-from trxo.utils.console import error, info, success, warning
-from trxo.utils.export import MetadataBuilder
+from trxo_lib.config.api_headers import get_headers
+from trxo_lib.constants import DEFAULT_REALM, IGNORED_SCRIPT_IDS
+from trxo_lib.utils.console import error, info, success, warning
+from trxo_lib.utils.export import MetadataBuilder
 
-from .base_exporter import BaseExporter
+from trxo_lib.operations.export.base_exporter import BaseExporter
 
 
 def _collect_oidc_client_ids(applications: List[Dict[str, Any]]) -> List[str]:

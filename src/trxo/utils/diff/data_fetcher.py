@@ -9,14 +9,14 @@ import json
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from trxo.commands.export.base_exporter import BaseExporter
-from trxo.commands.export.oauth import OAuthExporter, process_oauth_response
+from trxo_lib.operations.export.base_exporter import BaseExporter
+from trxo_lib.operations.export.oauth import OAuthExporter, process_oauth_response
 from trxo.commands.export.policies import process_policies_response
-from trxo.commands.export.saml import process_saml_response
-from trxo.commands.export.scripts import decode_script_response
-from trxo.config.api_headers import get_headers
-from trxo.constants import DEFAULT_REALM
-from trxo.utils.console import error, info, warning
+from trxo_lib.operations.export.saml import process_saml_response
+from trxo_lib.operations.export.scripts import decode_script_response
+from trxo_lib.config.api_headers import get_headers
+from trxo_lib.constants import DEFAULT_REALM
+from trxo_lib.utils.console import error, info, warning
 
 
 def _process_nodes_response(exporter: BaseExporter, realm: str):
@@ -307,7 +307,7 @@ class DataFetcher:
         """
         try:
             # Determine storage mode
-            from trxo.utils.config_store import ConfigStore
+            from trxo_lib.utils.config_store import ConfigStore
 
             config_store = ConfigStore()
             storage_mode = self._get_storage_mode(config_store, project_name)
@@ -378,8 +378,8 @@ class DataFetcher:
     ) -> Optional[Dict[str, Any]]:
         """Fetch data from Git repository"""
         try:
-            from trxo.utils.config_store import ConfigStore
-            from trxo.utils.git import get_repo_base_path
+            from trxo_lib.utils.config_store import ConfigStore
+            from trxo_lib.utils.git import get_repo_base_path
 
             config_store = ConfigStore()
 

@@ -30,11 +30,11 @@ from trxo.commands.shared.options import (
     SaIdOpt,
     SrcRealmOpt,
 )
-from trxo.config.api_headers import get_headers
-from trxo.constants import DEFAULT_REALM
-from trxo.utils.console import error, info
+from trxo_lib.config.api_headers import get_headers
+from trxo_lib.constants import DEFAULT_REALM
+from trxo_lib.utils.console import error, info
 
-from .base_importer import BaseImporter
+from trxo_lib.operations.imports.base_importer import BaseImporter
 
 
 class AuthnImporter(BaseImporter):

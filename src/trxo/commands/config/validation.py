@@ -12,11 +12,11 @@ from typing import Optional, Tuple
 
 import typer
 
-from trxo.auth.on_premise import OnPremAuth
-from trxo.auth.service_account import ServiceAccountAuth
-from trxo.utils.config_store import ConfigStore
-from trxo.utils.console import error, info, success
-from trxo.utils.git import validate_and_setup_git_repo
+from trxo_lib.auth.on_premise import OnPremAuth
+from trxo_lib.auth.service_account import ServiceAccountAuth
+from trxo_lib.utils.config_store import ConfigStore
+from trxo_lib.utils.console import error, info, success
+from trxo_lib.utils.git import validate_and_setup_git_repo
 
 
 def validate_authentication(auth: ServiceAccountAuth) -> bool:

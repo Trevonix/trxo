@@ -12,19 +12,19 @@ from typing import Any, Dict, List, Optional
 
 import typer
 
-from trxo.constants import DEFAULT_REALM
-from trxo.utils.console import error, info, success, warning
-from trxo.utils.git import GitManager, setup_git_for_import
-from trxo.utils.hash_manager import (
+from trxo_lib.constants import DEFAULT_REALM
+from trxo_lib.utils.console import error, info, success, warning
+from trxo_lib.utils.git import GitManager, setup_git_for_import
+from trxo_lib.utils.hash_manager import (
     HashManager,
     get_command_name_from_item_type,
 )
-from trxo.utils.imports.cherry_pick_filter import CherryPickFilter
-from trxo.utils.imports.component_mapper import ComponentMapper
-from trxo.utils.imports.file_loader import FileLoader
-from trxo.utils.imports.sync_handler import SyncHandler
+from trxo_lib.utils.imports.cherry_pick_filter import CherryPickFilter
+from trxo_lib.utils.imports.component_mapper import ComponentMapper
+from trxo_lib.utils.imports.file_loader import FileLoader
+from trxo_lib.utils.imports.sync_handler import SyncHandler
 
-from ..shared.base_command import BaseCommand
+from trxo_lib.operations.base_command import BaseCommand
 
 
 class BaseImporter(BaseCommand):
@@ -474,8 +474,8 @@ class BaseImporter(BaseCommand):
             return None
 
         try:
-            from trxo.utils.hash_manager import get_command_name_from_item_type
-            from trxo.utils.rollback_manager import RollbackManager
+            from trxo_lib.utils.hash_manager import get_command_name_from_item_type
+            from trxo_lib.utils.rollback_manager import RollbackManager
 
             command_name = get_command_name_from_item_type(self.get_item_type())
             rollback_manager = RollbackManager(command_name, realm)
@@ -562,7 +562,7 @@ class BaseImporter(BaseCommand):
     ) -> None:
         """Perform diff analysis and display results"""
         try:
-            from trxo.utils.diff.diff_manager import DiffManager
+            from trxo_lib.utils.diff.diff_manager import DiffManager
 
             # Get command name for data fetcher
             command_name = self.component_mapper.get_command_name(self.get_item_type())

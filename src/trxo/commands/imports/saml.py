@@ -36,12 +36,12 @@ from trxo.commands.shared.options import (
     SrcRealmOpt,
     SyncOpt,
 )
-from trxo.config.api_headers import get_headers
-from trxo.constants import DEFAULT_REALM
-from trxo.utils.console import error, info, success, warning
-from trxo.utils.rollback_manager import RollbackManager
+from trxo_lib.config.api_headers import get_headers
+from trxo_lib.constants import DEFAULT_REALM
+from trxo_lib.utils.console import error, info, success, warning
+from trxo_lib.utils.rollback_manager import RollbackManager
 
-from .base_importer import BaseImporter
+from trxo_lib.operations.imports.base_importer import BaseImporter
 
 
 class SamlImporter(BaseImporter):
@@ -792,7 +792,7 @@ def create_saml_import_command():
             )
 
             if success:
-                from trxo.utils.console import success as console_success
+                from trxo_lib.utils.console import success as console_success
 
                 console_success("SAML import completed successfully!")
 
