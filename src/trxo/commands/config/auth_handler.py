@@ -8,12 +8,17 @@ including service account and on-premises authentication.
 import getpass
 import os
 from typing import Dict, Optional
-from urllib.parse import urlparse
 
 import typer
 
 from trxo_lib.auth.service_account import ServiceAccountAuth
 from trxo_lib.utils.console import error, info, success
+from trxo_lib.auth.handler import (
+    normalize_base_url,
+    create_service_account_config,
+    create_onprem_config,
+    TOKEN_ENDPOINT,
+)
 
 from .settings import get_credential_value, process_regions_value
 from .validation import (
@@ -25,27 +30,7 @@ from .validation import (
     validate_onprem_authentication,
 )
 
-# Token endpoint to get access token
-TOKEN_ENDPOINT = "/am/oauth2/access_token"
-
-
-def normalize_base_url(base_url: str, auth_mode: str) -> str:
-    """Normalize base URL based on authentication mode"""
-    if not base_url:
-        return base_url
-    base_url = base_url.rstrip("/")
-    if auth_mode == "service-account":
-        # If user enters https://host/am, strip /am to keep base
-        # (SA usually expects root base + /am endpoint)
-        if base_url.endswith("/am"):
-            base_url = base_url[:-3]
-    elif auth_mode == "onprem":
-        # For on-prem, if no context is provided (e.g. https://host), default to /am
-        # If context is provided (e.g. https://host/custom), keep it.
-        parsed = urlparse(base_url)
-        if not parsed.path or parsed.path == "/":
-            base_url = f"{base_url}/am"
-    return base_url
+# normalize_base_url and TOKEN_ENDPOINT are imported from trxo_lib.auth.handler
 
 
 def setup_service_account_auth(
@@ -145,32 +130,18 @@ def setup_service_account_auth(
         error(f"Authentication failed: {str(e)}")
         raise typer.Exit(1)
 
-    # Build configuration - explicitly clear onprem keys
-    config = {
-        "auth_mode": "service-account",
-        "base_url": base_url_value,
-        "sa_id": sa_id_value,
-        "jwk_path": jwk_path_expanded,
-        "jwk_keyring": keyring_ok,
-        "jwk_fingerprint": jwk_fingerprint,
-        "token_url": token_url,
-        "regions": process_regions_value(regions),
-        "storage_mode": storage_mode,
-        # Clear onprem keys
-        "am_base_url": None,
-        "idm_base_url": None,
-        "onprem_username": None,
-        "onprem_realm": None,
-        "onprem_products": None,
-        "idm_username": None,
-    }
-    if storage_mode == "git":
-        config.update(
-            {
-                "git_username": git_username_value,
-                "git_repo": git_repo_value,
-            }
-        )
+    # Build configuration using library generator
+    config = create_service_account_config(
+        base_url=base_url_value,
+        sa_id=sa_id_value,
+        jwk_path_expanded=jwk_path_expanded,
+        jwk_fingerprint=jwk_fingerprint,
+        keyring_ok=keyring_ok,
+        regions=process_regions_value(regions),
+        storage_mode=storage_mode,
+        git_username=git_username_value if storage_mode == "git" else None,
+        git_repo=git_repo_value if storage_mode == "git" else None,
+    )
     return config
 
 
@@ -322,37 +293,16 @@ def setup_onprem_auth(
             git_username_value, git_repo_value, git_token_value, current_project
         )
 
-    # Build configuration - explicitly clear service account keys
-    config = {
-        "auth_mode": "onprem",
-        "am_base_url": am_base_url_value if am_configured else None,
-        "idm_base_url": effective_idm_url if idm_configured else None,
-        # Force clear base_url since on-prem uses am_base_url/idm_base_url.
-        # This keeps config show clean and prevents confusion when switching back to SA mode.
-        "base_url": None,
-        "onprem_products": products,
-        "storage_mode": storage_mode,
-        # Clear SA-specific keys
-        "sa_id": None,
-        "jwk_path": None,
-        "jwk_keyring": None,
-        "jwk_fingerprint": None,
-        "token_url": None,
-    }
-
-    if am_configured:
-        config["onprem_username"] = username_value
-        config["onprem_realm"] = realm_value
-
-    if idm_configured:
-        config["idm_username"] = idm_username_value
-
-    if storage_mode == "git":
-        config.update(
-            {
-                "git_username": git_username_value,
-                "git_repo": git_repo_value,
-            }
-        )
-
+    # Build configuration using library generator
+    config = create_onprem_config(
+        products=products,
+        storage_mode=storage_mode,
+        am_base_url=am_base_url_value if am_configured else None,
+        onprem_username=username_value if am_configured else None,
+        onprem_realm=realm_value if am_configured else None,
+        idm_base_url=effective_idm_url if idm_configured else None,
+        idm_username=idm_username_value if idm_configured else None,
+        git_username=git_username_value if storage_mode == "git" else None,
+        git_repo=git_repo_value if storage_mode == "git" else None,
+    )
     return config
