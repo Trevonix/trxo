@@ -6,8 +6,6 @@ Filters /openidm/config?_queryFilter=true to only include items with _id startin
 "emailTemplate".
 """
 
-import typer
-
 from trxo.commands.shared.options import (
     AmBaseUrlOpt,
     AuthModeOpt,
@@ -30,9 +28,8 @@ from trxo.commands.shared.options import (
     ViewColumnsOpt,
     ViewOpt,
 )
-from trxo_lib.config.api_headers import get_headers
 
-from trxo_lib.operations.export.base_exporter import BaseExporter
+from trxo_lib.operations.export.service import ExportService
 
 
 def create_email_export_command():
@@ -61,34 +58,7 @@ def create_email_export_command():
         idm_password: IdmPasswordOpt = None,
     ):
         """Export email configuration"""
-        exporter = BaseExporter()
-
-        headers = get_headers("email_templates")
-
-        exporter.export_data(
-            command_name="email_templates",
-            api_endpoint='/openidm/config?_queryFilter=_id sw "emailTemplate"',
-            headers=headers,
-            view=view,
-            view_columns=view_columns,
-            jwk_path=jwk_path,
-            sa_id=sa_id,
-            base_url=base_url,
-            project_name=project_name,
-            output_dir=output_dir,
-            output_file=output_file,
-            auth_mode=auth_mode,
-            onprem_username=onprem_username,
-            onprem_password=onprem_password,
-            onprem_realm=onprem_realm,
-            idm_base_url=idm_base_url,
-            idm_username=idm_username,
-            idm_password=idm_password,
-            am_base_url=am_base_url,
-            version=version,
-            no_version=no_version,
-            branch=branch,
-            commit_message=commit,
-        )
+        kwargs = locals()
+        ExportService().export_email_templates(**kwargs)
 
     return export_email

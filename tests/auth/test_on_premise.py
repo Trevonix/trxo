@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from trxo.auth.on_premise import OnPremAuth
+from trxo_lib.auth.on_premise import OnPremAuth
 
 
 @pytest.fixture
@@ -26,7 +26,7 @@ def _mock_httpx_client(mocker, mock_response):
 
 def test_auth_url_constructed_correctly(mocker, auth_client):
     mock_construct = mocker.patch(
-        "trxo.utils.url.construct_api_url",
+        "trxo_lib.utils.url.construct_api_url",
         return_value="http://localhost:8080/am/json/realms/alpha/authenticate",
     )
 
@@ -41,7 +41,7 @@ def test_auth_url_constructed_correctly(mocker, auth_client):
 
 def test_authenticate_success(mocker, auth_client):
     mocker.patch(
-        "trxo.utils.url.construct_api_url",
+        "trxo_lib.utils.url.construct_api_url",
         return_value="http://localhost:8080/auth",
     )
 
@@ -64,7 +64,7 @@ def test_authenticate_success(mocker, auth_client):
 
 def test_authenticate_token_missing(mocker, auth_client):
     mocker.patch(
-        "trxo.utils.url.construct_api_url",
+        "trxo_lib.utils.url.construct_api_url",
         return_value="http://localhost:8080/auth",
     )
 
@@ -82,7 +82,7 @@ def test_authenticate_token_missing(mocker, auth_client):
 
 def test_authenticate_http_error(mocker, auth_client):
     mocker.patch(
-        "trxo.utils.url.construct_api_url",
+        "trxo_lib.utils.url.construct_api_url",
         return_value="http://localhost:8080/auth",
     )
 

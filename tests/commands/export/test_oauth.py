@@ -2,7 +2,8 @@ import base64
 
 import pytest
 
-from trxo.commands.export.oauth import OAuthExporter, create_oauth_export_command
+from trxo_lib.operations.export.oauth import OAuthExporter
+from trxo.commands.export.oauth import create_oauth_export_command
 from trxo.constants import DEFAULT_REALM, IGNORED_SCRIPT_IDS
 
 
@@ -87,7 +88,9 @@ def test_export_oauth_happy_path(mocker):
     export_oauth = create_oauth_export_command()
 
     mock_exporter = mocker.Mock(spec=OAuthExporter)
-    mocker.patch("trxo.commands.export.oauth.OAuthExporter", return_value=mock_exporter)
+    mocker.patch(
+        "trxo_lib.operations.export.oauth.OAuthExporter", return_value=mock_exporter
+    )
 
     export_oauth(
         realm="gamma",

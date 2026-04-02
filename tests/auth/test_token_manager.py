@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from trxo.auth.token_manager import TokenManager
+from trxo_lib.auth.token_manager import TokenManager
 
 
 @pytest.fixture
@@ -16,7 +16,7 @@ def manager(store):
 
 
 def test_get_token_uses_cached_token(mocker, manager, store):
-    mocker.patch("trxo.auth.token_manager.time.time", return_value=1000)
+    mocker.patch("trxo_lib.auth.token_manager.time.time", return_value=1000)
 
     store.get_token.return_value = {
         "access_token": "cached",
@@ -30,11 +30,11 @@ def test_get_token_uses_cached_token(mocker, manager, store):
 
 
 def test_get_token_missing_project_config(mocker, manager, store):
-    mocker.patch("trxo.auth.token_manager.time.time", return_value=1000)
+    mocker.patch("trxo_lib.auth.token_manager.time.time", return_value=1000)
     store.get_token.return_value = None
     store.get_project_config.return_value = None
 
-    error_mock = mocker.patch("trxo.auth.token_manager.error")
+    error_mock = mocker.patch("trxo_lib.auth.token_manager.error")
 
     with pytest.raises(ValueError):
         manager.get_token("p1")
@@ -43,11 +43,11 @@ def test_get_token_missing_project_config(mocker, manager, store):
 
 
 def test_get_token_missing_auth_config(mocker, manager, store):
-    mocker.patch("trxo.auth.token_manager.time.time", return_value=1000)
+    mocker.patch("trxo_lib.auth.token_manager.time.time", return_value=1000)
     store.get_token.return_value = None
     store.get_project_config.return_value = {"client_id": "x"}
 
-    error_mock = mocker.patch("trxo.auth.token_manager.error")
+    error_mock = mocker.patch("trxo_lib.auth.token_manager.error")
 
     with pytest.raises(ValueError):
         manager.get_token("p1")
@@ -56,7 +56,7 @@ def test_get_token_missing_auth_config(mocker, manager, store):
 
 
 def test_get_token_keyring_present(mocker, manager, store):
-    mocker.patch("trxo.auth.token_manager.time.time", return_value=1000)
+    mocker.patch("trxo_lib.auth.token_manager.time.time", return_value=1000)
     store.get_token.return_value = None
     store.get_project_config.return_value = {
         "client_id": "cid",
@@ -76,7 +76,7 @@ def test_get_token_keyring_present(mocker, manager, store):
         "expires_in": 10,
     }
 
-    mocker.patch("trxo.auth.token_manager.ServiceAccountAuth", return_value=auth)
+    mocker.patch("trxo_lib.auth.token_manager.ServiceAccountAuth", return_value=auth)
 
     token = manager.get_token("p1")
 
@@ -85,7 +85,7 @@ def test_get_token_keyring_present(mocker, manager, store):
 
 
 def test_get_token_keyring_failure_fallback_to_file(mocker, manager, store):
-    mocker.patch("trxo.auth.token_manager.time.time", return_value=1000)
+    mocker.patch("trxo_lib.auth.token_manager.time.time", return_value=1000)
     store.get_token.return_value = None
     store.get_project_config.return_value = {
         "client_id": "cid",
@@ -105,7 +105,7 @@ def test_get_token_keyring_failure_fallback_to_file(mocker, manager, store):
         "expires_in": 10,
     }
 
-    mocker.patch("trxo.auth.token_manager.ServiceAccountAuth", return_value=auth)
+    mocker.patch("trxo_lib.auth.token_manager.ServiceAccountAuth", return_value=auth)
 
     token = manager.get_token("p1")
 
@@ -114,7 +114,7 @@ def test_get_token_keyring_failure_fallback_to_file(mocker, manager, store):
 
 
 def test_get_token_service_account_error(mocker, manager, store):
-    mocker.patch("trxo.auth.token_manager.time.time", return_value=1000)
+    mocker.patch("trxo_lib.auth.token_manager.time.time", return_value=1000)
     store.get_token.return_value = None
     store.get_project_config.return_value = {
         "client_id": "cid",
@@ -125,9 +125,9 @@ def test_get_token_service_account_error(mocker, manager, store):
 
     auth = MagicMock()
     auth.get_access_token.side_effect = Exception("boom")
-    mocker.patch("trxo.auth.token_manager.ServiceAccountAuth", return_value=auth)
+    mocker.patch("trxo_lib.auth.token_manager.ServiceAccountAuth", return_value=auth)
 
-    error_mock = mocker.patch("trxo.auth.token_manager.error")
+    error_mock = mocker.patch("trxo_lib.auth.token_manager.error")
 
     with pytest.raises(Exception):
         manager.get_token("p1")

@@ -784,7 +784,27 @@ def _resolve_idm_base(exporter: BaseExporter, api_base_url: str) -> str:
     return base
 
 
-# ---------------------------------------------------------------------------
-# CLI command factory
-# ---------------------------------------------------------------------------
+class JourneysExportService:
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
 
+    def execute(self) -> Any:
+        realm = self.kwargs.get("realm", DEFAULT_REALM)
+        exporter = JourneyExporter()
+        headers = _am_headers()
+
+        safe_kwargs = self.kwargs.copy()
+        if "commit" in safe_kwargs:
+            safe_kwargs["commit_message"] = safe_kwargs.pop("commit")
+
+        return exporter.export_data(
+            command_name="journeys",
+            api_endpoint=(
+                f"/am/json/realms/root/realms/{realm}"
+                "/realm-config/authentication/authenticationtrees"
+                "/trees?_queryFilter=true"
+            ),
+            headers=headers,
+            response_filter=process_journey_response(exporter, realm),
+            **safe_kwargs,
+        )

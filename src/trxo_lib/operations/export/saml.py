@@ -333,3 +333,26 @@ def fetch_scripts(
         except Exception as e:
             warning(f"Failed to fetch script {script_id}: {str(e)}")
 
+
+class SamlExportService:
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+    def execute(self) -> Any:
+        realm = self.kwargs.get("realm", DEFAULT_REALM)
+        exporter = SamlExporter()
+        headers = get_headers("saml")
+
+        safe_kwargs = self.kwargs.copy()
+        if "commit" in safe_kwargs:
+            safe_kwargs["commit_message"] = safe_kwargs.pop("commit")
+
+        return exporter.export_data(
+            command_name="saml",
+            api_endpoint=(
+                f"/am/json/realms/root/realms/{realm}/realm-config/saml2?_queryFilter=true"
+            ),
+            headers=headers,
+            response_filter=process_saml_response(exporter, realm),
+            **safe_kwargs,
+        )

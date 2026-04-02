@@ -7,7 +7,7 @@ from trxo.commands.export.privileges import create_privileges_export_command
 def mock_exporter(mocker):
     exporter = mocker.Mock()
     mocker.patch(
-        "trxo.commands.export.privileges.BaseExporter",
+        "trxo_lib.operations.export.privileges.BaseExporter",
         return_value=exporter,
     )
     return exporter

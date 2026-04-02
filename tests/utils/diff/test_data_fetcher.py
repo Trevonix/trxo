@@ -95,8 +95,8 @@ def test_fetch_from_git_no_repo_returns_none(mocker, tmp_path):
         "token": "t",
     }
 
-    mocker.patch("trxo.utils.config_store.ConfigStore", return_value=mock_config)
-    mocker.patch("trxo.utils.git.get_repo_base_path", return_value=tmp_path)
+    mocker.patch("trxo_lib.utils.config_store.ConfigStore", return_value=mock_config)
+    mocker.patch("trxo_lib.utils.git.get_repo_base_path", return_value=tmp_path)
     mocker.patch("trxo.utils.diff.data_fetcher.warning")
     mocker.patch("trxo.utils.diff.data_fetcher.error")
 
@@ -127,8 +127,8 @@ def test_fetch_from_git_happy_path(mocker, tmp_path):
         "token": "t",
     }
 
-    mocker.patch("trxo.utils.config_store.ConfigStore", return_value=mock_config)
-    mocker.patch("trxo.utils.git.get_repo_base_path", return_value=tmp_path)
+    mocker.patch("trxo_lib.utils.config_store.ConfigStore", return_value=mock_config)
+    mocker.patch("trxo_lib.utils.git.get_repo_base_path", return_value=tmp_path)
 
     result = fetcher.fetch_from_file_or_git(
         command_name="scripts",

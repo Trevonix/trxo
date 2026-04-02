@@ -10,7 +10,9 @@ from trxo.commands.export.agents import (
 @pytest.fixture
 def mock_exporter(mocker):
     exporter = mocker.Mock()
-    mocker.patch("trxo.commands.export.agents.BaseExporter", return_value=exporter)
+    mocker.patch(
+        "trxo_lib.operations.export.agents.BaseExporter", return_value=exporter
+    )
     return exporter
 
 

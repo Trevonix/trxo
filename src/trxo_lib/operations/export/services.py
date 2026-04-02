@@ -7,6 +7,7 @@ Supports both global and realm-based services with flexible realm selection.
 Fetches complete service configurations by individual service ID.
 """
 
+from typing import Any
 
 from trxo_lib.config.api_headers import get_headers
 from trxo_lib.constants import DEFAULT_REALM
@@ -141,3 +142,32 @@ class ServicesExporter(BaseExporter):
 
         return captured.get("data")
 
+
+class ServicesExportService:
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+    def execute(self) -> Any:
+        scope = self.kwargs.get("scope", "realm")
+        realm = self.kwargs.get("realm", DEFAULT_REALM)
+        exporter = ServicesExporter()
+
+        headers = get_headers("services")
+        if scope.lower() == "global":
+            api_endpoint = "/am/json/global-config/services?_queryFilter=true"
+        else:
+            api_endpoint = f"/am/json/realms/root/realms/{realm}/realm-config/services?_queryFilter=true"
+
+        safe_kwargs = self.kwargs.copy()
+        if "commit" in safe_kwargs:
+            safe_kwargs["commit_message"] = safe_kwargs.pop("commit")
+
+        return exporter.export_data(
+            command_name="services",
+            api_endpoint=api_endpoint,
+            headers=headers,
+            response_filter=lambda data: services_response_filter(
+                data, exporter=exporter, scope=scope, realm=realm, headers=headers
+            ),
+            **safe_kwargs,
+        )

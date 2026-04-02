@@ -1,11 +1,13 @@
-from trxo.commands.export.realms import BaseExporter, create_realms_export_command
+from trxo.commands.export.realms import create_realms_export_command
 
 
 def test_realms_export_happy_path(mocker):
     export_realms = create_realms_export_command()
 
-    mock_exporter = mocker.Mock(spec=BaseExporter)
-    mocker.patch("trxo.commands.export.realms.BaseExporter", return_value=mock_exporter)
+    mock_exporter = mocker.Mock()
+    mocker.patch(
+        "trxo_lib.operations.export.realms.BaseExporter", return_value=mock_exporter
+    )
 
     mock_exporter.export_data.return_value = None
 
@@ -23,8 +25,10 @@ def test_realms_export_happy_path(mocker):
 def test_realms_export_view_columns_without_view(mocker):
     export_realms = create_realms_export_command()
 
-    mock_exporter = mocker.Mock(spec=BaseExporter)
-    mocker.patch("trxo.commands.export.realms.BaseExporter", return_value=mock_exporter)
+    mock_exporter = mocker.Mock()
+    mocker.patch(
+        "trxo_lib.operations.export.realms.BaseExporter", return_value=mock_exporter
+    )
 
     mock_exporter.export_data.return_value = None
 

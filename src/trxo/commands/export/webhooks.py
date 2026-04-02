@@ -5,8 +5,6 @@ Exports AM realm webhooks from /am/json/realms/root/realms/{realm}/realm-config/
 _queryFilter=true
 """
 
-import typer
-
 from trxo.commands.shared.options import (
     AmBaseUrlOpt,
     AuthModeOpt,
@@ -30,10 +28,8 @@ from trxo.commands.shared.options import (
     ViewColumnsOpt,
     ViewOpt,
 )
-from trxo_lib.config.api_headers import get_headers
 from trxo_lib.constants import DEFAULT_REALM
-
-from trxo_lib.operations.export.base_exporter import BaseExporter
+from trxo_lib.operations.export.service import ExportService
 
 
 def create_webhooks_export_command():
@@ -63,37 +59,7 @@ def create_webhooks_export_command():
         idm_password: IdmPasswordOpt = None,
     ):
         """Export webhooks configuration from specified realm"""
-        exporter = BaseExporter()
-
-        headers = get_headers("webhooks")
-
-        exporter.export_data(
-            command_name="webhooks",
-            api_endpoint=(
-                f"/am/json/realms/root/realms/{realm}/realm-config/webhooks"
-                "?_queryFilter=true"
-            ),
-            headers=headers,
-            view=view,
-            view_columns=view_columns,
-            jwk_path=jwk_path,
-            sa_id=sa_id,
-            base_url=base_url,
-            project_name=project_name,
-            output_dir=output_dir,
-            output_file=output_file,
-            auth_mode=auth_mode,
-            onprem_username=onprem_username,
-            onprem_password=onprem_password,
-            onprem_realm=onprem_realm,
-            idm_base_url=idm_base_url,
-            idm_username=idm_username,
-            idm_password=idm_password,
-            am_base_url=am_base_url,
-            version=version,
-            no_version=no_version,
-            branch=branch,
-            commit_message=commit,
-        )
+        kwargs = locals()
+        ExportService().export_webhooks(**kwargs)
 
     return export_webhooks

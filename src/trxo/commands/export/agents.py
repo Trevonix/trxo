@@ -34,7 +34,7 @@ from trxo_lib.config.api_headers import get_headers
 from trxo_lib.constants import DEFAULT_REALM
 from trxo_lib.utils.console import console, info, warning
 
-from trxo_lib.operations.export.base_exporter import BaseExporter
+from trxo_lib.operations.export.service import ExportService
 
 
 def create_agents_export_command():
@@ -64,38 +64,8 @@ def create_agents_export_command():
         commit: CommitMessageOpt = None,
     ):
         """Export Identity Gateway Agents"""
-        exporter = BaseExporter()
-
-        headers = get_headers("agents")
-
-        exporter.export_data(
-            command_name="agents_gateway",
-            api_endpoint=(
-                f"/am/json/realms/root/realms/{realm}/realm-config/agents/"
-                "IdentityGatewayAgent?_queryFilter=true"
-            ),
-            headers=headers,
-            view=view,
-            view_columns=view_columns,
-            jwk_path=jwk_path,
-            sa_id=sa_id,
-            base_url=base_url,
-            project_name=project_name,
-            output_dir=output_dir,
-            output_file=output_file,
-            auth_mode=auth_mode,
-            onprem_username=onprem_username,
-            onprem_password=onprem_password,
-            onprem_realm=onprem_realm,
-            idm_base_url=idm_base_url,
-            idm_username=idm_username,
-            idm_password=idm_password,
-            am_base_url=am_base_url,
-            version=version,
-            no_version=no_version,
-            branch=branch,
-            commit_message=commit,
-        )
+        kwargs = locals()
+        ExportService().export_agents_gateway(**kwargs)
 
     def export_java_agents(
         realm: RealmOpt = DEFAULT_REALM,
@@ -121,38 +91,8 @@ def create_agents_export_command():
         commit: CommitMessageOpt = None,
     ):
         """Export Java Agents"""
-        exporter = BaseExporter()
-
-        headers = get_headers("agents")
-
-        exporter.export_data(
-            command_name="agents_java",
-            api_endpoint=(
-                f"/am/json/realms/root/realms/{realm}/realm-config/agents/"
-                "J2EEAgent?_queryFilter=true"
-            ),
-            headers=headers,
-            view=view,
-            view_columns=view_columns,
-            jwk_path=jwk_path,
-            sa_id=sa_id,
-            base_url=base_url,
-            project_name=project_name,
-            output_dir=output_dir,
-            output_file=output_file,
-            auth_mode=auth_mode,
-            onprem_username=onprem_username,
-            onprem_password=onprem_password,
-            onprem_realm=onprem_realm,
-            idm_base_url=idm_base_url,
-            idm_username=idm_username,
-            idm_password=idm_password,
-            am_base_url=am_base_url,
-            version=version,
-            no_version=no_version,
-            branch=branch,
-            commit_message=commit,
-        )
+        kwargs = locals()
+        ExportService().export_agents_java(**kwargs)
 
     def export_web_agents(
         realm: RealmOpt = DEFAULT_REALM,
@@ -178,38 +118,8 @@ def create_agents_export_command():
         commit: CommitMessageOpt = None,
     ):
         """Export Web Agents"""
-        exporter = BaseExporter()
-
-        headers = get_headers("agents")
-
-        exporter.export_data(
-            command_name="agents_web",
-            api_endpoint=(
-                f"/am/json/realms/root/realms/{realm}/realm-config/agents/"
-                "WebAgent?_queryFilter=true"
-            ),
-            headers=headers,
-            view=view,
-            view_columns=view_columns,
-            jwk_path=jwk_path,
-            sa_id=sa_id,
-            base_url=base_url,
-            project_name=project_name,
-            output_dir=output_dir,
-            output_file=output_file,
-            auth_mode=auth_mode,
-            onprem_username=onprem_username,
-            onprem_password=onprem_password,
-            onprem_realm=onprem_realm,
-            idm_base_url=idm_base_url,
-            idm_username=idm_username,
-            idm_password=idm_password,
-            am_base_url=am_base_url,
-            version=version,
-            no_version=no_version,
-            branch=branch,
-            commit_message=commit,
-        )
+        kwargs = locals()
+        ExportService().export_agents_web(**kwargs)
 
     return export_identity_gateway_agents, export_java_agents, export_web_agents
 

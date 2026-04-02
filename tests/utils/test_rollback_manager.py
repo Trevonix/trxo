@@ -17,7 +17,7 @@ def test_execute_rollback_created_success(mocker, manager):
         "trxo.utils.rollback_manager.get_command_api_endpoint",
         return_value=("/scripts", None),
     )
-    mocker.patch("trxo.utils.url.construct_api_url", return_value="url")
+    mocker.patch("trxo_lib.utils.url.construct_api_url", return_value="url")
 
     client = MagicMock()
     client.__enter__.return_value = client
@@ -46,7 +46,7 @@ def test_execute_rollback_updated_success(mocker, manager):
         "trxo.utils.rollback_manager.get_command_api_endpoint",
         return_value=("/scripts", None),
     )
-    mocker.patch("trxo.utils.url.construct_api_url", return_value="url")
+    mocker.patch("trxo_lib.utils.url.construct_api_url", return_value="url")
 
     client = MagicMock()
     client.__enter__.return_value = client
@@ -76,7 +76,7 @@ def test_execute_rollback_updated_no_change(mocker, manager):
         "trxo.utils.rollback_manager.get_command_api_endpoint",
         return_value=("/scripts", None),
     )
-    mocker.patch("trxo.utils.url.construct_api_url", return_value="url")
+    mocker.patch("trxo_lib.utils.url.construct_api_url", return_value="url")
 
     client = MagicMock()
     client.__enter__.return_value = client
@@ -105,7 +105,7 @@ def test_execute_rollback_managed_special_case(mocker):
         return_value=("/managed", None),
     )
 
-    mocker.patch("trxo.utils.url.construct_api_url", return_value="url")
+    mocker.patch("trxo_lib.utils.url.construct_api_url", return_value="url")
 
     client = MagicMock()
     client.__enter__.return_value = client
@@ -131,7 +131,7 @@ def test_build_api_url_list_endpoint(mocker, manager):
         "trxo.utils.rollback_manager.get_command_api_endpoint",
         return_value=("/scripts?_queryFilter=true", None),
     )
-    mocker.patch("trxo.utils.url.construct_api_url", return_value="final")
+    mocker.patch("trxo_lib.utils.url.construct_api_url", return_value="final")
 
     result = manager._build_api_url("1", "base")
 
@@ -143,7 +143,7 @@ def test_build_api_url_fallback(mocker, manager):
         "trxo.utils.rollback_manager.get_command_api_endpoint",
         side_effect=Exception("boom"),
     )
-    mocker.patch("trxo.utils.url.construct_api_url", return_value="fallback")
+    mocker.patch("trxo_lib.utils.url.construct_api_url", return_value="fallback")
 
     result = manager._build_api_url("1", "base")
 

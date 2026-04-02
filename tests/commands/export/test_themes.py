@@ -4,7 +4,7 @@ from trxo.commands.export.themes import create_themes_export_command
 def test_export_themes_with_realm(mocker):
     exporter = mocker.Mock()
     mocker.patch(
-        "trxo.commands.export.themes.BaseExporter",
+        "trxo_lib.operations.export.themes.BaseExporter",
         return_value=exporter,
     )
 

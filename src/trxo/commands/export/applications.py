@@ -7,11 +7,6 @@ Exports from /openidm/config?_queryFilter=true endpoint, filtered to
 only include items with _id containing "application/".
 """
 
-from typing import Any, Dict, List
-
-import typer
-
-from trxo_lib.operations.export.oauth import OAuthExporter
 from trxo.commands.shared.options import (
     AmBaseUrlOpt,
     AuthModeOpt,

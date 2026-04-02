@@ -7,7 +7,7 @@ from trxo.commands.export.endpoints import create_endpoints_export_command
 def mock_exporter(mocker):
     exporter = mocker.Mock()
     mocker.patch(
-        "trxo.commands.export.endpoints.BaseExporter",
+        "trxo_lib.operations.export.endpoints.BaseExporter",
         return_value=exporter,
     )
     return exporter

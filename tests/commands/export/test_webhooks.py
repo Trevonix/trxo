@@ -6,7 +6,7 @@ from trxo.commands.export.webhooks import create_webhooks_export_command
 def test_export_webhooks_defaults(mocker):
     exporter = mocker.Mock()
     mocker.patch(
-        "trxo.commands.export.webhooks.BaseExporter",
+        "trxo_lib.operations.export.webhooks.BaseExporter",
         return_value=exporter,
     )
 
@@ -29,7 +29,7 @@ def test_export_webhooks_defaults(mocker):
 def test_export_webhooks_custom_args(mocker):
     exporter = mocker.Mock()
     mocker.patch(
-        "trxo.commands.export.webhooks.BaseExporter",
+        "trxo_lib.operations.export.webhooks.BaseExporter",
         return_value=exporter,
     )
 

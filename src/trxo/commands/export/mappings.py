@@ -5,8 +5,6 @@ This module provides export functionality for PingOne Advanced Identity Cloud sy
 Exports from /openidm/config/sync endpoint.
 """
 
-import typer
-
 from trxo.commands.shared.options import (
     AmBaseUrlOpt,
     AuthModeOpt,

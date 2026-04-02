@@ -220,3 +220,27 @@ class OAuthExporter(BaseExporter):
             warning(f"Failed to fetch OAuth provider config: {last_error}")
         return {}
 
+
+class OauthExportService:
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+    def execute(self) -> Any:
+        realm = self.kwargs.get("realm", DEFAULT_REALM)
+        exporter = OAuthExporter(realm=realm)
+        headers = get_headers("oauth")
+
+        safe_kwargs = self.kwargs.copy()
+        if "commit" in safe_kwargs:
+            safe_kwargs["commit_message"] = safe_kwargs.pop("commit")
+
+        return exporter.export_data(
+            command_name="oauth",
+            api_endpoint=(
+                f"/am/json/realms/root/realms/{realm}/realm-config/"
+                "agents/OAuth2Client?_queryFilter=true"
+            ),
+            headers=headers,
+            response_filter=process_oauth_response(exporter, realm),
+            **safe_kwargs,
+        )

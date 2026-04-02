@@ -26,14 +26,14 @@ def test_git_manager_init():
 
 
 def test_git_manager_build_secure_url(mocker):
-    mocker.patch("trxo.utils.git.manager.build_secure_url", return_value="secure")
+    mocker.patch("trxo_lib.utils.git.manager.build_secure_url", return_value="secure")
     gm = GitManager("u", "t", "https://github.com/org/repo.git")
     assert gm.secure_url == "secure"
 
 
 def test_git_manager_validate_credentials(mocker):
     mocker.patch(
-        "trxo.utils.git.manager.validate_credentials", return_value={"ok": True}
+        "trxo_lib.utils.git.manager.validate_credentials", return_value={"ok": True}
     )
     gm = GitManager("u", "t", "https://github.com/org/repo.git")
     out = gm.validate_credentials()
@@ -42,7 +42,7 @@ def test_git_manager_validate_credentials(mocker):
 
 def test_git_manager_get_or_create_repo_caches(mocker):
     repo = make_repo()
-    mocker.patch("trxo.utils.git.manager.get_or_create_repo", return_value=repo)
+    mocker.patch("trxo_lib.utils.git.manager.get_or_create_repo", return_value=repo)
 
     gm = GitManager("u", "t", "https://github.com/org/repo.git")
     r1 = gm.get_or_create_repo({"x": 1})
@@ -53,7 +53,7 @@ def test_git_manager_get_or_create_repo_caches(mocker):
 
 def test_git_manager_ensure_branch(mocker):
     repo = make_repo()
-    mocker.patch("trxo.utils.git.manager.ensure_branch", return_value=repo)
+    mocker.patch("trxo_lib.utils.git.manager.ensure_branch", return_value=repo)
 
     gm = GitManager("u", "t", "https://github.com/org/repo.git")
     gm._repo_cache = repo
@@ -64,7 +64,7 @@ def test_git_manager_ensure_branch(mocker):
 
 def test_git_manager_commit_and_push(mocker):
     repo = make_repo()
-    mocker.patch("trxo.utils.git.manager.commit_and_push", return_value=True)
+    mocker.patch("trxo_lib.utils.git.manager.commit_and_push", return_value=True)
 
     gm = GitManager("u", "t", "https://github.com/org/repo.git")
     gm._repo_cache = repo
@@ -91,10 +91,10 @@ def test_setup_git_for_export_default_branch(mocker):
     repo = make_repo(DEFAULT_EXPORT_BRANCH)
 
     mocker.patch(
-        "trxo.utils.git.manager.validate_credentials", return_value={"ok": True}
+        "trxo_lib.utils.git.manager.validate_credentials", return_value={"ok": True}
     )
-    mocker.patch("trxo.utils.git.manager.get_or_create_repo", return_value=repo)
-    mocker.patch("trxo.utils.git.manager.ensure_branch", return_value=repo)
+    mocker.patch("trxo_lib.utils.git.manager.get_or_create_repo", return_value=repo)
+    mocker.patch("trxo_lib.utils.git.manager.ensure_branch", return_value=repo)
 
     gm = setup_git_for_export("u", "t", "https://github.com/org/repo.git")
 
@@ -105,10 +105,10 @@ def test_setup_git_for_export_custom_branch(mocker):
     repo = make_repo("feature")
 
     mocker.patch(
-        "trxo.utils.git.manager.validate_credentials", return_value={"ok": True}
+        "trxo_lib.utils.git.manager.validate_credentials", return_value={"ok": True}
     )
-    mocker.patch("trxo.utils.git.manager.get_or_create_repo", return_value=repo)
-    mocker.patch("trxo.utils.git.manager.ensure_branch", return_value=repo)
+    mocker.patch("trxo_lib.utils.git.manager.get_or_create_repo", return_value=repo)
+    mocker.patch("trxo_lib.utils.git.manager.ensure_branch", return_value=repo)
 
     gm = setup_git_for_export(
         "u", "t", "https://github.com/org/repo.git", branch="feature"
@@ -119,7 +119,7 @@ def test_setup_git_for_export_custom_branch(mocker):
 
 def test_setup_git_for_export_failure(mocker):
     mocker.patch(
-        "trxo.utils.git.manager.validate_credentials", side_effect=Exception("boom")
+        "trxo_lib.utils.git.manager.validate_credentials", side_effect=Exception("boom")
     )
 
     with pytest.raises(RuntimeError):
@@ -130,14 +130,14 @@ def test_setup_git_for_import_branch_exists(mocker):
     repo = make_repo("dev")
 
     mocker.patch(
-        "trxo.utils.git.manager.validate_credentials", return_value={"ok": True}
+        "trxo_lib.utils.git.manager.validate_credentials", return_value={"ok": True}
     )
-    mocker.patch("trxo.utils.git.manager.get_or_create_repo", return_value=repo)
+    mocker.patch("trxo_lib.utils.git.manager.get_or_create_repo", return_value=repo)
     mocker.patch(
-        "trxo.utils.git.manager.branch_exists",
+        "trxo_lib.utils.git.manager.branch_exists",
         return_value={"local": True, "remote": False},
     )
-    mocker.patch("trxo.utils.git.manager.ensure_branch", return_value=repo)
+    mocker.patch("trxo_lib.utils.git.manager.ensure_branch", return_value=repo)
 
     gm = setup_git_for_import("u", "t", "https://github.com/org/repo.git", branch="dev")
     assert isinstance(gm, GitManager)
@@ -145,11 +145,11 @@ def test_setup_git_for_import_branch_exists(mocker):
 
 def test_setup_git_for_import_branch_missing(mocker):
     mocker.patch(
-        "trxo.utils.git.manager.validate_credentials", return_value={"ok": True}
+        "trxo_lib.utils.git.manager.validate_credentials", return_value={"ok": True}
     )
-    mocker.patch("trxo.utils.git.manager.get_or_create_repo", return_value=make_repo())
+    mocker.patch("trxo_lib.utils.git.manager.get_or_create_repo", return_value=make_repo())
     mocker.patch(
-        "trxo.utils.git.manager.branch_exists",
+        "trxo_lib.utils.git.manager.branch_exists",
         return_value={"local": False, "remote": False},
     )
 
@@ -166,9 +166,9 @@ def test_validate_and_setup_git_repo(mocker):
     repo = make_repo("main")
 
     mocker.patch(
-        "trxo.utils.git.manager.validate_credentials", return_value={"ok": True}
+        "trxo_lib.utils.git.manager.validate_credentials", return_value={"ok": True}
     )
-    mocker.patch("trxo.utils.git.manager.get_or_create_repo", return_value=repo)
+    mocker.patch("trxo_lib.utils.git.manager.get_or_create_repo", return_value=repo)
     mocker.patch.object(GitManager, "ensure_work_branch", return_value=repo)
 
     out = validate_and_setup_git_repo("u", "t", "https://github.com/org/repo.git")

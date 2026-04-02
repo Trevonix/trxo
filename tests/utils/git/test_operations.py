@@ -145,7 +145,7 @@ def test_validate_clean_state_for_operation_untracked():
 
 def test_commit_and_push_success(mocker):
     repo = make_repo(staged=["a.txt"])
-    mocker.patch("trxo.utils.git.operations.logger")
+    mocker.patch("trxo_lib.utils.git.operations.logger")
     ok = commit_and_push(repo, ["a.txt"], "msg")
     assert ok is True
 

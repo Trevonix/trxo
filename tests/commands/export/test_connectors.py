@@ -6,7 +6,10 @@ from trxo.commands.export.connectors import create_connectors_export_command
 @pytest.fixture
 def mock_exporter(mocker):
     exporter = mocker.Mock()
-    mocker.patch("trxo.commands.export.connectors.BaseExporter", return_value=exporter)
+    mocker.patch(
+        "trxo_lib.operations.export.connectors.BaseExporter",
+        return_value=exporter,
+    )
     return exporter
 
 

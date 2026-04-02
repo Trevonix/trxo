@@ -61,3 +61,24 @@ class PoliciesExporter(BaseExporter):
         super().__init__()
         self.realm = realm
 
+
+class PoliciesExportService:
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+    def execute(self) -> Any:
+        realm = self.kwargs.get("realm", DEFAULT_REALM)
+        exporter = PoliciesExporter(realm=realm)
+        headers = get_headers("policies")
+
+        safe_kwargs = self.kwargs.copy()
+        if "commit" in safe_kwargs:
+            safe_kwargs["commit_message"] = safe_kwargs.pop("commit")
+
+        return exporter.export_data(
+            command_name="policies",
+            api_endpoint=f"/am/json/realms/root/realms/{realm}/policies?_queryFilter=true",
+            headers=headers,
+            response_filter=process_policies_response(exporter, realm),
+            **safe_kwargs,
+        )

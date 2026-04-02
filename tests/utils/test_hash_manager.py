@@ -60,8 +60,8 @@ def test_list_all_hashes(manager):
 
 
 def test_validate_import_hash_success(manager, mocker):
-    mocker.patch("trxo.utils.hash_manager.success")
-    mocker.patch("trxo.utils.hash_manager.error")
+    mocker.patch("trxo_lib.utils.hash_manager.success")
+    mocker.patch("trxo_lib.utils.hash_manager.error")
 
     data = {"_id": "1"}
     h = manager.create_hash(data, "scripts")
@@ -71,8 +71,8 @@ def test_validate_import_hash_success(manager, mocker):
 
 
 def test_validate_import_hash_mismatch(manager, mocker):
-    error_mock = mocker.patch("trxo.utils.hash_manager.error")
-    mocker.patch("trxo.utils.hash_manager.success")
+    error_mock = mocker.patch("trxo_lib.utils.hash_manager.error")
+    mocker.patch("trxo_lib.utils.hash_manager.success")
 
     manager.save_export_hash("scripts", "wrong")
 
@@ -83,7 +83,7 @@ def test_validate_import_hash_mismatch(manager, mocker):
 
 
 def test_validate_import_hash_missing_metadata(manager, mocker):
-    error_mock = mocker.patch("trxo.utils.hash_manager.error")
+    error_mock = mocker.patch("trxo_lib.utils.hash_manager.error")
 
     result = manager.validate_import_hash({"_id": "1"}, "scripts")
 
@@ -92,7 +92,7 @@ def test_validate_import_hash_missing_metadata(manager, mocker):
 
 
 def test_validate_import_hash_force_true(manager, mocker):
-    mocker.patch("trxo.utils.hash_manager.warning")
+    mocker.patch("trxo_lib.utils.hash_manager.warning")
 
     result = manager.validate_import_hash({"x": 1}, "scripts", force=True)
 

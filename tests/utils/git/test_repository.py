@@ -38,7 +38,7 @@ def test_get_repo_path(tmp_path, mocker):
 
 def test_init_empty_repo_happy_path(tmp_path, mocker):
     repo = make_repo_mock()
-    mocker.patch("trxo.utils.git.repository.Repo.init", return_value=repo)
+    mocker.patch("trxo_lib.utils.git.repository.Repo.init", return_value=repo)
 
     result = init_empty_repo(
         tmp_path, "repo", "https://secure.git", {"default_branch": "main"}
@@ -61,7 +61,7 @@ def test_init_empty_repo_remote_already_exists(tmp_path, mocker):
     origin_remote.name = "origin"
     repo.remotes = [origin_remote]
 
-    mocker.patch("trxo.utils.git.repository.Repo.init", return_value=repo)
+    mocker.patch("trxo_lib.utils.git.repository.Repo.init", return_value=repo)
 
     init_empty_repo(tmp_path, "repo", "url", {"default_branch": "main"})
 
@@ -72,7 +72,7 @@ def test_init_empty_repo_remote_already_exists(tmp_path, mocker):
 def test_init_empty_repo_checkout_fallback(tmp_path, mocker):
     repo = make_repo_mock()
     repo.git.checkout.side_effect = GitCommandError("x", 1)
-    mocker.patch("trxo.utils.git.repository.Repo.init", return_value=repo)
+    mocker.patch("trxo_lib.utils.git.repository.Repo.init", return_value=repo)
 
     init_empty_repo(tmp_path, "repo", "url", {"default_branch": "dev"})
 
@@ -81,19 +81,19 @@ def test_init_empty_repo_checkout_fallback(tmp_path, mocker):
 
 def test_clone_or_init_repo_clone_success(tmp_path, mocker):
     repo = make_repo_mock()
-    mocker.patch("trxo.utils.git.repository.Repo.clone_from", return_value=repo)
+    mocker.patch("trxo_lib.utils.git.repository.Repo.clone_from", return_value=repo)
     result = clone_or_init_repo(tmp_path, "repo", "url", {})
     assert result == repo
 
 
 def test_clone_or_init_repo_empty_remote_fallback(tmp_path, mocker):
     mocker.patch(
-        "trxo.utils.git.repository.Repo.clone_from",
+        "trxo_lib.utils.git.repository.Repo.clone_from",
         side_effect=GitCommandError("x", 1, "remote HEAD refers to nonexistent ref"),
     )
 
     init_repo = make_repo_mock()
-    mocker.patch("trxo.utils.git.repository.init_empty_repo", return_value=init_repo)
+    mocker.patch("trxo_lib.utils.git.repository.init_empty_repo", return_value=init_repo)
 
     result = clone_or_init_repo(tmp_path, "repo", "url", {})
     assert result == init_repo
@@ -101,7 +101,7 @@ def test_clone_or_init_repo_empty_remote_fallback(tmp_path, mocker):
 
 def test_clone_or_init_repo_clone_failure(tmp_path, mocker):
     mocker.patch(
-        "trxo.utils.git.repository.Repo.clone_from",
+        "trxo_lib.utils.git.repository.Repo.clone_from",
         side_effect=GitCommandError("x", 1, "boom"),
     )
 
@@ -114,7 +114,7 @@ def test_get_or_create_repo_existing_valid_repo(tmp_path, mocker):
     (repo_dir / ".git").mkdir(parents=True)
 
     repo = make_repo_mock()
-    mocker.patch("trxo.utils.git.repository.Repo", return_value=repo)
+    mocker.patch("trxo_lib.utils.git.repository.Repo", return_value=repo)
 
     result = get_or_create_repo(repo_dir, "repo", "url", {})
 
@@ -128,12 +128,12 @@ def test_get_or_create_repo_existing_invalid_repo(tmp_path, mocker):
     (repo_dir / ".git").mkdir(parents=True)
 
     mocker.patch(
-        "trxo.utils.git.repository.Repo", side_effect=InvalidGitRepositoryError
+        "trxo_lib.utils.git.repository.Repo", side_effect=InvalidGitRepositoryError
     )
 
     clone_repo = make_repo_mock()
     mocker.patch(
-        "trxo.utils.git.repository.clone_or_init_repo", return_value=clone_repo
+        "trxo_lib.utils.git.repository.clone_or_init_repo", return_value=clone_repo
     )
 
     result = get_or_create_repo(repo_dir, "repo", "url", {})
@@ -146,7 +146,7 @@ def test_get_or_create_repo_existing_repo_remote_update_fails(tmp_path, mocker):
 
     repo = make_repo_mock()
     repo.remote.return_value.set_url.side_effect = Exception("boom")
-    mocker.patch("trxo.utils.git.repository.Repo", return_value=repo)
+    mocker.patch("trxo_lib.utils.git.repository.Repo", return_value=repo)
 
     result = get_or_create_repo(repo_dir, "repo", "url", {})
     assert result == repo
@@ -155,7 +155,7 @@ def test_get_or_create_repo_existing_repo_remote_update_fails(tmp_path, mocker):
 def test_get_or_create_repo_not_existing(tmp_path, mocker):
     clone_repo = make_repo_mock()
     mocker.patch(
-        "trxo.utils.git.repository.clone_or_init_repo", return_value=clone_repo
+        "trxo_lib.utils.git.repository.clone_or_init_repo", return_value=clone_repo
     )
 
     result = get_or_create_repo(tmp_path / "repo", "repo", "url", {})

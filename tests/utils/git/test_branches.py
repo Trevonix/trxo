@@ -123,7 +123,7 @@ def test_check_branch_sync_status_diverged():
 def test_validate_branch_sync_for_operation_pulls_when_behind(mocker):
     repo = make_repo(local_branches=("main",), remote_branches=("main",), behind=1)
     mocker.patch(
-        "trxo.utils.git.branches.check_branch_sync_status",
+        "trxo_lib.utils.git.branches.check_branch_sync_status",
         return_value={
             "exists_local": True,
             "exists_remote": True,
@@ -141,7 +141,7 @@ def test_validate_branch_sync_for_operation_pulls_when_behind(mocker):
 def test_validate_branch_sync_for_operation_diverged_raises(mocker):
     repo = make_repo(local_branches=("main",), remote_branches=("main",))
     mocker.patch(
-        "trxo.utils.git.branches.check_branch_sync_status",
+        "trxo_lib.utils.git.branches.check_branch_sync_status",
         return_value={
             "exists_local": True,
             "exists_remote": True,
@@ -158,21 +158,21 @@ def test_validate_branch_sync_for_operation_diverged_raises(mocker):
 
 def test_ensure_branch_existing_local(mocker):
     repo = make_repo(local_branches=("dev",))
-    mocker.patch("trxo.utils.git.branches.validate_clean_state_for_operation")
+    mocker.patch("trxo_lib.utils.git.branches.validate_clean_state_for_operation")
     ensure_branch(repo, "dev")
     repo.git.checkout.assert_called_with("dev")
 
 
 def test_ensure_branch_checkout_remote(mocker):
     repo = make_repo(local_branches=(), remote_branches=("dev",))
-    mocker.patch("trxo.utils.git.branches.validate_clean_state_for_operation")
+    mocker.patch("trxo_lib.utils.git.branches.validate_clean_state_for_operation")
     ensure_branch(repo, "dev")
     repo.git.checkout.assert_called_with("-b", "dev", "origin/dev")
 
 
 def test_ensure_branch_create_from_default(mocker):
     repo = make_repo(local_branches=("main",), remote_branches=("main",))
-    mocker.patch("trxo.utils.git.branches.validate_clean_state_for_operation")
+    mocker.patch("trxo_lib.utils.git.branches.validate_clean_state_for_operation")
     ensure_branch(repo, "feature-x")
     repo.git.checkout.assert_any_call("-b", "feature-x")
 

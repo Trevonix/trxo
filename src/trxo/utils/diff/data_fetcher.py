@@ -11,7 +11,7 @@ from typing import Any, Dict, Optional
 
 from trxo_lib.operations.export.base_exporter import BaseExporter
 from trxo_lib.operations.export.oauth import OAuthExporter, process_oauth_response
-from trxo.commands.export.policies import process_policies_response
+from trxo_lib.operations.export.policies import process_policies_response
 from trxo_lib.operations.export.saml import process_saml_response
 from trxo_lib.operations.export.scripts import decode_script_response
 from trxo_lib.config.api_headers import get_headers
@@ -221,7 +221,7 @@ class DataFetcher:
                     self.exporter, realm
                 )
             elif command_name == "policies":
-                from trxo.commands.export.policies import PoliciesExporter
+                from trxo_lib.operations.export.policies import PoliciesExporter
 
                 exporter = PoliciesExporter(realm=realm or DEFAULT_REALM)
                 self.exporter = exporter

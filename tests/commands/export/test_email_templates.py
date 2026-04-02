@@ -7,7 +7,7 @@ from trxo.commands.export.email_templates import create_email_export_command
 def mock_exporter(mocker):
     exporter = mocker.Mock()
     mocker.patch(
-        "trxo.commands.export.email_templates.BaseExporter",
+        "trxo_lib.operations.export.email_templates.BaseExporter",
         return_value=exporter,
     )
     return exporter

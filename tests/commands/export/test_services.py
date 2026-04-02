@@ -19,7 +19,7 @@ def mock_exporter(mocker):
     exporter._construct_api_url.side_effect = lambda base, ep: f"{base}{ep}"
     exporter.get_current_auth.return_value = ("token", "https://api.example.com")
     mocker.patch(
-        "trxo.commands.export.services.ServicesExporter", return_value=exporter
+        "trxo_lib.operations.export.services.ServicesExporter", return_value=exporter
     )
     return exporter
 
@@ -49,7 +49,7 @@ def test_export_services_scope_realm(mock_exporter):
 def test_export_services_invalid_scope(mocker):
     exporter = mocker.Mock()
     mocker.patch(
-        "trxo.commands.export.services.ServicesExporter", return_value=exporter
+        "trxo_lib.operations.export.services.ServicesExporter", return_value=exporter
     )
 
     export_services = create_services_export_command()
@@ -82,7 +82,7 @@ def test_services_response_filter_empty_result(mock_exporter):
 
 def test_services_response_filter_missing_auth(mock_exporter, mocker):
     mock_exporter.get_current_auth.return_value = (None, None)
-    warn_spy = mocker.patch("trxo.commands.export.services.warning")
+    warn_spy = mocker.patch("trxo_lib.operations.export.services.warning")
 
     export_services = create_services_export_command()
     export_services(scope="realm")
@@ -145,7 +145,7 @@ def test_services_response_filter_nextdescendents_failure(mock_exporter):
 
 def test_services_response_filter_detail_fetch_failure(mock_exporter, mocker):
     mock_exporter.make_http_request.side_effect = Exception("boom")
-    warn_spy = mocker.patch("trxo.commands.export.services.warning")
+    warn_spy = mocker.patch("trxo_lib.operations.export.services.warning")
 
     export_services = create_services_export_command()
     export_services(scope="realm", realm="alpha")

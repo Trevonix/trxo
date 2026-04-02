@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from trxo.auth.service_account import ServiceAccountAuth
+from trxo_lib.auth.service_account import ServiceAccountAuth
 
 
 @pytest.fixture
@@ -56,10 +56,10 @@ def test_get_private_key_from_content(mocker, jwk_dict):
 
 
 def test_create_jwt_calls_encode(mocker):
-    mocker.patch("trxo.auth.service_account.time.time", return_value=1000)
-    mocker.patch("trxo.auth.service_account.uuid.uuid4", return_value="uuid")
+    mocker.patch("trxo_lib.auth.service_account.time.time", return_value=1000)
+    mocker.patch("trxo_lib.auth.service_account.uuid.uuid4", return_value="uuid")
     mocker.patch(
-        "trxo.auth.service_account.ServiceAccountAuth.get_private_key",
+        "trxo_lib.auth.service_account.ServiceAccountAuth.get_private_key",
         return_value=b"pem",
     )
     jwt_encode = mocker.patch("jwt.encode", return_value="signed-jwt")
@@ -78,7 +78,7 @@ def test_create_jwt_calls_encode(mocker):
 
 def test_get_access_token_success(mocker):
     mocker.patch(
-        "trxo.auth.service_account.ServiceAccountAuth.create_jwt",
+        "trxo_lib.auth.service_account.ServiceAccountAuth.create_jwt",
         return_value="signed",
     )
 
@@ -94,7 +94,7 @@ def test_get_access_token_success(mocker):
     httpx_client.__exit__.return_value = None
 
     mocker.patch("httpx.Client", return_value=httpx_client)
-    mocker.patch("trxo.auth.service_account.get_logger")
+    mocker.patch("trxo_lib.auth.service_account.get_logger")
 
     auth = ServiceAccountAuth(
         jwk_path="x",
@@ -110,7 +110,7 @@ def test_get_access_token_success(mocker):
 
 def test_get_access_token_http_error(mocker):
     mocker.patch(
-        "trxo.auth.service_account.ServiceAccountAuth.create_jwt",
+        "trxo_lib.auth.service_account.ServiceAccountAuth.create_jwt",
         return_value="signed",
     )
 
@@ -127,7 +127,7 @@ def test_get_access_token_http_error(mocker):
     mocker.patch("httpx.Client", return_value=httpx_client)
 
     logger = MagicMock()
-    mocker.patch("trxo.auth.service_account.get_logger", return_value=logger)
+    mocker.patch("trxo_lib.auth.service_account.get_logger", return_value=logger)
 
     auth = ServiceAccountAuth(
         jwk_path="x",

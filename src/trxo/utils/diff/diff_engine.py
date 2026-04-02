@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Optional
 from deepdiff import DeepDiff
 
 from trxo_lib.operations.export.saml import SamlExporter
-from trxo.commands.export.services import ServicesExporter
+from trxo_lib.operations.export.services import ServicesExporter
 from trxo_lib.utils.console import error, info
 
 

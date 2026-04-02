@@ -5,8 +5,6 @@ This module provides export functionality for PingOne Advanced Identity Cloud ma
 Exports from /openidm/config/managed endpoint.
 """
 
-import typer
-
 from trxo.commands.shared.options import (
     AmBaseUrlOpt,
     AuthModeOpt,
@@ -29,9 +27,7 @@ from trxo.commands.shared.options import (
     ViewColumnsOpt,
     ViewOpt,
 )
-from trxo_lib.config.api_headers import get_headers
-
-from trxo_lib.operations.export.base_exporter import BaseExporter
+from trxo_lib.operations.export.service import ExportService
 
 
 def create_managed_export_command():
@@ -60,34 +56,7 @@ def create_managed_export_command():
         idm_password: IdmPasswordOpt = None,
     ):
         """Export managed objects configuration"""
-        exporter = BaseExporter()
-
-        headers = get_headers("managed")
-
-        exporter.export_data(
-            command_name="managed",
-            api_endpoint="/openidm/config/managed",
-            headers=headers,
-            view=view,
-            view_columns=view_columns,
-            jwk_path=jwk_path,
-            sa_id=sa_id,
-            base_url=base_url,
-            project_name=project_name,
-            output_dir=output_dir,
-            output_file=output_file,
-            auth_mode=auth_mode,
-            onprem_username=onprem_username,
-            onprem_password=onprem_password,
-            onprem_realm=onprem_realm,
-            idm_base_url=idm_base_url,
-            idm_username=idm_username,
-            idm_password=idm_password,
-            am_base_url=am_base_url,
-            version=version,
-            no_version=no_version,
-            branch=branch,
-            commit_message=commit,
-        )
+        kwargs = locals()
+        ExportService().export_managed(**kwargs)
 
     return export_managed
