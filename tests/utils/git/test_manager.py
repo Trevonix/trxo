@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from trxo.constants import DEFAULT_EXPORT_BRANCH
-from trxo.utils.git.manager import (
+from trxo_lib.utils.git.manager import (
     GitManager,
     get_git_manager,
     setup_git_for_export,

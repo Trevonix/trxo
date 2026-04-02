@@ -1,11 +1,11 @@
 import pytest
 
-from trxo.utils.diff.diff_engine import ChangeType, DiffEngine
+from trxo_lib.utils.diff.diff_engine import ChangeType, DiffEngine
 
 
 def _mock_insights(mocker):
     mocker.patch(
-        "trxo.utils.diff.insights_generator.InsightsGenerator.generate_key_insights",
+        "trxo_lib.utils.diff.insights_generator.InsightsGenerator.generate_key_insights",
         return_value=[],
     )
 
@@ -16,7 +16,7 @@ def test_compare_data_added_item(mocker):
     current = {"result": []}
     new = {"result": [{"_id": "1", "name": "A"}]}
 
-    mocker.patch("trxo.utils.diff.diff_engine.DeepDiff", return_value={})
+    mocker.patch("trxo_lib.utils.diff.diff_engine.DeepDiff", return_value={})
     _mock_insights(mocker)
 
     result = engine.compare_data(current, new, "scripts", "alpha")
@@ -33,7 +33,7 @@ def test_compare_data_removed_item(mocker):
     current = {"result": [{"_id": "1", "name": "A"}]}
     new = {"result": []}
 
-    mocker.patch("trxo.utils.diff.diff_engine.DeepDiff", return_value={})
+    mocker.patch("trxo_lib.utils.diff.diff_engine.DeepDiff", return_value={})
     _mock_insights(mocker)
 
     result = engine.compare_data(current, new, "scripts", "alpha")
@@ -55,7 +55,7 @@ def test_compare_data_modified_item(mocker):
     diff_obj.get.side_effect = fake_diff.get
     diff_obj.__bool__.return_value = True
 
-    mocker.patch("trxo.utils.diff.diff_engine.DeepDiff", return_value=diff_obj)
+    mocker.patch("trxo_lib.utils.diff.diff_engine.DeepDiff", return_value=diff_obj)
     _mock_insights(mocker)
 
     result = engine.compare_data(current, new, "scripts", "alpha")
@@ -74,7 +74,7 @@ def test_compare_data_unchanged_item(mocker):
     diff_obj = mocker.MagicMock()
     diff_obj.__bool__.return_value = False
 
-    mocker.patch("trxo.utils.diff.diff_engine.DeepDiff", return_value=diff_obj)
+    mocker.patch("trxo_lib.utils.diff.diff_engine.DeepDiff", return_value=diff_obj)
     _mock_insights(mocker)
 
     result = engine.compare_data(current, new, "scripts", "alpha")

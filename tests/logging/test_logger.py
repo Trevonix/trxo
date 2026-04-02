@@ -1,6 +1,5 @@
 import logging
 
-import pytest
 
 from trxo.logging import (
     get_logger,
@@ -117,7 +116,7 @@ def test_log_application_event_custom_level(mocker):
 
 
 def test_log_authentication_event_success(mocker):
-    real_logger = logging.getLogger("trxo_lib.auth")
+    real_logger = logging.getLogger("trxo.auth")
     spy = mocker.spy(real_logger, "info")
 
     log_authentication_event("service-account", True)
@@ -126,7 +125,7 @@ def test_log_authentication_event_success(mocker):
 
 
 def test_log_authentication_event_failure(mocker):
-    real_logger = logging.getLogger("trxo_lib.auth")
+    real_logger = logging.getLogger("trxo.auth")
     spy = mocker.spy(real_logger, "error")
 
     log_authentication_event("onprem", False)

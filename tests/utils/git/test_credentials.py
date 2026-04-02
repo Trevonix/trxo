@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import httpx
 import pytest
 
-from trxo.utils.git.credentials import build_secure_url, validate_credentials
+from trxo_lib.utils.git.credentials import build_secure_url, validate_credentials
 
 
 class FakeResponse:

@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from trxo.utils.export.file_saver import FileSaver
+from trxo_lib.utils.export.file_saver import FileSaver
 
 
 def test_build_versioned_filename_with_realm():
@@ -43,9 +43,9 @@ def test_save_with_progress_success(tmp_path, mocker):
     file_path = tmp_path / "test.json"
 
     fake_pbar = MagicMock()
-    mocker.patch("trxo.utils.export.file_saver.tqdm", return_value=fake_pbar)
-    mocker.patch("trxo.utils.export.file_saver.time.sleep")
-    mocker.patch("trxo.utils.export.file_saver.info")
+    mocker.patch("trxo_lib.utils.export.file_saver.tqdm", return_value=fake_pbar)
+    mocker.patch("trxo_lib.utils.export.file_saver.time.sleep")
+    mocker.patch("trxo_lib.utils.export.file_saver.info")
 
     ok = FileSaver.save_with_progress(data, file_path, "test.json")
 
@@ -60,8 +60,8 @@ def test_save_with_progress_failure(tmp_path, mocker):
     data = {"a": 1}
     file_path = tmp_path / "test.json"
 
-    mocker.patch("trxo.utils.export.file_saver.tqdm", side_effect=Exception("boom"))
-    mocker.patch("trxo.utils.export.file_saver.error")
+    mocker.patch("trxo_lib.utils.export.file_saver.tqdm", side_effect=Exception("boom"))
+    mocker.patch("trxo_lib.utils.export.file_saver.error")
 
     ok = FileSaver.save_with_progress(data, file_path, "test.json")
 
@@ -72,7 +72,7 @@ def test_save_to_local_basic(tmp_path, mocker):
     data = {"items": [1, 2, 3], "metadata": {"realm": "alpha"}}
 
     mocker.patch(
-        "trxo.utils.export.file_saver.FileSaver.save_with_progress",
+        "trxo_lib.utils.export.file_saver.FileSaver.save_with_progress",
         return_value=True,
     )
 

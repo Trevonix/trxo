@@ -1,7 +1,7 @@
 import pytest
 import typer
 
-from trxo.commands.export.base_exporter import BaseExporter
+from trxo_lib.operations.export.base_exporter import BaseExporter
 
 
 @pytest.fixture
@@ -24,21 +24,21 @@ def exporter(mocker):
     be.make_http_request.return_value = response
 
     mocker.patch(
-        "trxo.commands.export.base_exporter.MetadataBuilder.build_metadata",
+        "trxo_lib.operations.export.base_exporter.MetadataBuilder.build_metadata",
         return_value={"m": 1},
     )
-    mocker.patch("trxo.commands.export.base_exporter.ViewRenderer.display_table_view")
+    mocker.patch("trxo_lib.operations.export.base_exporter.ViewRenderer.display_table_view")
     mocker.patch(
-        "trxo.commands.export.base_exporter.PaginationHandler.is_paginated",
+        "trxo_lib.operations.export.base_exporter.PaginationHandler.is_paginated",
         return_value=False,
     )
     mocker.patch(
-        "trxo.commands.export.base_exporter.FileSaver.save_to_local",
+        "trxo_lib.operations.export.base_exporter.FileSaver.save_to_local",
         return_value="file.json",
     )
-    mocker.patch("trxo.commands.export.base_exporter.success")
-    mocker.patch("trxo.commands.export.base_exporter.error")
-    mocker.patch("trxo.commands.export.base_exporter.info")
+    mocker.patch("trxo_lib.operations.export.base_exporter.success")
+    mocker.patch("trxo_lib.operations.export.base_exporter.error")
+    mocker.patch("trxo_lib.operations.export.base_exporter.info")
 
     return be
 
@@ -65,7 +65,7 @@ def test_export_data_view_mode(exporter):
 
 
 def test_export_data_view_columns_without_view_warns(exporter, mocker):
-    warn = mocker.patch("trxo.commands.export.base_exporter.warning")
+    warn = mocker.patch("trxo_lib.operations.export.base_exporter.warning")
 
     exporter.export_data(
         command_name="test",
@@ -106,11 +106,11 @@ def test_export_data_non_200_response(exporter):
 
 def test_handle_pagination_success(exporter, mocker):
     mocker.patch(
-        "trxo.commands.export.base_exporter.PaginationHandler.is_paginated",
+        "trxo_lib.operations.export.base_exporter.PaginationHandler.is_paginated",
         return_value=True,
     )
     mocker.patch(
-        "trxo.commands.export.base_exporter.PaginationHandler.fetch_all_pages",
+        "trxo_lib.operations.export.base_exporter.PaginationHandler.fetch_all_pages",
         return_value={"items": []},
     )
 
@@ -121,11 +121,11 @@ def test_handle_pagination_success(exporter, mocker):
 
 def test_handle_pagination_failure_fallback(exporter, mocker):
     mocker.patch(
-        "trxo.commands.export.base_exporter.PaginationHandler.is_paginated",
+        "trxo_lib.operations.export.base_exporter.PaginationHandler.is_paginated",
         return_value=True,
     )
     mocker.patch(
-        "trxo.commands.export.base_exporter.PaginationHandler.fetch_all_pages",
+        "trxo_lib.operations.export.base_exporter.PaginationHandler.fetch_all_pages",
         side_effect=Exception("boom"),
     )
 

@@ -1,6 +1,6 @@
 import pytest
 
-from trxo.utils.git.common import extract_branch_name_from_ref
+from trxo_lib.utils.git.common import extract_branch_name_from_ref
 
 
 def test_extract_branch_name_refs_remotes_origin_simple():

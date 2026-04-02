@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from trxo.utils.diff.diff_manager import DiffManager
+from trxo_lib.utils.diff.diff_manager import DiffManager
 
 
 def test_perform_diff_success(mocker):
@@ -10,7 +10,7 @@ def test_perform_diff_success(mocker):
 
     # Mock get_command_api_endpoint at correct import path
     mocker.patch(
-        "trxo.utils.diff.diff_manager.get_command_api_endpoint",
+        "trxo_lib.utils.diff.diff_manager.get_command_api_endpoint",
         return_value=("/api/test", None),
     )
 
@@ -49,7 +49,7 @@ def test_perform_diff_fails_on_current_data_fetch(mocker):
     manager = DiffManager()
 
     mocker.patch(
-        "trxo.utils.diff.diff_manager.get_command_api_endpoint",
+        "trxo_lib.utils.diff.diff_manager.get_command_api_endpoint",
         return_value=("/api/test", None),
     )
 
@@ -64,7 +64,7 @@ def test_perform_diff_fails_on_import_data_fetch(mocker):
     manager = DiffManager()
 
     mocker.patch(
-        "trxo.utils.diff.diff_manager.get_command_api_endpoint",
+        "trxo_lib.utils.diff.diff_manager.get_command_api_endpoint",
         return_value=("/api/test", None),
     )
 

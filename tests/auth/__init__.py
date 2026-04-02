@@ -1,1 +1,1 @@
-# tests for trxo.auth
+# tests for trxo_lib.auth

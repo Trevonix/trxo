@@ -1,1 +1,1 @@
-# tests for trxo.utils.git
+# tests for trxo_lib.utils.git

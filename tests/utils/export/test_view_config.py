@@ -1,6 +1,6 @@
 import pytest
 
-from trxo.utils.export.view_config import (
+from trxo_lib.utils.export.view_config import (
     COLUMN_DESCRIPTIONS,
     DEFAULT_VIEW_COLUMNS,
     get_available_columns_help,

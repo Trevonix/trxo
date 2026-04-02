@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from trxo.utils.export.git_export_handler import GitExportHandler
+from trxo_lib.utils.export.git_export_handler import GitExportHandler
 
 
 @pytest.fixture
@@ -30,7 +30,7 @@ def fake_git_manager(tmp_path):
 
 def test_setup_git_repo_success(mocker, fake_config_store, fake_git_manager):
     mocker.patch(
-        "trxo.utils.export.git_export_handler.setup_git_for_export",
+        "trxo_lib.utils.export.git_export_handler.setup_git_for_export",
         return_value=fake_git_manager,
     )
 
@@ -47,7 +47,7 @@ def test_setup_git_repo_missing_credentials(mocker):
     store.get_current_project.return_value = "proj1"
     store.get_git_credentials.return_value = None
 
-    mocker.patch("trxo.utils.export.git_export_handler.error")
+    mocker.patch("trxo_lib.utils.export.git_export_handler.error")
 
     handler = GitExportHandler(store)
 
@@ -96,9 +96,9 @@ def test_save_to_git_success(mocker, fake_config_store, fake_git_manager, tmp_pa
     handler = GitExportHandler(fake_config_store)
 
     mocker.patch.object(handler, "setup_git_repo", return_value=fake_git_manager)
-    mocker.patch("trxo.utils.export.git_export_handler.tqdm", autospec=True)
-    mocker.patch("trxo.utils.export.git_export_handler.time.sleep")
-    mocker.patch("trxo.utils.export.git_export_handler.info")
+    mocker.patch("trxo_lib.utils.export.git_export_handler.tqdm", autospec=True)
+    mocker.patch("trxo_lib.utils.export.git_export_handler.time.sleep")
+    mocker.patch("trxo_lib.utils.export.git_export_handler.info")
 
     data = {"data": [{"id": 1}], "metadata": {"realm": "alpha"}}
 

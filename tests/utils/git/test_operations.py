@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from trxo.utils.git.operations import (
+from trxo_lib.utils.git.operations import (
     commit_and_push,
     get_diff,
     get_working_tree_status,

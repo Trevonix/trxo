@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from trxo.utils.hash_manager import HashManager, get_command_name_from_item_type
+from trxo_lib.utils.hash_manager import HashManager, get_command_name_from_item_type
 
 
 @pytest.fixture()

@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from trxo.utils.config_store import SERVICE_NAME, ConfigStore
+from trxo_lib.utils.config_store import SERVICE_NAME, ConfigStore
 
 
 @pytest.fixture

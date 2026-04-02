@@ -1,1 +1,1 @@
-# tests for trxo.utils.imports
+# tests for trxo_lib.utils.imports

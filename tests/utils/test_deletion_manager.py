@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock
 
-from trxo.utils.deletion_manager import DeletionManager
+from trxo_lib.utils.deletion_manager import DeletionManager
 
 
 class FakeDiffItem:
@@ -25,7 +25,7 @@ def test_get_items_to_delete():
 
 
 def test_confirm_deletions_no_items(mocker):
-    mocker.patch("trxo.utils.deletion_manager.info")
+    mocker.patch("trxo_lib.utils.deletion_manager.info")
     mgr = DeletionManager()
 
     ok = mgr.confirm_deletions([], "scripts", force=False)
@@ -34,8 +34,8 @@ def test_confirm_deletions_no_items(mocker):
 
 
 def test_confirm_deletions_force_true(mocker):
-    mocker.patch("trxo.utils.deletion_manager.warning")
-    mocker.patch("trxo.utils.deletion_manager.info")
+    mocker.patch("trxo_lib.utils.deletion_manager.warning")
+    mocker.patch("trxo_lib.utils.deletion_manager.info")
 
     mgr = DeletionManager()
     items = [FakeDiffItem("1", "one")]
@@ -46,9 +46,9 @@ def test_confirm_deletions_force_true(mocker):
 
 
 def test_confirm_deletions_user_confirms(mocker):
-    mocker.patch("trxo.utils.deletion_manager.warning")
-    mocker.patch("trxo.utils.deletion_manager.info")
-    mocker.patch("typer.confirm", return_value=True)
+    mocker.patch("trxo_lib.utils.deletion_manager.warning")
+    mocker.patch("trxo_lib.utils.deletion_manager.info")
+    mocker.patch("builtins.input", return_value="y")
 
     mgr = DeletionManager()
     items = [FakeDiffItem("1", "one")]
@@ -59,9 +59,9 @@ def test_confirm_deletions_user_confirms(mocker):
 
 
 def test_confirm_deletions_user_cancels(mocker):
-    mocker.patch("trxo.utils.deletion_manager.warning")
-    mocker.patch("trxo.utils.deletion_manager.info")
-    mocker.patch("typer.confirm", return_value=False)
+    mocker.patch("trxo_lib.utils.deletion_manager.warning")
+    mocker.patch("trxo_lib.utils.deletion_manager.info")
+    mocker.patch("builtins.input", return_value="n")
 
     mgr = DeletionManager()
     items = [FakeDiffItem("1", "one")]
@@ -72,9 +72,9 @@ def test_confirm_deletions_user_cancels(mocker):
 
 
 def test_execute_deletions_all_success(mocker):
-    mocker.patch("trxo.utils.deletion_manager.info")
-    mocker.patch("trxo.utils.deletion_manager.success")
-    mocker.patch("trxo.utils.deletion_manager.error")
+    mocker.patch("trxo_lib.utils.deletion_manager.info")
+    mocker.patch("trxo_lib.utils.deletion_manager.success")
+    mocker.patch("trxo_lib.utils.deletion_manager.error")
 
     delete_func = MagicMock(return_value=True)
     items = [FakeDiffItem("1"), FakeDiffItem("2")]
@@ -89,9 +89,9 @@ def test_execute_deletions_all_success(mocker):
 
 
 def test_execute_deletions_partial_failure(mocker):
-    mocker.patch("trxo.utils.deletion_manager.info")
-    mocker.patch("trxo.utils.deletion_manager.success")
-    mocker.patch("trxo.utils.deletion_manager.error")
+    mocker.patch("trxo_lib.utils.deletion_manager.info")
+    mocker.patch("trxo_lib.utils.deletion_manager.success")
+    mocker.patch("trxo_lib.utils.deletion_manager.error")
 
     delete_func = MagicMock(side_effect=[True, False])
     items = [FakeDiffItem("1"), FakeDiffItem("2")]
@@ -106,9 +106,9 @@ def test_execute_deletions_partial_failure(mocker):
 
 
 def test_execute_deletions_exception(mocker):
-    mocker.patch("trxo.utils.deletion_manager.info")
-    mocker.patch("trxo.utils.deletion_manager.success")
-    mocker.patch("trxo.utils.deletion_manager.error")
+    mocker.patch("trxo_lib.utils.deletion_manager.info")
+    mocker.patch("trxo_lib.utils.deletion_manager.success")
+    mocker.patch("trxo_lib.utils.deletion_manager.error")
 
     def boom(item_id, token, url):
         raise Exception("boom")
@@ -126,7 +126,7 @@ def test_execute_deletions_exception(mocker):
 
 def test_print_summary_only_success(mocker):
     print_mock = mocker.patch("builtins.print")
-    error_mock = mocker.patch("trxo.utils.deletion_manager.error")
+    error_mock = mocker.patch("trxo_lib.utils.deletion_manager.error")
 
     mgr = DeletionManager()
     mgr.print_summary(
@@ -144,7 +144,7 @@ def test_print_summary_only_success(mocker):
 
 def test_print_summary_only_failures(mocker):
     print_mock = mocker.patch("builtins.print")
-    error_mock = mocker.patch("trxo.utils.deletion_manager.error")
+    error_mock = mocker.patch("trxo_lib.utils.deletion_manager.error")
 
     mgr = DeletionManager()
     mgr.print_summary(
@@ -162,7 +162,7 @@ def test_print_summary_only_failures(mocker):
 
 def test_print_summary_mixed(mocker):
     print_mock = mocker.patch("builtins.print")
-    error_mock = mocker.patch("trxo.utils.deletion_manager.error")
+    error_mock = mocker.patch("trxo_lib.utils.deletion_manager.error")
 
     mgr = DeletionManager()
     mgr.print_summary(

@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from trxo.utils.git.branches import (
+from trxo_lib.utils.git.branches import (
     branch_exists,
     check_branch_sync_status,
     ensure_branch,

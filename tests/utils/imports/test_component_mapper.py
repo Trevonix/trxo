@@ -1,6 +1,6 @@
 import pytest
 
-from trxo.utils.imports.component_mapper import ComponentMapper
+from trxo_lib.utils.imports.component_mapper import ComponentMapper
 
 
 def test_get_component_directory_direct_mapping():

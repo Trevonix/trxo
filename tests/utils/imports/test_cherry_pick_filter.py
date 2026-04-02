@@ -1,11 +1,11 @@
 import pytest
 
-from trxo.utils.imports.cherry_pick_filter import CherryPickFilter
+from trxo_lib.utils.imports.cherry_pick_filter import CherryPickFilter
 
 
 def test_apply_filter_happy_path_id_match(mocker):
-    mocker.patch("trxo.utils.imports.cherry_pick_filter.info")
-    mocker.patch("trxo.utils.imports.cherry_pick_filter.error")
+    mocker.patch("trxo_lib.utils.imports.cherry_pick_filter.info")
+    mocker.patch("trxo_lib.utils.imports.cherry_pick_filter.error")
 
     items = [{"_id": "1"}, {"_id": "2"}]
 
@@ -15,8 +15,8 @@ def test_apply_filter_happy_path_id_match(mocker):
 
 
 def test_apply_filter_multiple_ids(mocker):
-    mocker.patch("trxo.utils.imports.cherry_pick_filter.info")
-    mocker.patch("trxo.utils.imports.cherry_pick_filter.error")
+    mocker.patch("trxo_lib.utils.imports.cherry_pick_filter.info")
+    mocker.patch("trxo_lib.utils.imports.cherry_pick_filter.error")
 
     items = [{"_id": "1"}, {"_id": "2"}, {"_id": "3"}]
 
@@ -26,8 +26,8 @@ def test_apply_filter_multiple_ids(mocker):
 
 
 def test_apply_filter_strips_spaces(mocker):
-    mocker.patch("trxo.utils.imports.cherry_pick_filter.info")
-    mocker.patch("trxo.utils.imports.cherry_pick_filter.error")
+    mocker.patch("trxo_lib.utils.imports.cherry_pick_filter.info")
+    mocker.patch("trxo_lib.utils.imports.cherry_pick_filter.error")
 
     items = [{"_id": "1"}, {"_id": "2"}]
 
@@ -37,8 +37,8 @@ def test_apply_filter_strips_spaces(mocker):
 
 
 def test_apply_filter_fallback_id_field(mocker):
-    mocker.patch("trxo.utils.imports.cherry_pick_filter.info")
-    mocker.patch("trxo.utils.imports.cherry_pick_filter.error")
+    mocker.patch("trxo_lib.utils.imports.cherry_pick_filter.info")
+    mocker.patch("trxo_lib.utils.imports.cherry_pick_filter.error")
 
     items = [{"id": "x"}, {"id": "y"}]
 
@@ -48,8 +48,8 @@ def test_apply_filter_fallback_id_field(mocker):
 
 
 def test_apply_filter_fallback_name_field(mocker):
-    mocker.patch("trxo.utils.imports.cherry_pick_filter.info")
-    mocker.patch("trxo.utils.imports.cherry_pick_filter.error")
+    mocker.patch("trxo_lib.utils.imports.cherry_pick_filter.info")
+    mocker.patch("trxo_lib.utils.imports.cherry_pick_filter.error")
 
     items = [{"name": "alpha"}, {"name": "beta"}]
 
@@ -59,8 +59,8 @@ def test_apply_filter_fallback_name_field(mocker):
 
 
 def test_apply_filter_nested_type_id(mocker):
-    mocker.patch("trxo.utils.imports.cherry_pick_filter.info")
-    mocker.patch("trxo.utils.imports.cherry_pick_filter.error")
+    mocker.patch("trxo_lib.utils.imports.cherry_pick_filter.info")
+    mocker.patch("trxo_lib.utils.imports.cherry_pick_filter.error")
 
     items = [
         {"_id": "", "_type": {"_id": "nested-1"}},
@@ -73,8 +73,8 @@ def test_apply_filter_nested_type_id(mocker):
 
 
 def test_apply_filter_missing_id_logs_error(mocker):
-    error_mock = mocker.patch("trxo.utils.imports.cherry_pick_filter.error")
-    mocker.patch("trxo.utils.imports.cherry_pick_filter.info")
+    error_mock = mocker.patch("trxo_lib.utils.imports.cherry_pick_filter.error")
+    mocker.patch("trxo_lib.utils.imports.cherry_pick_filter.info")
 
     items = [{"_id": "1"}]
 
@@ -85,8 +85,8 @@ def test_apply_filter_missing_id_logs_error(mocker):
 
 
 def test_apply_filter_partial_missing_ids(mocker):
-    error_mock = mocker.patch("trxo.utils.imports.cherry_pick_filter.error")
-    mocker.patch("trxo.utils.imports.cherry_pick_filter.info")
+    error_mock = mocker.patch("trxo_lib.utils.imports.cherry_pick_filter.error")
+    mocker.patch("trxo_lib.utils.imports.cherry_pick_filter.info")
 
     items = [{"_id": "1"}, {"_id": "2"}]
 
@@ -97,8 +97,8 @@ def test_apply_filter_partial_missing_ids(mocker):
 
 
 def test_apply_filter_no_valid_ids(mocker):
-    error_mock = mocker.patch("trxo.utils.imports.cherry_pick_filter.error")
-    mocker.patch("trxo.utils.imports.cherry_pick_filter.info")
+    error_mock = mocker.patch("trxo_lib.utils.imports.cherry_pick_filter.error")
+    mocker.patch("trxo_lib.utils.imports.cherry_pick_filter.info")
 
     items = [{"_id": "1"}]
 
@@ -109,8 +109,8 @@ def test_apply_filter_no_valid_ids(mocker):
 
 
 def test_apply_filter_empty_items(mocker):
-    mocker.patch("trxo.utils.imports.cherry_pick_filter.info")
-    error_mock = mocker.patch("trxo.utils.imports.cherry_pick_filter.error")
+    mocker.patch("trxo_lib.utils.imports.cherry_pick_filter.info")
+    error_mock = mocker.patch("trxo_lib.utils.imports.cherry_pick_filter.error")
 
     result = CherryPickFilter.apply_filter([], "1")
 
@@ -119,8 +119,8 @@ def test_apply_filter_empty_items(mocker):
 
 
 def test_apply_filter_duplicate_ids(mocker):
-    mocker.patch("trxo.utils.imports.cherry_pick_filter.info")
-    mocker.patch("trxo.utils.imports.cherry_pick_filter.error")
+    mocker.patch("trxo_lib.utils.imports.cherry_pick_filter.info")
+    mocker.patch("trxo_lib.utils.imports.cherry_pick_filter.error")
 
     items = [{"_id": "1"}, {"_id": "2"}]
 
