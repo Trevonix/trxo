@@ -139,6 +139,15 @@ CherryPickOpt = Annotated[
     ),
 ]
 
+GlobalOpt = Annotated[
+    bool,
+    typer.Option(
+        ...,
+        "--global-policy",
+        help="Include IDM policies in addition to AM policies",
+    ),
+]
+
 # Auth & Connection Options
 JwkPathOpt = Annotated[
     Optional[str],

@@ -43,6 +43,7 @@ class DiffManager:
         branch: Optional[str] = None,
         generate_html: bool = True,
         html_output_dir: Optional[str] = None,
+        global_policy: bool = False,
     ) -> Optional[DiffResult]:
         """
         Perform complete diff analysis
@@ -90,6 +91,7 @@ class DiffManager:
                 idm_password=idm_password,
                 am_base_url=am_base_url,
                 branch=branch,
+                global_policy=global_policy,
             )
 
             if not current_data:
@@ -104,6 +106,7 @@ class DiffManager:
                 branch=branch,
                 project_name=project_name,
                 realm=realm,
+                global_policy=global_policy,
             )
 
             if not new_data:
@@ -116,6 +119,7 @@ class DiffManager:
                 new_data=new_data,
                 command_name=command_name,
                 realm=realm,
+                global_policy=global_policy,
             )
 
             # Step 4: Display summary
@@ -158,6 +162,7 @@ class DiffManager:
         idm_password: Optional[str] = None,
         am_base_url: Optional[str] = None,
         branch: Optional[str] = None,
+        global_policy: bool = False,
     ) -> Optional[Dict[str, Any]]:
         """Fetch current data from server"""
 
@@ -188,6 +193,7 @@ class DiffManager:
             idm_password=idm_password,
             am_base_url=am_base_url,
             branch=branch,
+            global_policy=global_policy,
         )
 
     def _fetch_import_data(
@@ -197,6 +203,7 @@ class DiffManager:
         branch: Optional[str] = None,
         project_name: Optional[str] = None,
         realm: Optional[str] = None,
+        global_policy: bool = False,
     ) -> Optional[Dict[str, Any]]:
         """Fetch data to be imported"""
         return self.data_fetcher.fetch_from_file_or_git(
@@ -205,6 +212,7 @@ class DiffManager:
             branch=branch,
             project_name=project_name,
             realm=realm,
+            global_policy=global_policy,
         )
 
     def quick_diff(

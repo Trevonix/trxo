@@ -62,6 +62,7 @@ class BaseImporter(BaseCommand):
         rollback: bool = False,
         sync: bool = False,
         cherry_pick: Optional[str] = None,
+        **kwargs,
     ) -> None:
         """Main import workflow with Git and local storage support."""
         item_type = self.get_item_type()
@@ -105,6 +106,7 @@ class BaseImporter(BaseCommand):
                     idm_password=idm_password,
                     am_base_url=am_base_url,
                     branch=branch,
+                    **kwargs,
                 )
                 return
 
@@ -173,6 +175,7 @@ class BaseImporter(BaseCommand):
                     am_base_url=am_base_url,
                     branch=branch,
                     force=True,  # User requested direct deletion without permission prompt
+                    **kwargs,
                 )
 
             # Print summary
@@ -343,10 +346,17 @@ class BaseImporter(BaseCommand):
             git_manager, item_type, effective_realm, branch
         )
 
-        # Normalize Git export format
-        # Normalize items so only valid objects with identifiers remain
-        normalized_items = []
+        if not all_items:
+            self._handle_no_git_files_found(item_type, effective_realm, realm)
+            return []
 
+        # Normalize Git export format
+        # Prefer importer-specific normalization if it exists
+        if hasattr(self, "load_data_from_items"):
+            return self.load_data_from_items(all_items)
+
+        # Default normalization
+        normalized_items = []
         for item in all_items:
             if not isinstance(item, dict):
                 continue
@@ -559,6 +569,7 @@ class BaseImporter(BaseCommand):
         idm_password: Optional[str] = None,
         am_base_url: Optional[str] = None,
         branch: Optional[str] = None,
+        **kwargs,
     ) -> None:
         """Perform diff analysis and display results"""
         try:
@@ -587,6 +598,7 @@ class BaseImporter(BaseCommand):
                 am_base_url=am_base_url,
                 branch=branch,
                 generate_html=True,
+                global_policy=getattr(self, "global_policy", False),
             )
 
             if diff_result:
@@ -666,6 +678,7 @@ class BaseImporter(BaseCommand):
         am_base_url: Optional[str] = None,
         branch: Optional[str] = None,
         force: bool = False,
+        **kwargs,
     ) -> Optional[Dict[str, Any]]:
         """Handle deletion of orphaned items in sync mode"""
         command_name = self.component_mapper.get_command_name(self.get_item_type())
@@ -691,6 +704,7 @@ class BaseImporter(BaseCommand):
             am_base_url=am_base_url,
             branch=branch,
             force=force,
+            **kwargs,
         )
 
     # ==================== Validation Methods ====================

@@ -56,15 +56,12 @@ class MetadataBuilder:
         Returns:
             Number of items
         """
-        if (
-            isinstance(data, dict)
-            and "result" in data
-            and isinstance(data["result"], list)
-        ):
-            return len(data["result"])
-        elif isinstance(data, list):
-            return len(data)
-        elif isinstance(data, dict):
+        if isinstance(data, dict):
+            if "result" in data and isinstance(data["result"], list):
+                return len(data["result"])
+            # Handle flattened policies structure
+            if "am" in data or "global" in data:
+                return len(data.get("am", [])) + len(data.get("global", []))
             return 1
         return 0
 
