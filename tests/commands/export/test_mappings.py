@@ -7,7 +7,7 @@ from trxo.commands.export.mappings import create_mappings_export_command
 def mock_exporter(mocker):
     exporter = mocker.Mock()
     mocker.patch(
-        "trxo.commands.export.mappings.BaseExporter",
+        "trxo_lib.operations.export.mappings.BaseExporter",
         return_value=exporter,
     )
     return exporter

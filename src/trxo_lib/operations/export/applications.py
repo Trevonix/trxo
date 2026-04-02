@@ -223,3 +223,52 @@ def _export_applications_with_deps(
             oauth_gate.cleanup()
         base.cleanup()
 
+
+class ApplicationsExportService:
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+    def execute(self) -> Any:
+        with_deps = self.kwargs.get("with_deps")
+        view = self.kwargs.get("view")
+
+        if with_deps:
+            if view:
+                warning("--with-deps is ignored when using --view")
+            else:
+                _export_applications_with_deps(
+                    realm=self.kwargs.get("realm"),
+                    version=self.kwargs.get("version"),
+                    no_version=self.kwargs.get("no_version"),
+                    branch=self.kwargs.get("branch"),
+                    commit=self.kwargs.get("commit"),
+                    jwk_path=self.kwargs.get("jwk_path"),
+                    sa_id=self.kwargs.get("sa_id"),
+                    base_url=self.kwargs.get("base_url"),
+                    project_name=self.kwargs.get("project_name"),
+                    output_dir=self.kwargs.get("output_dir"),
+                    output_file=self.kwargs.get("output_file"),
+                    auth_mode=self.kwargs.get("auth_mode"),
+                    onprem_username=self.kwargs.get("onprem_username"),
+                    onprem_password=self.kwargs.get("onprem_password"),
+                    onprem_realm=self.kwargs.get("onprem_realm"),
+                    am_base_url=self.kwargs.get("am_base_url"),
+                    idm_base_url=self.kwargs.get("idm_base_url"),
+                    idm_username=self.kwargs.get("idm_username"),
+                    idm_password=self.kwargs.get("idm_password"),
+                )
+                return
+
+        exporter = BaseExporter()
+        headers = get_headers("applications")
+
+        safe_kwargs = {k: v for k, v in self.kwargs.items() if k != "with_deps"}
+        if "commit" in safe_kwargs:
+            safe_kwargs["commit_message"] = safe_kwargs.pop("commit")
+
+        return exporter.export_data(
+            command_name="applications",
+            api_endpoint=f"/openidm/managed/{self.kwargs.get('realm')}_application?_queryFilter=true",
+            headers=headers,
+            **safe_kwargs,
+        )

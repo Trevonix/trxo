@@ -8,7 +8,7 @@ from trxo.constants import DEFAULT_REALM
 def mock_exporter(mocker):
     exporter = mocker.Mock()
     mocker.patch(
-        "trxo.commands.export.applications.BaseExporter",
+        "trxo_lib.operations.export.applications.BaseExporter",
         return_value=exporter,
     )
     return exporter
@@ -108,10 +108,10 @@ def test_export_applications_custom_values(mock_exporter):
 
 def test_export_applications_with_deps_invokes_bundle(mocker):
     mock_run = mocker.patch(
-        "trxo.commands.export.applications._export_applications_with_deps",
+        "trxo_lib.operations.export.applications._export_applications_with_deps",
     )
     mock_exporter_cls = mocker.patch(
-        "trxo.commands.export.applications.BaseExporter",
+        "trxo_lib.operations.export.applications.BaseExporter",
     )
     export_applications = create_applications_export_command()
 
@@ -146,11 +146,11 @@ def test_export_applications_with_deps_invokes_bundle(mocker):
 
 def test_export_applications_with_deps_ignored_when_view(mocker):
     mock_run = mocker.patch(
-        "trxo.commands.export.applications._export_applications_with_deps",
+        "trxo_lib.operations.export.applications._export_applications_with_deps",
     )
     mock_exporter = mocker.Mock()
     mocker.patch(
-        "trxo.commands.export.applications.BaseExporter",
+        "trxo_lib.operations.export.applications.BaseExporter",
         return_value=mock_exporter,
     )
     export_applications = create_applications_export_command()
