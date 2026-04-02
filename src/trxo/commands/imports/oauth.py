@@ -39,7 +39,7 @@ from trxo_lib.constants import DEFAULT_REALM
 from trxo_lib.utils.console import error, info, warning
 
 from trxo_lib.operations.imports.base_importer import BaseImporter
-from .scripts import ScriptImporter
+from trxo_lib.operations.imports.scripts import ScriptImporter
 
 
 class OAuthImporter(BaseImporter):

@@ -1,14 +1,10 @@
 import base64
-import json
 
-import pytest
-from click.exceptions import Exit
-
-from trxo.commands.imports.scripts import (
+from trxo_lib.operations.imports.scripts import (
     ScriptImporter,
-    create_script_import_command,
     is_base64_encoded,
 )
+from trxo.commands.imports.scripts import create_script_import_command
 from trxo.constants import DEFAULT_REALM, IGNORED_SCRIPT_IDS, IGNORED_SCRIPT_NAMES
 
 
@@ -28,7 +24,7 @@ def test_update_item_skips_ignored_script_id(mocker):
     script_id = list(IGNORED_SCRIPT_IDS)[0]
     data = {"_id": script_id, "name": "x"}
 
-    mocker.patch("trxo.commands.imports.scripts.info")
+    mocker.patch("trxo_lib.operations.imports.scripts.info")
 
     result = importer.update_item(data, "token", "https://base")
 
@@ -41,7 +37,7 @@ def test_update_item_skips_ignored_script_name(mocker):
     script_name = list(IGNORED_SCRIPT_NAMES)[0]
     data = {"_id": "id1", "name": script_name}
 
-    mocker.patch("trxo.commands.imports.scripts.info")
+    mocker.patch("trxo_lib.operations.imports.scripts.info")
 
     result = importer.update_item(data, "token", "https://base")
 
@@ -51,7 +47,7 @@ def test_update_item_skips_ignored_script_name(mocker):
 def test_update_item_missing_id_returns_false(mocker):
     importer = ScriptImporter(realm=DEFAULT_REALM)
 
-    mocker.patch("trxo.commands.imports.scripts.error")
+    mocker.patch("trxo_lib.operations.imports.scripts.error")
 
     result = importer.update_item({"name": "test"}, "token", "https://base")
 
@@ -105,7 +101,7 @@ def test_update_item_encodes_script_string(mocker):
 def test_update_item_invalid_script_type_returns_false(mocker):
     importer = ScriptImporter(realm=DEFAULT_REALM)
 
-    mocker.patch("trxo.commands.imports.scripts.error")
+    mocker.patch("trxo_lib.operations.imports.scripts.error")
 
     data = {
         "_id": "s1",
@@ -123,7 +119,7 @@ def test_update_item_http_failure_returns_false(mocker):
 
     mocker.patch("httpx.Client", side_effect=Exception("boom"))
     mocker.patch.object(importer, "build_auth_headers", return_value={})
-    mocker.patch("trxo.commands.imports.scripts.error")
+    mocker.patch("trxo_lib.operations.imports.scripts.error")
 
     data = {
         "_id": "s1",
@@ -155,22 +151,19 @@ def test_delete_item_failure_returns_false(mocker):
 
     mocker.patch.object(importer, "make_http_request", side_effect=Exception("boom"))
     mocker.patch.object(importer, "build_auth_headers", return_value={})
-    mocker.patch("trxo.commands.imports.scripts.error")
+    mocker.patch("trxo_lib.operations.imports.scripts.error")
 
     result = importer.delete_item("s1", "token", "https://base")
 
     assert result is False  # ✅ fixed
 
 
-def test_create_script_import_command_calls_import_from_file(mocker):
+def test_create_script_import_command_calls_import_service(mocker):
     import_scripts = create_script_import_command()
 
-    mock_importer = mocker.Mock(spec=ScriptImporter)
-    mocker.patch(
-        "trxo.commands.imports.scripts.ScriptImporter",
-        return_value=mock_importer,
-    )
+    mock_service_cls = mocker.patch("trxo.commands.imports.scripts.ImportService")
+    mock_service_instance = mock_service_cls.return_value
 
     import_scripts(file="data.json")
 
-    mock_importer.import_from_file.assert_called_once()
+    mock_service_instance.import_scripts.assert_called_once()
