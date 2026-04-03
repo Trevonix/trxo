@@ -1,9 +1,5 @@
-import pytest
-
-from trxo.commands.imports.authn import (
-    AuthnImporter,
-    create_authn_import_command,
-)
+from trxo_lib.operations.imports.authn import AuthnImporter
+from trxo.commands.imports.authn import create_authn_import_command
 
 
 def test_authn_importer_required_fields():
@@ -41,7 +37,7 @@ def test_authn_importer_update_item_success(mocker):
         importer, "make_http_request", return_value=mock_response
     )
 
-    mocker.patch("trxo.commands.imports.authn.info")
+    mocker.patch("trxo_lib.operations.imports.authn.info")
 
     result = importer.update_item({"a": 1, "_rev": "x"}, "t", "http://base")
 
@@ -56,7 +52,7 @@ def test_authn_importer_update_item_failure(mocker):
         importer, "build_auth_headers", return_value={"Authorization": "Bearer t"}
     )
     mocker.patch.object(importer, "make_http_request", side_effect=Exception("boom"))
-    mocker.patch("trxo.commands.imports.authn.error")
+    mocker.patch("trxo_lib.operations.imports.authn.error")
 
     result = importer.update_item({"a": 1}, "t", "http://base")
 
@@ -64,19 +60,16 @@ def test_authn_importer_update_item_failure(mocker):
 
 
 def test_import_authn_defaults(mocker):
-    importer = mocker.Mock()
-    mocker.patch(
-        "trxo.commands.imports.authn.AuthnImporter",
-        return_value=importer,
-    )
+    mock_service_cls = mocker.patch("trxo.commands.imports.authn.ImportService")
+    mock_service = mock_service_cls.return_value
 
     import_authn = create_authn_import_command()
     import_authn(file="f")
 
-    importer.import_from_file.assert_called_once()
-    kwargs = importer.import_from_file.call_args.kwargs
+    mock_service.import_authn.assert_called_once()
+    kwargs = mock_service.import_authn.call_args.kwargs
 
-    assert "file_path" in kwargs
+    assert "file" in kwargs
     assert "realm" in kwargs
     assert "jwk_path" in kwargs
     assert "sa_id" in kwargs
@@ -92,11 +85,8 @@ def test_import_authn_defaults(mocker):
 
 
 def test_import_authn_custom_args(mocker):
-    importer = mocker.Mock()
-    mocker.patch(
-        "trxo.commands.imports.authn.AuthnImporter",
-        return_value=importer,
-    )
+    mock_service_cls = mocker.patch("trxo.commands.imports.authn.ImportService")
+    mock_service = mock_service_cls.return_value
 
     import_authn = create_authn_import_command()
     import_authn(
@@ -116,12 +106,12 @@ def test_import_authn_custom_args(mocker):
         am_base_url="am",
     )
 
-    importer.import_from_file.assert_called_once()
-    kwargs = importer.import_from_file.call_args.kwargs
+    mock_service.import_authn.assert_called_once()
+    kwargs = mock_service.import_authn.call_args.kwargs
 
     assert kwargs["realm"] == "alpha"
     assert kwargs["diff"] is True
-    assert kwargs["file_path"] == "f"
+    assert kwargs["file"] == "f"
     assert kwargs["force_import"] is True
     assert kwargs["branch"] == "b"
     assert kwargs["jwk_path"] == "k"

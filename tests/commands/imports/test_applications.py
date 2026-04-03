@@ -1,12 +1,7 @@
 import json
 
-import pytest
-import typer
-
-from trxo.commands.imports.applications import (
-    ApplicationsImporter,
-    create_applications_import_command,
-)
+from trxo_lib.operations.imports.applications import ApplicationsImporter
+from trxo.commands.imports.applications import create_applications_import_command
 
 
 def test_applications_importer_required_fields():
@@ -27,7 +22,7 @@ def test_applications_importer_api_endpoint():
 
 def test_applications_importer_update_item_missing_id(mocker):
     importer = ApplicationsImporter()
-    mocker.patch("trxo.commands.imports.applications.error")
+    mocker.patch("trxo_lib.operations.imports.applications.error")
 
     result = importer.update_item({}, "t", "b")
 
@@ -41,7 +36,7 @@ def test_applications_importer_update_item_success(mocker):
         importer, "build_auth_headers", return_value={"Authorization": "Bearer t"}
     )
     mocker.patch.object(importer, "make_http_request")
-    mocker.patch("trxo.commands.imports.applications.info")
+    mocker.patch("trxo_lib.operations.imports.applications.info")
 
     result = importer.update_item({"_id": "app1", "k": "v"}, "t", "http://base")
 
@@ -56,7 +51,7 @@ def test_applications_importer_update_item_failure(mocker):
         importer, "build_auth_headers", return_value={"Authorization": "Bearer t"}
     )
     mocker.patch.object(importer, "make_http_request", side_effect=Exception("boom"))
-    mocker.patch("trxo.commands.imports.applications.error")
+    mocker.patch("trxo_lib.operations.imports.applications.error")
 
     result = importer.update_item({"_id": "app1"}, "t", "http://base")
 
@@ -64,19 +59,16 @@ def test_applications_importer_update_item_failure(mocker):
 
 
 def test_import_applications_defaults(mocker):
-    importer = mocker.Mock()
-    mocker.patch(
-        "trxo.commands.imports.applications.ApplicationsImporter",
-        return_value=importer,
-    )
+    mock_service_cls = mocker.patch("trxo.commands.imports.applications.ImportService")
+    mock_service = mock_service_cls.return_value
 
     import_applications = create_applications_import_command()
     import_applications()
 
-    importer.import_from_file.assert_called_once()
-    kwargs = importer.import_from_file.call_args.kwargs
+    mock_service.import_applications.assert_called_once()
+    kwargs = mock_service.import_applications.call_args.kwargs
 
-    assert "file_path" in kwargs
+    assert "file" in kwargs
     assert "realm" in kwargs
     assert "jwk_path" in kwargs
     assert "sa_id" in kwargs
@@ -93,11 +85,8 @@ def test_import_applications_defaults(mocker):
 
 
 def test_import_applications_custom_args(mocker):
-    importer = mocker.Mock()
-    mocker.patch(
-        "trxo.commands.imports.applications.ApplicationsImporter",
-        return_value=importer,
-    )
+    mock_service_cls = mocker.patch("trxo.commands.imports.applications.ImportService")
+    mock_service = mock_service_cls.return_value
 
     import_applications = create_applications_import_command()
     import_applications(
@@ -118,10 +107,10 @@ def test_import_applications_custom_args(mocker):
         am_base_url="am",
     )
 
-    importer.import_from_file.assert_called_once()
-    kwargs = importer.import_from_file.call_args.kwargs
+    mock_service.import_applications.assert_called_once()
+    kwargs = mock_service.import_applications.call_args.kwargs
 
-    assert kwargs["file_path"] == "f"
+    assert kwargs["file"] == "f"
     assert kwargs["realm"] == "alpha"
     assert kwargs["force_import"] is True
     assert kwargs["diff"] is True
@@ -190,14 +179,12 @@ def test_applications_importer_load_data_without_deps_skips_pending(tmp_path):
 
 
 def test_import_applications_sets_include_am_dependencies(mocker):
-    importer = mocker.Mock()
-    mocker.patch(
-        "trxo.commands.imports.applications.ApplicationsImporter",
-        return_value=importer,
-    )
+    mock_service_cls = mocker.patch("trxo.commands.imports.applications.ImportService")
+    mock_service = mock_service_cls.return_value
 
     import_applications = create_applications_import_command()
     import_applications(with_deps=True)
 
-    assert importer.include_am_dependencies is True
-    importer.import_from_file.assert_called_once()
+    mock_service.import_applications.assert_called_once()
+    kwargs = mock_service.import_applications.call_args.kwargs
+    assert kwargs["with_deps"] is True

@@ -64,3 +64,19 @@ class AuthnImporter(BaseImporter):
             error(f"Failed to update authentication settings: {e}")
             return False
 
+
+class AuthnImportService:
+    """Service wrapper for authn import operations."""
+
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+    def execute(self) -> Any:
+        realm = self.kwargs.get("realm", DEFAULT_REALM)
+        importer = AuthnImporter(realm=realm)
+
+        # Typer passes 'file' which maps to 'file_path' in BaseImporter
+        if "file" in self.kwargs:
+            self.kwargs["file_path"] = self.kwargs.pop("file")
+
+        return importer.import_from_file(**self.kwargs)
