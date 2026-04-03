@@ -318,4 +318,8 @@ class ApplicationsImportService:
         if "file" in self.kwargs:
             self.kwargs["file_path"] = self.kwargs.pop("file")
 
+        # Pop 'with_deps' since it's used to set importer.include_am_dependencies
+        # and would cause a TypeError if passed to import_from_file
+        self.kwargs.pop("with_deps", None)
+
         return importer.import_from_file(**self.kwargs)
