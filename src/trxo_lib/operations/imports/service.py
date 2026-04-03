@@ -11,6 +11,7 @@ from trxo_lib.operations.imports.applications import ApplicationsImportService
 from trxo_lib.operations.imports.authn import AuthnImportService
 from trxo_lib.operations.imports.managed import ManagedImportService
 from trxo_lib.operations.imports.journeys import JourneyImportService
+from trxo_lib.operations.imports.esv import EsvImportService
 from trxo_lib.operations.imports.mappings import MappingsImportService
 from trxo_lib.operations.imports.oauth import OAuthImportService
 from trxo_lib.operations.imports.privileges import PrivilegesImportService
@@ -67,6 +68,12 @@ class ImportService:
 
     def import_endpoints(self, **kwargs) -> Any:
         return EndpointsImportService(**kwargs).execute()
+
+    def import_esv_variables(self, **kwargs) -> Any:
+        return EsvImportService(**kwargs).execute_variables()
+
+    def import_esv_secrets(self, **kwargs) -> Any:
+        return EsvImportService(**kwargs).execute_secrets()
 
     def import_mappings(self, **kwargs) -> Any:
         return MappingsImportService(**kwargs).execute()

@@ -53,8 +53,8 @@ API_HEADERS = {
     },
     "esv": {
         **BASE_HEADERS,
-        "Accept-API-Version": "resource=2.0",
-        # NOTE: some ESV calls use resource=1.0 but standard is 2.0. Handled via specific helper if needed.
+        "Accept-API-Version": "resource=1.0",
+        # The new resource version is 2.0 but it is not working for bulk export
     },
     "journeys": {
         **BASE_HEADERS,

@@ -1,19 +1,13 @@
 """
-ESV (Environment Secrets & Variables) import commands.
-
-This module provides import functionality for PingOne Advanced Identity Cloud Environment
-Secrets and Variables.
+ESV (Environment Secrets & Variables) import services.
 """
 
-from trxo_lib.exceptions import TrxoAbort
 import base64
 import json
 from typing import Any, Dict, List
 
-
 from trxo_lib.config.api_headers import get_headers
-from trxo_lib.utils.console import console, error, info, warning
-
+from trxo_lib.utils.console import error, info, warning
 from trxo_lib.operations.imports.base_importer import BaseImporter
 
 
@@ -190,27 +184,22 @@ class EsvSecretsImporter(BaseImporter):
             return False
 
 
-def create_esv_callback():
-    """Create ESV callback function"""
+class EsvImportService:
+    """Service wrapper for ESV import operations."""
 
-    def esv_callback(ctx=None):
-        """Top-level ESV command.
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
 
-        If run without a subcommand, prints a short guide to help the user.
-        """
-        if getattr(ctx, "invoked_subcommand", None) is None:
-            console.print()
-            warning("No ESV subcommand selected.")
-            info("ESV has two subcommands:")
-            info("  • secrets")
-            info("  • variables")
-            console.print()
-            info("Run one of:")
-            info("  trxo import esv secrets --help")
-            info("  trxo import esv variables --help")
-            console.print()
-            info("Tip: use --help on any command to see options.")
-            console.print()
-            raise TrxoAbort(code=0)
+    def execute_variables(self) -> Any:
+        importer = EsvVariablesImporter()
+        if "file" in self.kwargs:
+            self.kwargs["file_path"] = self.kwargs.pop("file")
+        self.kwargs["realm"] = None  # Root-level config
+        return importer.import_from_file(**self.kwargs)
 
-    return esv_callback
+    def execute_secrets(self) -> Any:
+        importer = EsvSecretsImporter()
+        if "file" in self.kwargs:
+            self.kwargs["file_path"] = self.kwargs.pop("file")
+        self.kwargs["realm"] = None  # Root-level config
+        return importer.import_from_file(**self.kwargs)

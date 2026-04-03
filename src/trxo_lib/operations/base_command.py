@@ -242,6 +242,7 @@ class BaseCommand(ABC):
 
         # Log request start
         self.logger.debug(f"Starting {method_upper} request to {url}")
+        self.logger.debug(f"Header accept version: {headers.get('Accept-API-Version')}")
 
         try:
             with httpx.Client(timeout=timeout) as client:
