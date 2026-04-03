@@ -14,7 +14,6 @@ from trxo_lib.operations.imports.journeys import JourneyImportService
 from trxo_lib.operations.imports.mappings import MappingsImportService
 from trxo_lib.operations.imports.oauth import OAuthImportService
 from trxo_lib.operations.imports.privileges import PrivilegesImportService
-from trxo_lib.operations.imports.realms import RealmsImportService
 from trxo_lib.operations.imports.policies import PoliciesImportService
 from trxo_lib.operations.imports.saml import SamlImportService
 from trxo_lib.operations.imports.services import ServicesImportService
@@ -74,9 +73,6 @@ class ImportService:
 
     def import_privileges(self, **kwargs) -> Any:
         return PrivilegesImportService(**kwargs).execute()
-
-    def import_realms(self, **kwargs) -> Any:
-        return RealmsImportService(**kwargs).execute()
 
     def import_webhooks(self, **kwargs) -> Any:
         return WebhooksImportService(**kwargs).execute()
