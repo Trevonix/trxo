@@ -68,3 +68,22 @@ class PrivilegesImporter(BaseImporter):
             error(f"Failed to upsert Privilege '{item_id}': {e}")
             return False
 
+
+
+class PrivilegesImportService:
+    """Service wrapper for privileges import operations."""
+
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+    def execute(self) -> Any:
+        importer = PrivilegesImporter()
+
+        # Typer passes 'file' which maps to 'file_path' in BaseImporter
+        if 'file' in self.kwargs:
+            self.kwargs['file_path'] = self.kwargs.pop('file')
+
+        # Privileges are root-level config in IDM
+        self.kwargs['realm'] = None
+
+        return importer.import_from_file(**self.kwargs)

@@ -2,15 +2,7 @@
 Privileges import command.
 
 Import functionality for PingIDM Privileges.
-- Uses PUT with _id in Privilege: /openidm/config/{_id}
-- Keeps complete data as payload (no field removal)
-- Works as upsert (create or update)
 """
-
-import json
-from typing import Any, Dict, List
-
-import typer
 
 from trxo.commands.shared.options import (
     AmBaseUrlOpt,
@@ -33,62 +25,7 @@ from trxo.commands.shared.options import (
     SaIdOpt,
     SyncOpt,
 )
-from trxo_lib.config.api_headers import get_headers
-from trxo_lib.utils.console import error, info
-
-from trxo_lib.operations.imports.base_importer import BaseImporter
-
-
-class PrivilegesImporter(BaseImporter):
-    """Importer for PingIDM Privileges"""
-
-    def __init__(self):
-        super().__init__()
-        self.product = "idm"
-
-    def get_required_fields(self) -> List[str]:
-        return ["_id"]
-
-    def get_item_type(self) -> str:
-        return "Privileges"
-
-    def get_api_endpoint(self, item_id: str, base_url: str) -> str:
-        return f"{base_url}/openidm/config/{item_id}"
-
-    def delete_item(self, item_id: str, token: str, base_url: str) -> bool:
-        """Delete a Privilege using DELETE /openidm/config/{item_id}"""
-        url = self.get_api_endpoint(item_id, base_url)
-        headers = get_headers("privileges")
-        headers = {**headers, **self.build_auth_headers(token)}
-
-        try:
-            self.make_http_request(url, "DELETE", headers)
-            return True
-        except Exception as e:
-            error(f"Failed to delete Privilege '{item_id}': {e}")
-            return False
-
-    def update_item(self, item_data: Dict[str, Any], token: str, base_url: str) -> bool:
-        """Upsert Privilege using PUT"""
-        item_id = item_data.get("_id")
-        if not item_id:
-            error("Privilege missing '_id'; required for upsert")
-            return False
-
-        # Keep complete data as payload (no field removal as per requirement)
-        payload = json.dumps(item_data)
-
-        url = self.get_api_endpoint(item_id, base_url)
-        headers = get_headers("privileges")
-        headers = {**headers, **self.build_auth_headers(token)}
-
-        try:
-            self.make_http_request(url, "PUT", headers, payload)
-            info(f"Upserted Privilege: {item_id}")
-            return True
-        except Exception as e:
-            error(f"Failed to upsert Privilege '{item_id}': {e}")
-            return False
+from trxo_lib.operations.imports.service import ImportService
 
 
 def create_privileges_import_command():
@@ -116,28 +53,7 @@ def create_privileges_import_command():
         sync: SyncOpt = False,
     ):
         """Import Privileges from JSON file (local mode) or Git repository (Git mode)"""
-        importer = PrivilegesImporter()
-        importer.import_from_file(
-            file_path=file,
-            realm=None,  # Root-level config
-            jwk_path=jwk_path,
-            sa_id=sa_id,
-            base_url=base_url,
-            project_name=project_name,
-            auth_mode=auth_mode,
-            onprem_username=onprem_username,
-            onprem_password=onprem_password,
-            onprem_realm=onprem_realm,
-            idm_base_url=idm_base_url,
-            idm_username=idm_username,
-            idm_password=idm_password,
-            am_base_url=am_base_url,
-            force_import=force_import,
-            branch=branch,
-            diff=diff,
-            rollback=rollback,
-            cherry_pick=cherry_pick,
-            sync=sync,
-        )
+        kwargs = locals()
+        return ImportService().import_privileges(**kwargs)
 
     return import_privileges

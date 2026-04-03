@@ -1,11 +1,9 @@
 import json
 import os
 import tempfile
-
-from trxo.commands.imports.mappings import (
-    MappingsImporter,
-    create_mappings_import_command,
-)
+import pytest
+from trxo.commands.imports.mappings import create_mappings_import_command
+from trxo_lib.operations.imports.mappings import MappingsImporter
 
 
 def test_mappings_required_fields():
@@ -57,7 +55,7 @@ def test_generate_patch_operations_list_replace():
 
 def test_update_item_missing_name(mocker):
     importer = MappingsImporter()
-    mocker.patch("trxo.commands.imports.mappings.error")
+    mocker.patch("trxo_lib.operations.imports.mappings.error")
 
     assert importer.update_item({}, "t", "http://x") is False
 
@@ -65,7 +63,7 @@ def test_update_item_missing_name(mocker):
 def test_update_item_no_current_config(mocker):
     importer = MappingsImporter()
     importer._get_current_sync_config = mocker.Mock(return_value={})
-    mocker.patch("trxo.commands.imports.mappings.error")
+    mocker.patch("trxo_lib.operations.imports.mappings.error")
 
     assert importer.update_item({"name": "a"}, "t", "http://x") is False
 
@@ -76,7 +74,7 @@ def test_update_item_existing_no_changes(mocker):
     importer._get_current_sync_config = mocker.Mock(
         return_value={"mappings": [{"name": "a"}]}
     )
-    mocker.patch("trxo.commands.imports.mappings.info")
+    mocker.patch("trxo_lib.operations.imports.mappings.info")
 
     assert importer.update_item({"name": "a"}, "t", "http://x") is True
 
@@ -87,7 +85,7 @@ def test_update_item_existing_with_patch(mocker):
     importer._get_current_sync_config = mocker.Mock(
         return_value={"mappings": [{"name": "a", "x": 1}]}
     )
-    mocker.patch("trxo.commands.imports.mappings.info")
+    mocker.patch("trxo_lib.operations.imports.mappings.info")
 
     assert importer.update_item({"name": "a", "x": 2}, "t", "http://x") is True
 
@@ -96,7 +94,7 @@ def test_update_item_create_new(mocker):
     importer = MappingsImporter()
     importer.make_http_request = mocker.Mock()
     importer._get_current_sync_config = mocker.Mock(return_value={"mappings": []})
-    mocker.patch("trxo.commands.imports.mappings.info")
+    mocker.patch("trxo_lib.operations.imports.mappings.info")
 
     assert importer.update_item({"name": "a"}, "t", "http://x") is True
 
@@ -127,14 +125,13 @@ def test_load_mappings_file_raw_object():
     assert data["name"] == "a"
 
 
-def test_create_mappings_import_command(mocker):
-    importer = mocker.Mock()
+def test_create_mappings_import_command_wires_service(mocker):
+    mock_service = mocker.Mock()
     mocker.patch(
-        "trxo.commands.imports.mappings.MappingsImporter",
-        return_value=importer,
+        "trxo.commands.imports.mappings.ImportService", return_value=mock_service
     )
 
     cmd = create_mappings_import_command()
     cmd(file="x.json")
 
-    importer.import_from_file.assert_called_once()
+    mock_service.import_mappings.assert_called_once()

@@ -1,11 +1,7 @@
 import json
-
 import pytest
-
-from trxo.commands.imports.themes import (
-    ThemesImporter,
-    create_themes_import_command,
-)
+from trxo.commands.imports.themes import create_themes_import_command
+from trxo_lib.operations.imports.themes import ThemesImporter
 
 
 def test_get_item_type():
@@ -117,7 +113,7 @@ def test_update_item_put_success(mocker):
         return_value={"_rev": "some-rev", "realm": {}}
     )
     importer.make_http_request = mocker.Mock()
-    mocker.patch("trxo.commands.imports.themes.info")
+    mocker.patch("trxo_lib.operations.imports.themes.info")
 
     incoming = {"realm": {"alpha": [{"_id": "1", "name": "theme1"}]}}
 
@@ -137,7 +133,7 @@ def test_update_item_put_failure(mocker):
 
     importer._fetch_current = mocker.Mock(return_value={"realm": {}})
     importer.make_http_request = mocker.Mock(side_effect=Exception("boom"))
-    mocker.patch("trxo.commands.imports.themes.error")
+    mocker.patch("trxo_lib.operations.imports.themes.error")
 
     incoming = {"realm": {"alpha": [{"_id": "1", "name": "theme1"}]}}
 
@@ -146,14 +142,16 @@ def test_update_item_put_failure(mocker):
     assert result is False
 
 
-def test_create_themes_import_command_wires_importer(mocker, tmp_path):
+def test_create_themes_import_command_wires_service(mocker, tmp_path):
     f = tmp_path / "themes.json"
     f.write_text(json.dumps({"realm": {"alpha": [{"a": 1}]}}))
 
-    importer = mocker.Mock()
-    mocker.patch("trxo.commands.imports.themes.ThemesImporter", return_value=importer)
+    mock_service = mocker.Mock()
+    mocker.patch(
+        "trxo.commands.imports.themes.ImportService", return_value=mock_service
+    )
 
     cmd = create_themes_import_command()
     cmd(file=str(f))
 
-    importer.import_from_file.assert_called_once()
+    mock_service.import_themes.assert_called_once()

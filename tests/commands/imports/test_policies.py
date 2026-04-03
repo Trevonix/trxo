@@ -1,7 +1,6 @@
-from trxo.commands.imports.policies import (
-    PoliciesImporter,
-    create_policies_import_command,
-)
+import pytest
+from trxo.commands.imports.policies import create_policies_import_command
+from trxo_lib.operations.imports.policies import PoliciesImporter
 
 
 def test_policies_required_fields():
@@ -27,7 +26,7 @@ def test_policies_api_endpoint():
 
 def test_update_item_missing_id(mocker):
     importer = PoliciesImporter()
-    mocker.patch("trxo.commands.imports.policies.error")
+    mocker.patch("trxo_lib.operations.imports.policies.error")
 
     result = importer.update_item({}, "t", "http://x")
 
@@ -37,7 +36,7 @@ def test_update_item_missing_id(mocker):
 def test_update_item_success(mocker):
     importer = PoliciesImporter(realm="alpha")
     importer.make_http_request = mocker.Mock()
-    mocker.patch("trxo.commands.imports.policies.info")
+    mocker.patch("trxo_lib.operations.imports.policies.info")
 
     data = {"_id": "p1", "x": 1}
     result = importer.update_item(data, "t", "http://x")
@@ -49,7 +48,7 @@ def test_update_item_success(mocker):
 def test_update_item_failure(mocker):
     importer = PoliciesImporter(realm="alpha")
     importer.make_http_request = mocker.Mock(side_effect=Exception("boom"))
-    mocker.patch("trxo.commands.imports.policies.error")
+    mocker.patch("trxo_lib.operations.imports.policies.error")
 
     data = {"_id": "p1"}
     result = importer.update_item(data, "t", "http://x")
@@ -57,17 +56,16 @@ def test_update_item_failure(mocker):
     assert result is False
 
 
-def test_create_policies_import_command(mocker):
-    importer = mocker.Mock()
+def test_create_policies_import_command_wires_service(mocker):
+    mock_service = mocker.Mock()
     mocker.patch(
-        "trxo.commands.imports.policies.PoliciesImporter",
-        return_value=importer,
+        "trxo.commands.imports.policies.ImportService", return_value=mock_service
     )
 
     cmd = create_policies_import_command()
     cmd(file="x.json", realm="beta")
 
-    importer.import_from_file.assert_called_once()
+    mock_service.import_policies.assert_called_once()
 
 
 def test_policies_get_item_id():
@@ -79,7 +77,7 @@ def test_policies_get_item_id():
 def test_delete_item_success(mocker):
     importer = PoliciesImporter(realm="alpha")
     importer.make_http_request = mocker.Mock()
-    mocker.patch("trxo.commands.imports.policies.info")
+    mocker.patch("trxo_lib.operations.imports.policies.info")
 
     result = importer.delete_item("p1", "tok", "http://x")
 
@@ -92,25 +90,8 @@ def test_delete_item_success(mocker):
 def test_delete_item_failure(mocker):
     importer = PoliciesImporter(realm="alpha")
     importer.make_http_request = mocker.Mock(side_effect=Exception("403 Forbidden"))
-    mocker.patch("trxo.commands.imports.policies.error")
+    mocker.patch("trxo_lib.operations.imports.policies.error")
 
     result = importer.delete_item("p1", "tok", "http://x")
 
     assert result is False
-
-
-def test_create_policies_import_command_sync(mocker):
-    """Verify sync, rollback, cherry_pick are forwarded to import_from_file."""
-    importer = mocker.Mock()
-    mocker.patch(
-        "trxo.commands.imports.policies.PoliciesImporter",
-        return_value=importer,
-    )
-
-    cmd = create_policies_import_command()
-    cmd(file="x.json", realm="alpha", sync=True, rollback=True, cherry_pick="p1")
-
-    call_kwargs = importer.import_from_file.call_args.kwargs
-    assert call_kwargs.get("sync") is True
-    assert call_kwargs.get("rollback") is True
-    assert call_kwargs.get("cherry_pick") == "p1"

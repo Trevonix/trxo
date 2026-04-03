@@ -3,7 +3,7 @@ import json
 import pytest
 import typer
 
-from trxo.commands.imports.base_importer import BaseImporter, SimpleImporter
+from trxo_lib.operations.imports.base_importer import BaseImporter, SimpleImporter
 
 
 class DummyImporter(BaseImporter):
@@ -92,13 +92,16 @@ def test_import_from_file_local_success(mocker, tmp_path):
     importer.process_items.assert_called_once()
 
 
+from trxo_lib.exceptions import TrxoAbort
+
+
 def test_import_from_file_missing_file_path(mocker):
     importer = DummyImporter()
 
     mocker.patch.object(importer, "initialize_auth", return_value=("t", "url"))
     mocker.patch.object(importer, "_get_storage_mode", return_value="local")
 
-    with pytest.raises(typer.Exit):
+    with pytest.raises(TrxoAbort):
         importer.import_from_file(file_path=None)
 
 
@@ -121,7 +124,7 @@ def test_apply_cherry_pick_invalid(mocker):
         importer.cherry_pick_filter, "validate_cherry_pick_argument", return_value=False
     )
 
-    with pytest.raises(typer.Exit):
+    with pytest.raises(TrxoAbort):
         importer._apply_cherry_pick_filter([{"_id": "1"}], "bad")
 
 
@@ -163,13 +166,12 @@ def test_process_items_failure_with_rollback(mocker):
     importer = DummyImporter()
     rollback_mgr = mocker.Mock()
     rollback_mgr.baseline_snapshot = {}
+    rollback_mgr.execute_rollback.return_value = {"rolled_back": [], "errors": []}
 
     mocker.patch.object(importer, "update_item", return_value=False)
-    mocker.patch.object(
-        importer, "_execute_rollback_and_exit", side_effect=typer.Exit(1)
-    )
+    mocker.patch.object(importer, "_execute_rollback_and_exit", side_effect=TrxoAbort())
 
-    with pytest.raises(typer.Exit):
+    with pytest.raises(TrxoAbort):
         importer.process_items(
             [{"_id": "1"}],
             "t",

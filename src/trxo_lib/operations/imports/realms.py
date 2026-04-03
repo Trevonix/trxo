@@ -74,3 +74,22 @@ class RealmImporter(BaseImporter):
             error(f"Failed to {action} realm '{item_name}': {str(e)}")
             return False
 
+
+
+class RealmsImportService:
+    """Service wrapper for realms import operations."""
+
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+    def execute(self) -> Any:
+        importer = RealmImporter()
+
+        # Typer passes 'file' which maps to 'file_path' in BaseImporter
+        if 'file' in self.kwargs:
+            self.kwargs['file_path'] = self.kwargs.pop('file')
+
+        # Realms are global config, realm should be None for auth
+        self.kwargs['realm'] = None
+
+        return importer.import_from_file(**self.kwargs)

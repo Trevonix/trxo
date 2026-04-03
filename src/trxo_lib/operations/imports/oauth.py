@@ -394,3 +394,19 @@ class OAuthImporter(BaseImporter):
             error(f"Failed to delete OAuth2 Client '{item_id}': {e}")
             return False
 
+
+class OAuthImportService:
+    """Service to handle OAuth clients import logic"""
+
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+    def execute(self):
+        realm = self.kwargs.get("realm", DEFAULT_REALM)
+        importer = OAuthImporter(realm=realm)
+
+        # Typer passes 'file' which maps to 'file_path' in BaseImporter
+        if "file" in self.kwargs:
+            self.kwargs["file_path"] = self.kwargs.pop("file")
+
+        return importer.import_from_file(**self.kwargs)

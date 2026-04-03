@@ -1,8 +1,8 @@
 import json
-
 import httpx
-
-from trxo.commands.imports.saml import SamlImporter, create_saml_import_command
+import pytest
+from trxo.commands.imports.saml import create_saml_import_command
+from trxo_lib.operations.imports.saml import SamlImporter
 
 
 def test_saml_basic_methods():
@@ -28,7 +28,7 @@ def test_filter_entities_with_cherry_pick():
 
 def test_import_single_script_missing_id(mocker):
     s = SamlImporter()
-    mocker.patch("trxo.commands.imports.saml.error")
+    mocker.patch("trxo_lib.operations.imports.saml.error")
     result = s._import_single_script({"name": "a"}, "t", "http://x")
     assert result is False
 
@@ -36,7 +36,7 @@ def test_import_single_script_missing_id(mocker):
 def test_import_single_script_success(mocker):
     s = SamlImporter()
     s.make_http_request = mocker.Mock()
-    mocker.patch("trxo.commands.imports.saml.info")
+    mocker.patch("trxo_lib.operations.imports.saml.info")
 
     data = {"_id": "s1", "name": "n", "script": ["a", "b"]}
     assert s._import_single_script(data, "t", "http://x") is True
@@ -45,7 +45,7 @@ def test_import_single_script_success(mocker):
 def test_import_single_script_failure(mocker):
     s = SamlImporter()
     s.make_http_request = mocker.Mock(side_effect=Exception("boom"))
-    mocker.patch("trxo.commands.imports.saml.error")
+    mocker.patch("trxo_lib.operations.imports.saml.error")
 
     data = {"_id": "s1", "script": "x"}
     assert s._import_single_script(data, "t", "http://x") is False
@@ -53,7 +53,7 @@ def test_import_single_script_failure(mocker):
 
 def test_import_metadata_skip_invalid(mocker):
     s = SamlImporter()
-    mocker.patch("trxo.commands.imports.saml.warning")
+    mocker.patch("trxo_lib.operations.imports.saml.warning")
     assert s._import_metadata([{"x": 1}], [], "t", "http://x", None) is True
 
 
@@ -62,7 +62,7 @@ def test_import_single_metadata_exists(mocker):
     resp = mocker.Mock()
     resp.text = "metadata ok"
     s.make_http_request = mocker.Mock(return_value=resp)
-    mocker.patch("trxo.commands.imports.saml.info")
+    mocker.patch("trxo_lib.operations.imports.saml.info")
 
     assert s._import_single_metadata("e1", "<xml/>", "t", "http://x") is None
 
@@ -73,7 +73,7 @@ def test_import_single_metadata_missing_then_post(mocker):
     resp.text = "ERROR No metadata for entity"
     s.make_http_request = mocker.Mock(return_value=resp)
     s._post_metadata = mocker.Mock(return_value=True)
-    mocker.patch("trxo.commands.imports.saml.info")
+    mocker.patch("trxo_lib.operations.imports.saml.info")
 
     assert s._import_single_metadata("e1", "<xml/>", "t", "http://x") is True
 
@@ -81,7 +81,7 @@ def test_import_single_metadata_missing_then_post(mocker):
 def test_post_metadata_success(mocker):
     s = SamlImporter()
     s.make_http_request = mocker.Mock()
-    mocker.patch("trxo.commands.imports.saml.info")
+    mocker.patch("trxo_lib.operations.imports.saml.info")
 
     assert s._post_metadata("e1", "<xml/>", "t", "http://x") is True
 
@@ -89,21 +89,21 @@ def test_post_metadata_success(mocker):
 def test_post_metadata_failure(mocker):
     s = SamlImporter()
     s.make_http_request = mocker.Mock(side_effect=Exception("boom"))
-    mocker.patch("trxo.commands.imports.saml.error")
+    mocker.patch("trxo_lib.operations.imports.saml.error")
 
     assert s._post_metadata("e1", "<xml/>", "t", "http://x") is False
 
 
 def test_upsert_entity_missing_id(mocker):
     s = SamlImporter()
-    mocker.patch("trxo.commands.imports.saml.error")
+    mocker.patch("trxo_lib.operations.imports.saml.error")
     assert s._upsert_entity({}, "remote", "t", "http://x") is False
 
 
 def test_upsert_remote_entity_success(mocker):
     s = SamlImporter()
     s.make_http_request = mocker.Mock()
-    mocker.patch("trxo.commands.imports.saml.info")
+    mocker.patch("trxo_lib.operations.imports.saml.info")
 
     data = {"_id": "r1", "entityId": "e1"}
     assert s._upsert_entity(data, "remote", "t", "http://x") is True
@@ -112,7 +112,7 @@ def test_upsert_remote_entity_success(mocker):
 def test_upsert_remote_entity_failure(mocker):
     s = SamlImporter()
     s.make_http_request = mocker.Mock(side_effect=Exception("boom"))
-    mocker.patch("trxo.commands.imports.saml.error")
+    mocker.patch("trxo_lib.operations.imports.saml.error")
 
     data = {"_id": "r1", "entityId": "e1"}
     assert s._upsert_entity(data, "remote", "t", "http://x") is False
@@ -130,7 +130,7 @@ def test_upsert_hosted_create_on_404(mocker):
 
     mocker.patch.object(httpx, "Client", return_value=client_ctx)
     s.make_http_request = mocker.Mock()
-    mocker.patch("trxo.commands.imports.saml.info")
+    mocker.patch("trxo_lib.operations.imports.saml.info")
 
     data = {"_id": "h1", "entityId": "e1"}
     assert s._upsert_entity(data, "hosted", "t", "http://x") is True
@@ -148,7 +148,7 @@ def test_upsert_hosted_update_success(mocker):
     client_ctx.put.return_value = resp
 
     mocker.patch.object(httpx, "Client", return_value=client_ctx)
-    mocker.patch("trxo.commands.imports.saml.info")
+    mocker.patch("trxo_lib.operations.imports.saml.info")
 
     data = {"_id": "h1", "entityId": "e1"}
     assert s._upsert_entity(data, "hosted", "t", "http://x") is True
@@ -156,24 +156,18 @@ def test_upsert_hosted_update_success(mocker):
 
 def test_import_saml_data_empty(mocker):
     s = SamlImporter()
-    mocker.patch("trxo.commands.imports.saml.warning")
+    mocker.patch("trxo_lib.operations.imports.saml.warning")
     assert s.import_saml_data({}, "t", "http://x", None) is True
 
 
-def test_create_saml_import_command_local_file(mocker, tmp_path):
+def test_create_saml_import_command_wires_service(mocker, tmp_path):
     f = tmp_path / "saml.json"
     f.write_text(json.dumps({"data": {}}))
 
-    importer = mocker.Mock()
-    importer._get_storage_mode.return_value = "local"
-    importer.initialize_auth.return_value = ("t", "http://x")
-    importer.validate_import_hash.return_value = True
-    importer.import_saml_data.return_value = True
-    importer.cleanup = mocker.Mock()
-
-    mocker.patch("trxo.commands.imports.saml.SamlImporter", return_value=importer)
+    mock_service = mocker.Mock()
+    mocker.patch("trxo.commands.imports.saml.ImportService", return_value=mock_service)
 
     cmd = create_saml_import_command()
     cmd(file=str(f), diff=False)
 
-    importer.import_saml_data.assert_called_once()
+    mock_service.import_saml.assert_called_once()

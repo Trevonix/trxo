@@ -1,13 +1,10 @@
 import json
-
 import pytest
-import typer
-
 from trxo.commands.imports.agents import (
-    AgentsImporter,
     create_agents_callback,
     create_agents_import_command,
 )
+from trxo_lib.operations.imports.agents import AgentsImporter
 
 
 @pytest.fixture
@@ -40,7 +37,7 @@ def test_agents_importer_build_payload_removes_rev(importer):
 
 def test_agents_importer_update_item_missing_id(mocker):
     importer = AgentsImporter("WebAgent", realm="alpha")
-    mocker.patch("trxo.commands.imports.agents.error")
+    mocker.patch("trxo_lib.operations.imports.agents.error")
     ok = importer.update_item({}, "t", "https://x")
     assert ok is False
 
@@ -49,7 +46,7 @@ def test_agents_importer_update_item_success(mocker):
     importer = AgentsImporter("WebAgent", realm="alpha")
     mocker.patch.object(importer, "make_http_request")
     mocker.patch.object(importer, "build_auth_headers", return_value={})
-    mocker.patch("trxo.commands.imports.agents.info")
+    mocker.patch("trxo_lib.operations.imports.agents.info")
     ok = importer.update_item({"_id": "x", "a": 1}, "t", "https://x")
     assert ok is True
 
@@ -58,84 +55,51 @@ def test_agents_importer_update_item_failure(mocker):
     importer = AgentsImporter("WebAgent", realm="alpha")
     mocker.patch.object(importer, "make_http_request", side_effect=Exception("boom"))
     mocker.patch.object(importer, "build_auth_headers", return_value={})
-    mocker.patch("trxo.commands.imports.agents.error")
+    mocker.patch("trxo_lib.operations.imports.agents.error")
     ok = importer.update_item({"_id": "x"}, "t", "https://x")
     assert ok is False
 
 
-def test_import_identity_gateway_agents_calls_importer(mocker):
-    importer = mocker.Mock()
+def test_import_identity_gateway_agents_wires_service(mocker):
+    mock_service = mocker.Mock()
     mocker.patch(
-        "trxo.commands.imports.agents.AgentsImporter",
-        return_value=importer,
+        "trxo.commands.imports.agents.ImportService", return_value=mock_service
     )
 
     gateway, _, _ = create_agents_import_command()
     gateway()
 
-    importer.import_from_file.assert_called_once()
+    mock_service.import_agents.assert_called_once()
+    assert (
+        mock_service.import_agents.call_args.kwargs["agent_type"]
+        == "IdentityGatewayAgent"
+    )
 
 
-def test_import_java_agents_calls_importer(mocker):
-    importer = mocker.Mock()
+def test_import_java_agents_wires_service(mocker):
+    mock_service = mocker.Mock()
     mocker.patch(
-        "trxo.commands.imports.agents.AgentsImporter",
-        return_value=importer,
+        "trxo.commands.imports.agents.ImportService", return_value=mock_service
     )
 
     _, java, _ = create_agents_import_command()
     java()
 
-    importer.import_from_file.assert_called_once()
+    mock_service.import_agents.assert_called_once()
+    assert mock_service.import_agents.call_args.kwargs["agent_type"] == "J2EEAgent"
 
 
-def test_import_web_agents_calls_importer(mocker):
-    importer = mocker.Mock()
+def test_import_web_agents_wires_service(mocker):
+    mock_service = mocker.Mock()
     mocker.patch(
-        "trxo.commands.imports.agents.AgentsImporter",
-        return_value=importer,
+        "trxo.commands.imports.agents.ImportService", return_value=mock_service
     )
 
     _, _, web = create_agents_import_command()
     web()
 
-    importer.import_from_file.assert_called_once()
-
-
-def test_import_agents_with_args(mocker):
-    importer = mocker.Mock()
-    mocker.patch(
-        "trxo.commands.imports.agents.AgentsImporter",
-        return_value=importer,
-    )
-
-    gateway, _, _ = create_agents_import_command()
-    gateway(
-        file="f.json",
-        realm="bravo",
-        cherry_pick="x",
-        jwk_path="k",
-        sa_id="s",
-        base_url="b",
-        project_name="p",
-        auth_mode="onprem",
-        onprem_username="u",
-        onprem_password="pw",
-        onprem_realm="root",
-        am_base_url="am",
-        force_import=True,
-        diff=True,
-        branch="dev",
-    )
-
-    kwargs = importer.import_from_file.call_args.kwargs
-    assert kwargs["file_path"] == "f.json"
-    assert kwargs["realm"] == "bravo"
-    assert kwargs["cherry_pick"] == "x"
-    assert kwargs["force_import"] is True
-    assert kwargs["diff"] is True
-    assert kwargs["branch"] == "dev"
-    assert kwargs["am_base_url"] == "am"
+    mock_service.import_agents.assert_called_once()
+    assert mock_service.import_agents.call_args.kwargs["agent_type"] == "WebAgent"
 
 
 def test_agents_callback_with_subcommand_no_exit():

@@ -731,3 +731,18 @@ class ManagedObjectsImporter(BaseImporter):
 
         return objects_to_process
 
+
+class ManagedImportService:
+    """Service to handle managed objects import logic"""
+
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+    def execute(self):
+        importer = ManagedObjectsImporter()
+
+        # Typer passes 'file' which maps to 'file_path' in BaseImporter
+        if "file" in self.kwargs:
+            self.kwargs["file_path"] = self.kwargs.pop("file")
+
+        return importer.import_from_file(**self.kwargs)

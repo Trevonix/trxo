@@ -72,3 +72,22 @@ class EmailTemplatesImporter(BaseImporter):
             error(f"Failed to delete Email Template '{item_id}': {e}")
             return False
 
+
+
+class EmailTemplatesImportService:
+    """Service wrapper for email templates import operations."""
+
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+    def execute(self) -> Any:
+        importer = EmailTemplatesImporter()
+
+        # Typer passes 'file' which maps to 'file_path' in BaseImporter
+        if 'file' in self.kwargs:
+            self.kwargs['file_path'] = self.kwargs.pop('file')
+
+        # Email templates are root-level config, realm should be None
+        self.kwargs['realm'] = None
+
+        return importer.import_from_file(**self.kwargs)

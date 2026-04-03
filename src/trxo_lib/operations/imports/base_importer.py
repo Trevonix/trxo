@@ -733,7 +733,7 @@ class BaseImporter(BaseCommand):
         Returns:
             True if deletion successful, False otherwise
         """
-        pass
+        return False
 
 
 class SimpleImporter(BaseImporter):

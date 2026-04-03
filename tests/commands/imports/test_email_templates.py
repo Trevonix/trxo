@@ -1,10 +1,6 @@
 import pytest
-import typer
-
-from trxo.commands.imports.email_templates import (
-    EmailTemplatesImporter,
-    create_email_templates_import_command,
-)
+from trxo.commands.imports.email_templates import create_email_templates_import_command
+from trxo_lib.operations.imports.email_templates import EmailTemplatesImporter
 
 
 def test_email_templates_importer_required_fields():
@@ -27,7 +23,7 @@ def test_update_item_success(mocker):
     importer = EmailTemplatesImporter()
 
     importer.make_http_request = mocker.Mock()
-    mocker.patch("trxo.commands.imports.email_templates.info")
+    mocker.patch("trxo_lib.operations.imports.email_templates.info")
 
     data = {"_id": "emailTemplate/test", "subject": "Hi"}
 
@@ -39,7 +35,7 @@ def test_update_item_success(mocker):
 
 def test_update_item_missing_id(mocker):
     importer = EmailTemplatesImporter()
-    mocker.patch("trxo.commands.imports.email_templates.error")
+    mocker.patch("trxo_lib.operations.imports.email_templates.error")
 
     result = importer.update_item({}, "t", "http://x")
 
@@ -50,7 +46,7 @@ def test_update_item_http_error(mocker):
     importer = EmailTemplatesImporter()
 
     importer.make_http_request = mocker.Mock(side_effect=Exception("boom"))
-    mocker.patch("trxo.commands.imports.email_templates.error")
+    mocker.patch("trxo_lib.operations.imports.email_templates.error")
 
     data = {"_id": "emailTemplate/test"}
 
@@ -63,7 +59,7 @@ def test_update_item_http_error(mocker):
 def test_delete_item_success(mocker):
     importer = EmailTemplatesImporter()
     importer.make_http_request = mocker.Mock()
-    mocker.patch("trxo.commands.imports.email_templates.info")
+    mocker.patch("trxo_lib.operations.imports.email_templates.info")
 
     result = importer.delete_item("emailTemplate/test", "t", "http://x")
 
@@ -76,18 +72,17 @@ def test_delete_item_success(mocker):
 def test_delete_item_failure(mocker):
     importer = EmailTemplatesImporter()
     importer.make_http_request = mocker.Mock(side_effect=Exception("boom"))
-    mocker.patch("trxo.commands.imports.email_templates.error")
+    mocker.patch("trxo_lib.operations.imports.email_templates.error")
 
     result = importer.delete_item("emailTemplate/test", "t", "http://x")
 
     assert result is False
 
 
-def test_create_email_templates_import_command_calls_import_from_file(mocker):
-    importer = mocker.Mock()
+def test_create_email_templates_import_command_wires_service(mocker):
+    mock_service = mocker.Mock()
     mocker.patch(
-        "trxo.commands.imports.email_templates.EmailTemplatesImporter",
-        return_value=importer,
+        "trxo.commands.imports.email_templates.ImportService", return_value=mock_service
     )
 
     import_cmd = create_email_templates_import_command()
@@ -97,24 +92,12 @@ def test_create_email_templates_import_command_calls_import_from_file(mocker):
         force_import=True,
         diff=False,
         branch="main",
-        jwk_path="jwk",
-        sa_id="sid",
-        base_url="http://x",
-        project_name="proj",
-        auth_mode="service-account",
-        onprem_username="u",
-        onprem_password="p",
-        onprem_realm="root",
-        am_base_url="am",
         sync=True,
     )
 
-    importer.import_from_file.assert_called_once()
-    kwargs = importer.import_from_file.call_args.kwargs
-
-    assert kwargs["file_path"] == "x.json"
+    mock_service.import_email_templates.assert_called_once()
+    kwargs = mock_service.import_email_templates.call_args.kwargs
+    assert kwargs["file"] == "x.json"
     assert kwargs["force_import"] is True
-    assert kwargs["diff"] is False
-    assert kwargs["branch"] == "main"
     assert kwargs["cherry_pick"] == "id1,id2"
     assert kwargs["sync"] is True

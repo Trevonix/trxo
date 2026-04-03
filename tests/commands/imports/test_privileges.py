@@ -1,11 +1,7 @@
 import json
-
 import pytest
-
-from trxo.commands.imports.privileges import (
-    PrivilegesImporter,
-    create_privileges_import_command,
-)
+from trxo.commands.imports.privileges import create_privileges_import_command
+from trxo_lib.operations.imports.privileges import PrivilegesImporter
 
 
 def test_privileges_get_required_fields():
@@ -35,7 +31,9 @@ def test_update_item_success(monkeypatch):
         called["payload"] = payload
 
     monkeypatch.setattr(imp, "make_http_request", fake_http)
-    monkeypatch.setattr("trxo.commands.imports.privileges.info", lambda *a, **k: None)
+    monkeypatch.setattr(
+        "trxo_lib.operations.imports.privileges.info", lambda *a, **k: None
+    )
 
     data = {"_id": "p1", "a": 1}
 
@@ -49,7 +47,9 @@ def test_update_item_success(monkeypatch):
 
 def test_update_item_missing_id(monkeypatch):
     imp = PrivilegesImporter()
-    monkeypatch.setattr("trxo.commands.imports.privileges.error", lambda *a, **k: None)
+    monkeypatch.setattr(
+        "trxo_lib.operations.imports.privileges.error", lambda *a, **k: None
+    )
     ok = imp.update_item({}, "t", "http://x")
     assert ok is False
 
@@ -61,32 +61,21 @@ def test_update_item_exception(monkeypatch):
         raise Exception("x")
 
     monkeypatch.setattr(imp, "make_http_request", boom)
-    monkeypatch.setattr("trxo.commands.imports.privileges.error", lambda *a, **k: None)
+    monkeypatch.setattr(
+        "trxo_lib.operations.imports.privileges.error", lambda *a, **k: None
+    )
 
     ok = imp.update_item({"_id": "p1"}, "t", "http://x")
     assert ok is False
 
 
-def test_create_privileges_import_command(monkeypatch, tmp_path):
-    f = tmp_path / "p.json"
-    f.write_text(json.dumps([{"_id": "p1"}]))
-
-    imp = PrivilegesImporter()
-    monkeypatch.setattr(
-        "trxo.commands.imports.privileges.PrivilegesImporter",
-        lambda: imp,
+def test_create_privileges_import_command_wires_service(mocker):
+    mock_service = mocker.Mock()
+    mocker.patch(
+        "trxo.commands.imports.privileges.ImportService", return_value=mock_service
     )
 
-    called = {}
-
-    def fake_import(**kwargs):
-        called.update(kwargs)
-
-    monkeypatch.setattr(imp, "import_from_file", fake_import)
-
     cmd = create_privileges_import_command()
-    cmd(file=str(f), base_url="http://x")
+    cmd(file="f.json")
 
-    assert called["file_path"] == str(f)
-    assert called["base_url"] == "http://x"
-    assert called["realm"] is None
+    mock_service.import_privileges.assert_called_once()

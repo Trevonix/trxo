@@ -236,3 +236,26 @@ class ServicesImporter(BaseImporter):
             error(f"Failed to delete service '{item_id}': {e}")
             return False
 
+
+
+class ServicesImportService:
+    """Service wrapper for service import operations."""
+
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+    def execute(self) -> Any:
+        from trxo_lib.constants import DEFAULT_REALM
+        scope = self.kwargs.get('scope', 'realm').lower()
+        realm = self.kwargs.get('realm', DEFAULT_REALM)
+        importer = ServicesImporter(scope=scope, realm=realm)
+
+        # Typer passes 'file' which maps to 'file_path' in BaseImporter
+        if 'file' in self.kwargs:
+            self.kwargs['file_path'] = self.kwargs.pop('file')
+
+        # Map 'realm' to BaseImporter expected field only if strictly in realm scope
+        effective_realm = realm if scope == 'realm' else 'global'
+        self.kwargs['realm'] = effective_realm
+
+        return importer.import_from_file(**self.kwargs)

@@ -86,3 +86,21 @@ class WebhooksImporter(BaseImporter):
             error(f"Failed to delete Webhook '{item_id}': {e}")
             return False
 
+
+
+class WebhooksImportService:
+    """Service wrapper for webhooks import operations."""
+
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+    def execute(self) -> Any:
+        from trxo_lib.constants import DEFAULT_REALM
+        realm = self.kwargs.get('realm', DEFAULT_REALM)
+        importer = WebhooksImporter(realm=realm)
+
+        # Typer passes 'file' which maps to 'file_path' in BaseImporter
+        if 'file' in self.kwargs:
+            self.kwargs['file_path'] = self.kwargs.pop('file')
+
+        return importer.import_from_file(**self.kwargs)

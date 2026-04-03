@@ -69,3 +69,22 @@ class EndpointsImporter(BaseImporter):
             error(f"Failed to delete custom endpoint '{item_id}': {e}")
             return False
 
+
+
+class EndpointsImportService:
+    """Service wrapper for endpoints import operations."""
+
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+    def execute(self) -> Any:
+        importer = EndpointsImporter()
+
+        # Typer passes 'file' which maps to 'file_path' in BaseImporter
+        if 'file' in self.kwargs:
+            self.kwargs['file_path'] = self.kwargs.pop('file')
+
+        # Endpoints are root-level config, realm should be None
+        self.kwargs['realm'] = None
+
+        return importer.import_from_file(**self.kwargs)

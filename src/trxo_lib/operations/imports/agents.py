@@ -155,3 +155,22 @@ def create_agents_callback():
             raise TrxoAbort(code=0)
 
     return agents_callback
+
+
+class AgentsImportService:
+    """Service wrapper for agents import operations."""
+
+    def __init__(self, agent_type: str, **kwargs):
+        self.agent_type = agent_type
+        self.kwargs = kwargs
+
+    def execute(self) -> Any:
+        from trxo_lib.constants import DEFAULT_REALM
+        realm = self.kwargs.get('realm', DEFAULT_REALM)
+        importer = AgentsImporter(agent_type=self.agent_type, realm=realm)
+
+        # Typer passes 'file' which maps to 'file_path' in BaseImporter
+        if 'file' in self.kwargs:
+            self.kwargs['file_path'] = self.kwargs.pop('file')
+
+        return importer.import_from_file(**self.kwargs)

@@ -1,10 +1,6 @@
 import pytest
-from click.exceptions import Exit
-
-from trxo.commands.imports.services import (
-    ServicesImporter,
-    create_services_import_command,
-)
+from trxo.commands.imports.services import create_services_import_command
+from trxo_lib.operations.imports.services import ServicesImporter
 
 
 def test_services_importer_get_api_endpoint_global():
@@ -42,7 +38,7 @@ def test_prepare_service_payload_removes_dynamic_fields():
 
 def test_update_item_missing_id(mocker):
     importer = ServicesImporter()
-    mocker.patch("trxo.commands.imports.services.error")
+    mocker.patch("trxo_lib.operations.imports.services.error")
 
     result = importer.update_item({}, "t", "http://x")
 
@@ -53,7 +49,7 @@ def test_update_item_global_success(mocker):
     importer = ServicesImporter(scope="global")
 
     importer.make_http_request = mocker.Mock()
-    mocker.patch("trxo.commands.imports.services.info")
+    mocker.patch("trxo_lib.operations.imports.services.info")
 
     data = {"_type": {"_id": "svc1"}, "enabled": True}
 
@@ -65,7 +61,7 @@ def test_update_item_realm_success(mocker):
     importer = ServicesImporter(scope="realm", realm="alpha")
 
     importer.make_http_request = mocker.Mock()
-    mocker.patch("trxo.commands.imports.services.info")
+    mocker.patch("trxo_lib.operations.imports.services.info")
 
     data = {"_type": {"_id": "svc1"}, "enabled": True}
 
@@ -77,17 +73,20 @@ def test_update_item_http_error(mocker):
     importer = ServicesImporter(scope="realm", realm="alpha")
 
     importer.make_http_request = mocker.Mock(side_effect=Exception("boom"))
-    mocker.patch("trxo.commands.imports.services.error")
+    mocker.patch("trxo_lib.operations.imports.services.error")
 
     data = {"_type": {"_id": "svc1"}, "enabled": True}
 
     assert importer.update_item(data, "t", "http://x") is False
 
 
-def test_create_services_import_command_invalid_scope(mocker):
-    mocker.patch("trxo.commands.imports.services.error")
+def test_create_services_import_command_wires_service(mocker):
+    mock_service = mocker.Mock()
+    mocker.patch(
+        "trxo.commands.imports.services.ImportService", return_value=mock_service
+    )
 
     cmd = create_services_import_command()
+    cmd(file="x.json", scope="realm")
 
-    with pytest.raises(Exit):
-        cmd(scope="invalid")
+    mock_service.import_services.assert_called_once()

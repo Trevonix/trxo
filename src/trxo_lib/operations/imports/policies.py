@@ -100,3 +100,23 @@ class PoliciesImporter(BaseImporter):
                 error(f"Failed to delete '{item_id}' in realm '{self.realm}': {e}")
                 return False
 
+
+
+from typing import Any
+
+class PoliciesImportService:
+    """Service wrapper for policies import operations."""
+
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+    def execute(self) -> Any:
+        from trxo_lib.constants import DEFAULT_REALM
+        realm = self.kwargs.get('realm', DEFAULT_REALM)
+        importer = PoliciesImporter(realm=realm)
+
+        # Typer passes 'file' which maps to 'file_path' in BaseImporter
+        if 'file' in self.kwargs:
+            self.kwargs['file_path'] = self.kwargs.pop('file')
+
+        return importer.import_from_file(**self.kwargs)

@@ -427,3 +427,22 @@ class MappingsImporter(BaseImporter):
             **kwargs,
         )
 
+
+
+class MappingsImportService:
+    """Service wrapper for mappings import operations."""
+
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+    def execute(self) -> Any:
+        importer = MappingsImporter()
+
+        # Typer passes 'file' which maps to 'file_path' in BaseImporter
+        if 'file' in self.kwargs:
+            self.kwargs['file_path'] = self.kwargs.pop('file')
+
+        # Mappings are root-level config in IDM
+        self.kwargs['realm'] = 'root'
+
+        return importer.import_from_file(**self.kwargs)

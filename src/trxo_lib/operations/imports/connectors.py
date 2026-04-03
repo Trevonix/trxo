@@ -166,3 +166,22 @@ class ConnectorsImporter(BaseImporter):
 
         return normalized
 
+
+
+class ConnectorsImportService:
+    """Service wrapper for connectors import operations."""
+
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+    def execute(self) -> Any:
+        importer = ConnectorsImporter()
+
+        # Typer passes 'file' which maps to 'file_path' in BaseImporter
+        if 'file' in self.kwargs:
+            self.kwargs['file_path'] = self.kwargs.pop('file')
+
+        # Connectors are root-level config, realm should be None
+        self.kwargs['realm'] = None
+
+        return importer.import_from_file(**self.kwargs)

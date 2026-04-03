@@ -518,7 +518,10 @@ class JourneyImporter(BaseImporter):
         """
         from pathlib import Path
 
-        from trxo_lib.utils.diff.data_fetcher import DataFetcher, get_command_api_endpoint
+        from trxo_lib.utils.diff.data_fetcher import (
+            DataFetcher,
+            get_command_api_endpoint,
+        )
         from trxo_lib.utils.diff.diff_engine import DiffEngine
         from trxo_lib.utils.diff.diff_reporter import DiffReporter
 
@@ -1350,7 +1353,23 @@ def _scripts_needed_by_trees(data: Dict[str, Any], selected_tree_ids: List[str])
     return _resolve_deps_for_trees(data, selected_tree_ids)["scripts"]
 
 
+class JourneyImportService:
+    """Service to handle journey import logic"""
+
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+    def execute(self):
+        realm = self.kwargs.get("realm", DEFAULT_REALM)
+        importer = JourneyImporter(realm=realm)
+
+        # Typer passes 'file' which maps to 'file_path' in BaseImporter
+        if "file" in self.kwargs:
+            self.kwargs["file_path"] = self.kwargs.pop("file")
+
+        return importer.import_from_file(**self.kwargs)
+
+
 # ---------------------------------------------------------------------------
 # CLI command factory
 # ---------------------------------------------------------------------------
-
