@@ -403,6 +403,10 @@ class MappingsImporter(BaseImporter):
 
         # All modes (local, git, diff) go through super() so that
         # _handle_sync_deletions is invoked when sync=True.
+
+        # Ensure no realm conflict
+        kwargs.pop("realm", None)
+
         super().import_from_file(
             file_path=file_path,
             realm="root",
@@ -428,7 +432,6 @@ class MappingsImporter(BaseImporter):
         )
 
 
-
 class MappingsImportService:
     """Service wrapper for mappings import operations."""
 
@@ -439,10 +442,10 @@ class MappingsImportService:
         importer = MappingsImporter()
 
         # Typer passes 'file' which maps to 'file_path' in BaseImporter
-        if 'file' in self.kwargs:
-            self.kwargs['file_path'] = self.kwargs.pop('file')
+        if "file" in self.kwargs:
+            self.kwargs["file_path"] = self.kwargs.pop("file")
 
         # Mappings are root-level config in IDM
-        self.kwargs['realm'] = 'root'
+        self.kwargs["realm"] = "root"
 
         return importer.import_from_file(**self.kwargs)

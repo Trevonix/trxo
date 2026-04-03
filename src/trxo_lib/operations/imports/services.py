@@ -237,7 +237,6 @@ class ServicesImporter(BaseImporter):
             return False
 
 
-
 class ServicesImportService:
     """Service wrapper for service import operations."""
 
@@ -246,16 +245,20 @@ class ServicesImportService:
 
     def execute(self) -> Any:
         from trxo_lib.constants import DEFAULT_REALM
-        scope = self.kwargs.get('scope', 'realm').lower()
-        realm = self.kwargs.get('realm', DEFAULT_REALM)
+
+        scope = self.kwargs.get("scope", "realm").lower()
+        realm = self.kwargs.get("realm", DEFAULT_REALM)
         importer = ServicesImporter(scope=scope, realm=realm)
 
         # Typer passes 'file' which maps to 'file_path' in BaseImporter
-        if 'file' in self.kwargs:
-            self.kwargs['file_path'] = self.kwargs.pop('file')
+        if "file" in self.kwargs:
+            self.kwargs["file_path"] = self.kwargs.pop("file")
 
         # Map 'realm' to BaseImporter expected field only if strictly in realm scope
-        effective_realm = realm if scope == 'realm' else 'global'
-        self.kwargs['realm'] = effective_realm
+        effective_realm = realm if scope == "realm" else "global"
+        self.kwargs["realm"] = effective_realm
+
+        # Remove 'scope' as BaseImporter doesn't accept it
+        self.kwargs.pop("scope", None)
 
         return importer.import_from_file(**self.kwargs)

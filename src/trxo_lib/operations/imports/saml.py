@@ -15,7 +15,6 @@ import httpx
 from trxo_lib.config.api_headers import get_headers
 from trxo_lib.constants import DEFAULT_REALM
 from trxo_lib.utils.console import error, info, success, warning
-from trxo_lib.utils.rollback_manager import RollbackManager
 
 from trxo_lib.operations.imports.base_importer import BaseImporter
 
@@ -47,7 +46,6 @@ class SamlImporter(BaseImporter):
         realm=None,
         src_realm=None,
         jwk_path=None,
-        client_id=None,
         sa_id=None,
         base_url=None,
         project_name=None,
@@ -73,7 +71,6 @@ class SamlImporter(BaseImporter):
                 realm=realm,
                 src_realm=src_realm,
                 jwk_path=jwk_path,
-                client_id=client_id,
                 sa_id=sa_id,
                 base_url=base_url,
                 project_name=project_name,
@@ -95,7 +92,6 @@ class SamlImporter(BaseImporter):
         # Initialize auth (same as BaseImporter)
         token, api_base_url = self.initialize_auth(
             jwk_path=jwk_path,
-            client_id=client_id,
             sa_id=sa_id,
             base_url=base_url,
             project_name=project_name,
@@ -128,7 +124,6 @@ class SamlImporter(BaseImporter):
                 realm=realm,
                 src_realm=src_realm,
                 jwk_path=jwk_path,
-                client_id=client_id,
                 sa_id=sa_id,
                 project_name=project_name,
                 auth_mode=auth_mode,
@@ -650,7 +645,6 @@ class SamlImporter(BaseImporter):
             return False
 
 
-
 class SamlImportService:
     """Service wrapper for saml import operations."""
 
@@ -659,11 +653,19 @@ class SamlImportService:
 
     def execute(self) -> Any:
         from trxo_lib.constants import DEFAULT_REALM
-        realm = self.kwargs.get('realm', DEFAULT_REALM)
+
+        realm = self.kwargs.get("realm", DEFAULT_REALM)
         importer = SamlImporter(realm=realm)
 
         # Typer passes 'file' which maps to 'file_path' in SamlImporter
-        if 'file' in self.kwargs:
-            self.kwargs['file_path'] = self.kwargs.pop('file')
+        if "file" in self.kwargs:
+            self.kwargs["file_path"] = self.kwargs.pop("file")
+
+        # SamlImporter.import_from_file doesn't accept 'rollback' yet
+        self.kwargs.pop("rollback", None)
+        self.kwargs.pop("am_base_url", None)
+        self.kwargs.pop("idm_base_url", None)
+        self.kwargs.pop("idm_username", None)
+        self.kwargs.pop("idm_password", None)
 
         return importer.import_from_file(**self.kwargs)
