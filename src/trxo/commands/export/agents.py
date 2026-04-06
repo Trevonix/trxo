@@ -13,6 +13,7 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     CommitMessageOpt,
+    ContinueOnErrorOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
     IdmUsernameOpt,
@@ -62,6 +63,7 @@ def create_agents_export_command():
         no_version: NoVersionOpt = False,
         branch: BranchOpt = None,
         commit: CommitMessageOpt = None,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Export Identity Gateway Agents"""
         exporter = BaseExporter()
@@ -95,6 +97,7 @@ def create_agents_export_command():
             no_version=no_version,
             branch=branch,
             commit_message=commit,
+            continue_on_error=continue_on_error,
         )
 
     def export_java_agents(
@@ -119,6 +122,7 @@ def create_agents_export_command():
         no_version: NoVersionOpt = False,
         branch: BranchOpt = None,
         commit: CommitMessageOpt = None,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Export Java Agents"""
         exporter = BaseExporter()
@@ -152,6 +156,7 @@ def create_agents_export_command():
             no_version=no_version,
             branch=branch,
             commit_message=commit,
+            continue_on_error=continue_on_error,
         )
 
     def export_web_agents(
@@ -176,6 +181,7 @@ def create_agents_export_command():
         no_version: NoVersionOpt = False,
         branch: BranchOpt = None,
         commit: CommitMessageOpt = None,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Export Web Agents"""
         exporter = BaseExporter()
@@ -209,6 +215,7 @@ def create_agents_export_command():
             no_version=no_version,
             branch=branch,
             commit_message=commit,
+            continue_on_error=continue_on_error,
         )
 
     return export_identity_gateway_agents, export_java_agents, export_web_agents

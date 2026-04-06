@@ -19,6 +19,7 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     CherryPickOpt,
+    ContinueOnErrorOpt,
     DiffOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
@@ -84,6 +85,7 @@ class SamlImporter(BaseImporter):
         diff: bool = False,
         sync: bool = False,
         cherry_pick: str = None,
+        continue_on_error: bool = False,
     ):
         """
         Override import flow for SAML only.
@@ -109,6 +111,7 @@ class SamlImporter(BaseImporter):
                 branch=branch,
                 diff=diff,
                 cherry_pick=cherry_pick,
+                continue_on_error=continue_on_error,
             )
 
         info(f"Loading saml from local file: {file_path}")
@@ -142,6 +145,7 @@ class SamlImporter(BaseImporter):
             token=token,
             base_url=api_base_url,
             cherry_pick_ids=cherry_pick,
+            continue_on_error=continue_on_error,
         )
 
         if ok and sync:
@@ -170,6 +174,7 @@ class SamlImporter(BaseImporter):
         token: str,
         base_url: str,
         cherry_pick_ids: Optional[str] = None,
+        continue_on_error: bool = False,
     ) -> bool:
         """
         Import SAML data including scripts, metadata, and entities.
@@ -183,6 +188,10 @@ class SamlImporter(BaseImporter):
         Returns:
             True if import successful, False otherwise
         """
+        # Expose counts for the CLI to decide exit code.
+        self.successful_updates = 0
+        self.failed_updates = 0
+
         success_count = 0
         error_count = 0
 
@@ -203,6 +212,8 @@ class SamlImporter(BaseImporter):
                 scripts_data, token, base_url, selected_entity_ids, data
             )
             if not script_success:
+                if not continue_on_error:
+                    return False
                 warning("Some scripts failed to import, but continuing...")
 
         # Step 2: Import remote metadata (only for remote entities)
@@ -218,6 +229,8 @@ class SamlImporter(BaseImporter):
                 metadata_data, remote_entities, token, base_url, selected_entity_ids
             )
             if not metadata_success:
+                if not continue_on_error:
+                    return False
                 warning("Some metadata imports failed, but continuing...")
 
         # Step 3: Upsert hosted entities
@@ -232,8 +245,11 @@ class SamlImporter(BaseImporter):
                     success_count += 1
                 else:
                     error_count += 1
+                    self.failed_updates += 1
                     if hasattr(self, "rollback_manager") and self.rollback_manager:
                         error("Failure detected. Stopping import for rollback.")
+                        return False
+                    if not continue_on_error:
                         return False
 
         # Step 4: Upsert remote entities
@@ -247,8 +263,14 @@ class SamlImporter(BaseImporter):
                     success_count += 1
                 else:
                     error_count += 1
+                    self.failed_updates += 1
+                    if not continue_on_error:
+                        return False
 
         # Print summary
+        self.successful_updates = success_count
+        self.failed_updates = error_count
+
         total = success_count + error_count
         if total > 0:
             success(f"SAML import completed: {success_count}/{total} successful")
@@ -693,6 +715,7 @@ def create_saml_import_command():
         branch: BranchOpt = None,
         cherry_pick: CherryPickOpt = None,
         rollback: RollbackOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
         realm: RealmOpt = DEFAULT_REALM,
         src_realm: SrcRealmOpt = None,
         am_base_url: AmBaseUrlOpt = None,
@@ -789,6 +812,7 @@ def create_saml_import_command():
                 token=token,
                 base_url=api_base_url,
                 cherry_pick_ids=cherry_pick,
+                continue_on_error=continue_on_error,
             )
 
             if success:
@@ -826,7 +850,13 @@ def create_saml_import_command():
 
                     importer._print_rollback_report(report)
 
-                raise typer.Exit(1)
+                # In continue mode, only fail the command if *everything* failed.
+                if not continue_on_error or importer.successful_updates == 0:
+                    raise typer.Exit(1)
+                warning(
+                    "Continuing despite errors (--continue-on-error enabled)."
+                )
+                return
 
         except Exception as e:
             error(f"SAML import failed: {str(e)}")

@@ -17,6 +17,7 @@ from trxo.commands.shared.options import (
     AuthModeOpt,
     BaseUrlOpt,
     BranchOpt,
+    ContinueOnErrorOpt,
     DiffOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
@@ -102,6 +103,7 @@ def create_policies_import_command():
         idm_password: IdmPasswordOpt = None,
         force_import: ForceImportOpt = False,
         diff: DiffOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
         branch: BranchOpt = None,
         realm: RealmOpt = DEFAULT_REALM,
         src_realm: SrcRealmOpt = None,
@@ -127,6 +129,7 @@ def create_policies_import_command():
             force_import=force_import,
             branch=branch,
             diff=diff,
+            continue_on_error=continue_on_error,
         )
 
     return import_policies

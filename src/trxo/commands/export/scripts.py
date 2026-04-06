@@ -16,6 +16,7 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     CommitMessageOpt,
+    ContinueOnErrorOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
     IdmUsernameOpt,
@@ -104,6 +105,7 @@ def create_scripts_export_command():
         no_version: NoVersionOpt = False,
         branch: BranchOpt = None,
         commit: CommitMessageOpt = None,
+        continue_on_error: ContinueOnErrorOpt = False,
         jwk_path: JwkPathOpt = None,
         sa_id: SaIdOpt = None,
         base_url: BaseUrlOpt = None,
@@ -151,6 +153,7 @@ def create_scripts_export_command():
             branch=branch,
             commit_message=commit,
             response_filter=decode_script_response,
+            continue_on_error=continue_on_error,
         )
 
     return export_scripts

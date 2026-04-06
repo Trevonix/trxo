@@ -20,6 +20,7 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     CherryPickOpt,
+    ContinueOnErrorOpt,
     DiffOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
@@ -283,6 +284,7 @@ def create_services_import_command():
         diff: DiffOpt = False,
         branch: BranchOpt = None,
         rollback: RollbackOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
         cherry_pick: CherryPickOpt = None,
         scope: str = typer.Option(
             "realm",
@@ -325,6 +327,7 @@ def create_services_import_command():
             branch=branch,
             diff=diff,
             rollback=rollback,
+            continue_on_error=continue_on_error,
             cherry_pick=cherry_pick,
             sync=sync,
         )

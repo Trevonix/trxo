@@ -17,6 +17,7 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     CherryPickOpt,
+    ContinueOnErrorOpt,
     DiffOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
@@ -221,6 +222,7 @@ class ScriptImporter(BaseImporter):
         rollback: bool = False,
         sync: bool = False,
         cherry_pick: Optional[str] = None,
+        continue_on_error: bool = False,
     ) -> None:
         """Override to ensure automated sync (force=True)"""
         super().import_from_file(
@@ -245,6 +247,7 @@ class ScriptImporter(BaseImporter):
             rollback=rollback,
             sync=sync,
             cherry_pick=cherry_pick,
+            continue_on_error=continue_on_error,
         )
 
 
@@ -260,6 +263,7 @@ def create_script_import_command():
         file: InputFileOpt = None,
         force_import: ForceImportOpt = False,
         rollback: RollbackOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
         branch: BranchOpt = None,
         jwk_path: JwkPathOpt = None,
         sa_id: SaIdOpt = None,
@@ -296,6 +300,7 @@ def create_script_import_command():
             branch=branch,
             diff=diff,
             rollback=rollback,
+            continue_on_error=continue_on_error,
             sync=sync,
             cherry_pick=cherry_pick,
         )

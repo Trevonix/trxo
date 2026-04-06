@@ -171,6 +171,38 @@ def test_print_summary_failure_raises():
         cmd.print_summary()
 
 
+def test_print_summary_partial_failure_stop_mode_raises():
+    """Default/stop mode: any failure exits 1 even if some items succeeded."""
+    cmd = DummyCommand()
+    cmd.continue_on_error = False
+    cmd.successful_updates = 1
+    cmd.failed_updates = 1
+
+    with pytest.raises(typer.Exit):
+        cmd.print_summary()
+
+
+def test_print_summary_partial_failure_continue_mode_ok():
+    """Continue mode: mixed success/failure exits 0 from summary (no raise)."""
+    cmd = DummyCommand()
+    cmd.continue_on_error = True
+    cmd.successful_updates = 1
+    cmd.failed_updates = 1
+
+    cmd.print_summary()
+
+
+def test_print_summary_all_failed_continue_mode_raises():
+    """Continue mode: if every item failed, command still fails."""
+    cmd = DummyCommand()
+    cmd.continue_on_error = True
+    cmd.successful_updates = 0
+    cmd.failed_updates = 2
+
+    with pytest.raises(typer.Exit):
+        cmd.print_summary()
+
+
 def test_print_summary_no_success_raises():
     cmd = DummyCommand()
     cmd.successful_updates = 0

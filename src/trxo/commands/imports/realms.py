@@ -17,6 +17,7 @@ from trxo.commands.shared.options import (
     AuthModeOpt,
     BaseUrlOpt,
     BranchOpt,
+    ContinueOnErrorOpt,
     DiffOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
@@ -113,6 +114,7 @@ def create_realms_import_command():
         idm_password: IdmPasswordOpt = None,
         force_import: ForceImportOpt = False,
         diff: DiffOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
         branch: BranchOpt = None,
         # diff: bool = typer.Option(False, "--diff", help="Show differences before import"),
     ):
@@ -135,6 +137,7 @@ def create_realms_import_command():
             force_import=force_import,
             branch=branch,
             diff=diff,
+            continue_on_error=continue_on_error,
         )
 
     return import_realms

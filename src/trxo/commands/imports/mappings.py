@@ -16,6 +16,7 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     CherryPickOpt,
+    ContinueOnErrorOpt,
     DiffOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
@@ -474,6 +475,9 @@ class MappingsImporter(BaseImporter):
 
         # Local mode - use custom logic for flexible format support
         try:
+            continue_on_error = bool(kwargs.get("continue_on_error", False))
+            self.continue_on_error = continue_on_error
+
             # Initialize authentication
             token, api_base_url = self.initialize_auth(
                 jwk_path=jwk_path,
@@ -515,13 +519,25 @@ class MappingsImporter(BaseImporter):
 
             # Process each mapping
             success_count = 0
+            failed_count = 0
             for mapping in mappings_to_process:
                 if self.update_item(mapping, token, api_base_url):
                     success_count += 1
+                else:
+                    failed_count += 1
+                    if not continue_on_error:
+                        break
 
             info(
                 f"Successfully processed {success_count}/{len(mappings_to_process)} sync mappings"
             )
+
+            self.successful_updates = success_count
+            self.failed_updates = failed_count
+            if failed_count > 0 and (
+                (not continue_on_error) or self.successful_updates == 0
+            ):
+                raise typer.Exit(1)
 
         except Exception as e:
             error(f"Import failed: {str(e)}")
@@ -550,6 +566,7 @@ def create_mappings_import_command():
         branch: BranchOpt = None,
         sync: SyncOpt = False,
         rollback: RollbackOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Import sync mappings from JSON file (local mode) or Git repository (Git mode).
 
@@ -576,6 +593,7 @@ def create_mappings_import_command():
             cherry_pick=cherry_pick,
             rollback=rollback,
             sync=sync,
+            continue_on_error=continue_on_error,
         )
 
     return import_mappings

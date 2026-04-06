@@ -6,6 +6,7 @@ from trxo.commands.shared.cli_options import (
     create_export_params,
     create_import_params,
 )
+from trxo.commands.shared.options import ContinueOnErrorOpt
 
 
 def test_auth_options_contains_expected_keys():
@@ -70,3 +71,14 @@ def test_create_export_params_has_dir_and_file():
 
     assert "--dir" in flags
     assert "--file" in flags
+
+
+def test_continue_on_error_option_uses_typer_boolean_flag():
+    """Leaf import/export commands use this paired flag; default is stop-on-error."""
+    opt = ContinueOnErrorOpt.__metadata__[0]
+    assert isinstance(opt, typer.models.OptionInfo)
+    decls = opt.param_decls
+    assert any(
+        isinstance(d, str) and "continue-on-error" in d and "stop-on-error" in d
+        for d in decls
+    )

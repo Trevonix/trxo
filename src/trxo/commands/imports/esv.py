@@ -17,6 +17,7 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     CherryPickOpt,
+    ContinueOnErrorOpt,
     DiffOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
@@ -220,6 +221,7 @@ def create_esv_commands():
         diff: DiffOpt = False,
         branch: BranchOpt = None,
         rollback: RollbackOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
         jwk_path: JwkPathOpt = None,
         sa_id: SaIdOpt = None,
         base_url: BaseUrlOpt = None,
@@ -255,6 +257,7 @@ def create_esv_commands():
             diff=diff,
             rollback=rollback,
             cherry_pick=cherry_pick,
+            continue_on_error=continue_on_error,
         )
 
     def import_esv_secrets(
@@ -264,6 +267,7 @@ def create_esv_commands():
         diff: DiffOpt = False,
         branch: BranchOpt = None,
         rollback: RollbackOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
         jwk_path: JwkPathOpt = None,
         sa_id: SaIdOpt = None,
         base_url: BaseUrlOpt = None,
@@ -299,6 +303,7 @@ def create_esv_commands():
             diff=diff,
             rollback=rollback,
             cherry_pick=cherry_pick,
+            continue_on_error=continue_on_error,
         )
 
     return import_esv_variables, import_esv_secrets

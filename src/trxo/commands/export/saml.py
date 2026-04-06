@@ -16,6 +16,7 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     CommitMessageOpt,
+    ContinueOnErrorOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
     IdmUsernameOpt,
@@ -383,6 +384,7 @@ def create_saml_export_command():
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """
         Export SAML configuration with complete data including hosted/remote
@@ -422,6 +424,7 @@ def create_saml_export_command():
             branch=branch,
             commit_message=commit,
             response_filter=process_saml_response(exporter, realm),
+            continue_on_error=continue_on_error,
         )
 
     return export_saml

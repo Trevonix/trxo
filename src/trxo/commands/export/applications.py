@@ -17,6 +17,7 @@ from trxo.commands.shared.options import (
     AuthModeOpt,
     BaseUrlOpt,
     BranchOpt,
+    ContinueOnErrorOpt,
     CommitMessageOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
@@ -261,6 +262,7 @@ def create_applications_export_command():
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
         with_deps: WithDepsOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Export custom applications configuration"""
         if with_deps:
@@ -318,6 +320,7 @@ def create_applications_export_command():
             no_version=no_version,
             branch=branch,
             commit_message=commit,
+            continue_on_error=continue_on_error,
         )
 
     return export_applications
