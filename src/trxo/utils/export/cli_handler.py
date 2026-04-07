@@ -15,8 +15,8 @@ from trxo.utils.export.git_export_handler import GitExportHandler
 from trxo.utils.export.view_config import suggest_columns
 from trxo.utils.export.view_renderer import ViewRenderer
 
-from trxo_lib.utils.config_store import ConfigStore
-from trxo_lib.utils.hash_manager import HashManager
+from trxo_lib.config.config_store import ConfigStore
+from trxo_lib.state.hash import HashManager
 from trxo_lib.exceptions import TrxoAbort
 
 

@@ -1,6 +1,6 @@
 from trxo.commands.export.scripts import create_scripts_export_command
-from trxo_lib.operations.export.scripts import decode_script_response
-from trxo_lib.operations.export.service import ExportService
+from trxo_lib.exports.domains.scripts import decode_script_response
+from trxo_lib.exports.service import ExportService
 from trxo_lib.constants import DEFAULT_REALM
 
 
@@ -13,7 +13,7 @@ def test_decode_script_response_decodes_base64(mocker):
 
 
 def test_decode_script_response_handles_invalid_base64(mocker):
-    warn = mocker.patch("trxo_lib.operations.export.scripts.logger.warning")
+    warn = mocker.patch("trxo_lib.exports.domains.scripts.logger.warning")
 
     data = {"result": [{"_id": "s1", "script": "!!!invalid!!!"}]}
 

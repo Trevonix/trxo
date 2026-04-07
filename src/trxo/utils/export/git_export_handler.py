@@ -13,7 +13,7 @@ from typing import Any, Dict, Optional
 from tqdm import tqdm
 
 from trxo.utils.console import error, info
-from trxo_lib.utils.git import setup_git_for_export
+from trxo_lib.git import setup_git_for_export
 
 
 class GitExportHandler:

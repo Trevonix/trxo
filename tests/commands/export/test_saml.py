@@ -2,7 +2,7 @@ import base64
 
 import pytest
 
-from trxo_lib.operations.export.saml import (
+from trxo_lib.exports.domains.saml import (
     SamlExporter,
     extract_script_ids,
     process_saml_response,
@@ -85,7 +85,7 @@ def test_fetch_scripts_decode_failure_keeps_original(mock_exporter, mocker):
         {"_id": "script1", "script": bad_script, "name": "bad"}
     )
 
-    warn_spy = mocker.patch("trxo_lib.operations.export.saml.warning")
+    warn_spy = mocker.patch("trxo_lib.exports.domains.saml.warning")
 
     scripts = []
 
@@ -139,10 +139,10 @@ def test_process_saml_response_happy_path(mock_exporter, mocker):
     ]
 
     mocker.patch(
-        "trxo_lib.operations.export.saml.extract_script_ids",
+        "trxo_lib.exports.domains.saml.extract_script_ids",
         return_value=["script1"],
     )
-    mocker.patch("trxo_lib.operations.export.saml.fetch_scripts")
+    mocker.patch("trxo_lib.exports.domains.saml.fetch_scripts")
 
     filter_fn = process_saml_response(mock_exporter, "alpha")
 
@@ -160,7 +160,7 @@ def test_process_saml_response_happy_path(mock_exporter, mocker):
 def test_process_saml_response_no_providers(mock_exporter, mocker):
     mock_exporter.make_http_request.return_value = DummyResponse({"result": []})
 
-    info_spy = mocker.patch("trxo_lib.operations.export.saml.info")
+    info_spy = mocker.patch("trxo_lib.exports.domains.saml.info")
 
     filter_fn = process_saml_response(mock_exporter, "alpha")
     result = filter_fn({})
@@ -172,7 +172,7 @@ def test_process_saml_response_no_providers(mock_exporter, mocker):
 def test_process_saml_response_provider_fetch_error(mock_exporter, mocker):
     mock_exporter.make_http_request.side_effect = Exception("boom")
 
-    err_spy = mocker.patch("trxo_lib.operations.export.saml.error")
+    err_spy = mocker.patch("trxo_lib.exports.domains.saml.error")
 
     filter_fn = process_saml_response(mock_exporter, "alpha")
     result = filter_fn({})
@@ -184,7 +184,7 @@ def test_process_saml_response_provider_fetch_error(mock_exporter, mocker):
 def test_create_saml_export_command_wires_response_filter(mocker):
     mock_exporter = mocker.Mock(spec=SamlExporter)
     mocker.patch(
-        "trxo_lib.operations.export.saml.SamlExporter", return_value=mock_exporter
+        "trxo_lib.exports.domains.saml.SamlExporter", return_value=mock_exporter
     )
 
     export_saml = create_saml_export_command()

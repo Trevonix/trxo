@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import httpx
 import pytest
 
-from trxo_lib.utils.git.credentials import build_secure_url, validate_credentials
+from trxo_lib.git.credentials import build_secure_url, validate_credentials
 
 
 class FakeResponse:
@@ -53,7 +53,7 @@ def test_validate_credentials_unsupported_url():
 
 def test_validate_credentials_network_error(mocker):
     mocker.patch(
-        "trxo_lib.utils.git.credentials.httpx.Client",
+        "trxo_lib.git.credentials.httpx.Client",
         return_value=FakeClient(raise_exc=httpx.RequestError("boom")),
     )
 
@@ -63,7 +63,7 @@ def test_validate_credentials_network_error(mocker):
 
 def test_validate_credentials_404(mocker):
     mocker.patch(
-        "trxo_lib.utils.git.credentials.httpx.Client",
+        "trxo_lib.git.credentials.httpx.Client",
         return_value=FakeClient(response=FakeResponse(404)),
     )
 
@@ -73,7 +73,7 @@ def test_validate_credentials_404(mocker):
 
 def test_validate_credentials_401(mocker):
     mocker.patch(
-        "trxo_lib.utils.git.credentials.httpx.Client",
+        "trxo_lib.git.credentials.httpx.Client",
         return_value=FakeClient(response=FakeResponse(401)),
     )
 
@@ -83,7 +83,7 @@ def test_validate_credentials_401(mocker):
 
 def test_validate_credentials_unexpected_status(mocker):
     mocker.patch(
-        "trxo_lib.utils.git.credentials.httpx.Client",
+        "trxo_lib.git.credentials.httpx.Client",
         return_value=FakeClient(response=FakeResponse(500)),
     )
 
@@ -93,7 +93,7 @@ def test_validate_credentials_unexpected_status(mocker):
 
 def test_validate_credentials_no_push_permission(mocker):
     mocker.patch(
-        "trxo_lib.utils.git.credentials.httpx.Client",
+        "trxo_lib.git.credentials.httpx.Client",
         return_value=FakeClient(
             response=FakeResponse(200, json_data={"permissions": {"push": False}})
         ),
@@ -110,7 +110,7 @@ def test_validate_credentials_success(mocker):
     }
 
     mocker.patch(
-        "trxo_lib.utils.git.credentials.httpx.Client",
+        "trxo_lib.git.credentials.httpx.Client",
         return_value=FakeClient(response=FakeResponse(200, json_data=fake_repo)),
     )
 

@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from trxo_lib.utils.diff.insights_generator import InsightsGenerator
+from trxo_lib.state.diff.insights_generator import InsightsGenerator
 
 
 def make_item(item_id="id1", name="Item 1", diff=None):

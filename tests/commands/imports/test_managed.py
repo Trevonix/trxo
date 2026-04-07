@@ -4,7 +4,7 @@ import pytest
 from trxo.commands.shared.options import SyncOpt
 
 from trxo.commands.imports.managed import create_managed_import_command
-from trxo_lib.operations.imports.managed import ManagedObjectsImporter
+from trxo_lib.imports.domains.managed import ManagedObjectsImporter
 
 
 def test_find_object_by_name_found():
@@ -51,14 +51,14 @@ def test_get_current_managed_config_success(mocker):
 def test_get_current_managed_config_error(mocker):
     imp = ManagedObjectsImporter()
     imp.make_http_request = mocker.Mock(side_effect=Exception("boom"))
-    mocker.patch("trxo_lib.operations.imports.managed.error")
+    mocker.patch("trxo_lib.imports.domains.managed.error")
     out = imp._get_current_managed_config("t", "http://x")
     assert out == {}
 
 
 def test_update_item_single_create_success(mocker):
     imp = ManagedObjectsImporter()
-    mocker.patch("trxo_lib.operations.imports.managed.info")
+    mocker.patch("trxo_lib.imports.domains.managed.info")
     imp._get_current_managed_config = mocker.Mock(return_value={"objects": []})
     imp.make_http_request = mocker.Mock()
     imp._update_relationship_properties = mocker.Mock()
@@ -70,7 +70,7 @@ def test_update_item_single_create_success(mocker):
 
 def test_update_item_single_update_with_patch(mocker):
     imp = ManagedObjectsImporter()
-    mocker.patch("trxo_lib.operations.imports.managed.info")
+    mocker.patch("trxo_lib.imports.domains.managed.info")
     imp._get_current_managed_config = mocker.Mock(
         return_value={"objects": [{"name": "obj1", "x": 1}]}
     )
@@ -84,7 +84,7 @@ def test_update_item_single_update_with_patch(mocker):
 
 def test_update_item_single_no_changes(mocker):
     imp = ManagedObjectsImporter()
-    mocker.patch("trxo_lib.operations.imports.managed.info")
+    mocker.patch("trxo_lib.imports.domains.managed.info")
     imp._get_current_managed_config = mocker.Mock(
         return_value={"objects": [{"name": "obj1"}]}
     )
@@ -97,13 +97,13 @@ def test_update_item_single_no_changes(mocker):
 
 def test_update_item_single_missing_name(mocker):
     imp = ManagedObjectsImporter()
-    mocker.patch("trxo_lib.operations.imports.managed.error")
+    mocker.patch("trxo_lib.imports.domains.managed.error")
     assert imp.update_item({}, "t", "http://x") is False
 
 
 def test_update_item_multi_objects_patch_and_put(mocker):
     imp = ManagedObjectsImporter()
-    mocker.patch("trxo_lib.operations.imports.managed.info")
+    mocker.patch("trxo_lib.imports.domains.managed.info")
     imp._get_current_managed_config = mocker.Mock(
         return_value={"objects": [{"name": "a"}]}
     )
@@ -123,7 +123,7 @@ def test_update_item_multi_objects_patch_and_put(mocker):
 
 def test_update_item_multi_objects_skip_invalid_entries(mocker):
     imp = ManagedObjectsImporter()
-    mocker.patch("trxo_lib.operations.imports.managed.warning")
+    mocker.patch("trxo_lib.imports.domains.managed.warning")
     imp._get_current_managed_config = mocker.Mock(return_value={"objects": []})
     imp.make_http_request = mocker.Mock()
 
@@ -133,7 +133,7 @@ def test_update_item_multi_objects_skip_invalid_entries(mocker):
 
 def test_update_item_multi_get_current_config_fail(mocker):
     imp = ManagedObjectsImporter()
-    mocker.patch("trxo_lib.operations.imports.managed.error")
+    mocker.patch("trxo_lib.imports.domains.managed.error")
     imp._get_current_managed_config = mocker.Mock(return_value={})
 
     data = {"objects": [{"name": "a"}]}

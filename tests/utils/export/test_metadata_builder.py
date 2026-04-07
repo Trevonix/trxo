@@ -1,6 +1,6 @@
 import pytest
 
-from trxo_lib.utils.export.metadata_builder import MetadataBuilder
+from trxo_lib.exports.helpers.metadata_builder import MetadataBuilder
 
 
 def test_detect_realm_from_am_endpoint():

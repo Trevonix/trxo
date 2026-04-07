@@ -5,7 +5,7 @@ from trxo.commands.imports.esv import (
     create_esv_callback,
     create_esv_commands,
 )
-from trxo_lib.operations.imports.esv import (
+from trxo_lib.imports.domains.esv import (
     EsvSecretsImporter,
     EsvVariablesImporter,
 )
@@ -14,7 +14,7 @@ from trxo_lib.operations.imports.esv import (
 def test_esv_variables_update_success(mocker):
     imp = EsvVariablesImporter()
     imp.make_http_request = mocker.Mock()
-    mocker.patch("trxo_lib.operations.imports.esv.info")
+    mocker.patch("trxo_lib.imports.domains.esv.info")
 
     data = {
         "_id": "v1",
@@ -27,14 +27,14 @@ def test_esv_variables_update_success(mocker):
 
 def test_esv_variables_missing_id(mocker):
     imp = EsvVariablesImporter()
-    mocker.patch("trxo_lib.operations.imports.esv.error")
+    mocker.patch("trxo_lib.imports.domains.esv.error")
 
     assert imp.update_item({}, "t", "http://x") is False
 
 
 def test_esv_variables_missing_value(mocker):
     imp = EsvVariablesImporter()
-    mocker.patch("trxo_lib.operations.imports.esv.warning")
+    mocker.patch("trxo_lib.imports.domains.esv.warning")
 
     data = {"_id": "v1"}
     assert imp.update_item(data, "t", "http://x") is False
@@ -42,7 +42,7 @@ def test_esv_variables_missing_value(mocker):
 
 def test_esv_variables_invalid_base64(mocker):
     imp = EsvVariablesImporter()
-    mocker.patch("trxo_lib.operations.imports.esv.error")
+    mocker.patch("trxo_lib.imports.domains.esv.error")
 
     data = {"_id": "v1", "valueBase64": "!!!"}
 
@@ -56,7 +56,7 @@ def test_esv_secrets_create_on_404_success(mocker):
     get_resp.status_code = 404
 
     imp.make_http_request = mocker.Mock(side_effect=[get_resp, None])
-    mocker.patch("trxo_lib.operations.imports.esv.info")
+    mocker.patch("trxo_lib.imports.domains.esv.info")
 
     data = {
         "_id": "s1",
@@ -74,7 +74,7 @@ def test_esv_secrets_404_missing_value(mocker):
     get_resp.status_code = 404
 
     imp.make_http_request = mocker.Mock(return_value=get_resp)
-    mocker.patch("trxo_lib.operations.imports.esv.warning")
+    mocker.patch("trxo_lib.imports.domains.esv.warning")
 
     data = {"_id": "s1"}
 
@@ -88,7 +88,7 @@ def test_esv_secrets_404_invalid_encoding(mocker):
     get_resp.status_code = 404
 
     imp.make_http_request = mocker.Mock(return_value=get_resp)
-    mocker.patch("trxo_lib.operations.imports.esv.warning")
+    mocker.patch("trxo_lib.imports.domains.esv.warning")
 
     data = {
         "_id": "s1",
@@ -106,7 +106,7 @@ def test_esv_secrets_404_invalid_base64(mocker):
     get_resp.status_code = 404
 
     imp.make_http_request = mocker.Mock(return_value=get_resp)
-    mocker.patch("trxo_lib.operations.imports.esv.warning")
+    mocker.patch("trxo_lib.imports.domains.esv.warning")
 
     data = {
         "_id": "s1",
@@ -124,7 +124,7 @@ def test_esv_secrets_update_existing_with_value(mocker):
     get_resp.status_code = 200
 
     imp.make_http_request = mocker.Mock(side_effect=[get_resp, None])
-    mocker.patch("trxo_lib.operations.imports.esv.info")
+    mocker.patch("trxo_lib.imports.domains.esv.info")
 
     data = {
         "_id": "s1",
@@ -141,7 +141,7 @@ def test_esv_secrets_update_description_only(mocker):
     get_resp.status_code = 200
 
     imp.make_http_request = mocker.Mock(side_effect=[get_resp, None])
-    mocker.patch("trxo_lib.operations.imports.esv.info")
+    mocker.patch("trxo_lib.imports.domains.esv.info")
 
     data = {
         "_id": "s1",
@@ -158,7 +158,7 @@ def test_esv_secrets_update_nothing_to_do(mocker):
     get_resp.status_code = 200
 
     imp.make_http_request = mocker.Mock(return_value=get_resp)
-    mocker.patch("trxo_lib.operations.imports.esv.warning")
+    mocker.patch("trxo_lib.imports.domains.esv.warning")
 
     data = {"_id": "s1"}
 
@@ -173,7 +173,7 @@ def test_esv_secrets_unexpected_status(mocker):
     get_resp.text = "boom"
 
     imp.make_http_request = mocker.Mock(return_value=get_resp)
-    mocker.patch("trxo_lib.operations.imports.esv.error")
+    mocker.patch("trxo_lib.imports.domains.esv.error")
 
     data = {"_id": "s1"}
 
@@ -184,7 +184,7 @@ def test_esv_secrets_exception(mocker):
     imp = EsvSecretsImporter()
 
     imp.make_http_request = mocker.Mock(side_effect=Exception("boom"))
-    mocker.patch("trxo_lib.operations.imports.esv.error")
+    mocker.patch("trxo_lib.imports.domains.esv.error")
 
     data = {"_id": "s1"}
 

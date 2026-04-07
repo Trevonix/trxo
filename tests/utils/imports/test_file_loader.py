@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from trxo_lib.utils.imports.file_loader import FileLoader
+from trxo_lib.imports.helpers.file_loader import FileLoader
 
 
 def test_load_from_local_file_happy_path_collection(tmp_path):
@@ -84,7 +84,7 @@ def test_load_from_git_file_invalid_json(tmp_path, mocker):
     file = tmp_path / "a.json"
     file.write_text("{ bad json")
 
-    mocker.patch("trxo_lib.utils.imports.file_loader.error")
+    mocker.patch("trxo_lib.imports.helpers.file_loader.error")
 
     result = FileLoader.load_from_git_file(file)
 
@@ -103,7 +103,7 @@ def test_discover_git_files_with_realm(tmp_path, mocker):
 
     # Mock the discovery method
     mocker.patch(
-        "trxo_lib.utils.imports.file_loader.FileLoader.discover_git_files",
+        "trxo_lib.imports.helpers.file_loader.FileLoader.discover_git_files",
         return_value=[f1],
     )
 
@@ -133,11 +133,11 @@ def test_load_git_files_happy_path(tmp_path, mocker):
     git_manager.local_path = repo
 
     mocker.patch(
-        "trxo_lib.utils.imports.file_loader.FileLoader.discover_git_files",
+        "trxo_lib.imports.helpers.file_loader.FileLoader.discover_git_files",
         return_value=[f1],
     )
 
-    mocker.patch("trxo_lib.utils.imports.file_loader.info")
+    mocker.patch("trxo_lib.imports.helpers.file_loader.info")
 
     result = FileLoader.load_git_files(git_manager, "scripts", "alpha")
 
@@ -166,12 +166,12 @@ def test_load_git_files_partial_failure(tmp_path, mocker):
     git_manager.local_path = repo
 
     mocker.patch(
-        "trxo_lib.utils.imports.file_loader.FileLoader.discover_git_files",
+        "trxo_lib.imports.helpers.file_loader.FileLoader.discover_git_files",
         return_value=[good, bad],
     )
 
-    mocker.patch("trxo_lib.utils.imports.file_loader.info")
-    mocker.patch("trxo_lib.utils.imports.file_loader.warning")
+    mocker.patch("trxo_lib.imports.helpers.file_loader.info")
+    mocker.patch("trxo_lib.imports.helpers.file_loader.warning")
 
     result = FileLoader.load_git_files(git_manager, "scripts", "alpha")
 

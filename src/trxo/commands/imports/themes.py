@@ -26,7 +26,7 @@ from trxo.commands.shared.options import (
     SyncOpt,
 )
 from trxo_lib.constants import DEFAULT_REALM
-from trxo_lib.operations.imports.service import ImportService
+from trxo_lib.imports.service import ImportService
 
 
 def create_themes_import_command():

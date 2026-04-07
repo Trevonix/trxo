@@ -31,7 +31,7 @@ from trxo.commands.shared.options import (
 )
 from trxo.utils.console import console, info, warning
 
-from trxo_lib.operations.export.service import ExportService
+from trxo_lib.exports.service import ExportService
 
 
 def create_esv_commands():

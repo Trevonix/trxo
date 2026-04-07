@@ -21,7 +21,7 @@ from trxo.commands.shared.options import (
     SrcRealmOpt,
     SyncOpt,
 )
-from trxo_lib.operations.imports.service import ImportService
+from trxo_lib.imports.service import ImportService
 
 
 def create_journey_import_command():

@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from trxo_lib.utils.hash_manager import HashManager, get_command_name_from_item_type
+from trxo_lib.state.hash import HashManager, get_command_name_from_item_type
 
 
 @pytest.fixture()
@@ -60,8 +60,8 @@ def test_list_all_hashes(manager):
 
 
 def test_validate_import_hash_success(manager, mocker):
-    mocker.patch("trxo_lib.utils.hash_manager.success")
-    mocker.patch("trxo_lib.utils.hash_manager.error")
+    mocker.patch("trxo_lib.state.hash.success")
+    mocker.patch("trxo_lib.state.hash.error")
 
     data = {"_id": "1"}
     h = manager.create_hash(data, "scripts")
@@ -71,8 +71,8 @@ def test_validate_import_hash_success(manager, mocker):
 
 
 def test_validate_import_hash_mismatch(manager, mocker):
-    error_mock = mocker.patch("trxo_lib.utils.hash_manager.error")
-    mocker.patch("trxo_lib.utils.hash_manager.success")
+    error_mock = mocker.patch("trxo_lib.state.hash.error")
+    mocker.patch("trxo_lib.state.hash.success")
 
     manager.save_export_hash("scripts", "wrong")
 
@@ -83,7 +83,7 @@ def test_validate_import_hash_mismatch(manager, mocker):
 
 
 def test_validate_import_hash_missing_metadata(manager, mocker):
-    error_mock = mocker.patch("trxo_lib.utils.hash_manager.error")
+    error_mock = mocker.patch("trxo_lib.state.hash.error")
 
     result = manager.validate_import_hash({"_id": "1"}, "scripts")
 
@@ -92,7 +92,7 @@ def test_validate_import_hash_missing_metadata(manager, mocker):
 
 
 def test_validate_import_hash_force_true(manager, mocker):
-    mocker.patch("trxo_lib.utils.hash_manager.warning")
+    mocker.patch("trxo_lib.state.hash.warning")
 
     result = manager.validate_import_hash({"x": 1}, "scripts", force=True)
 

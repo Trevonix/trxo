@@ -2,18 +2,18 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from trxo_lib.utils.imports.sync_handler import SyncHandler
+from trxo_lib.imports.helpers.sync_handler import SyncHandler
 
 
 def test_handle_sync_deletions_diff_fails(mocker):
-    mocker.patch("trxo_lib.utils.imports.sync_handler.info")
-    mocker.patch("trxo_lib.utils.imports.sync_handler.warning")
-    mocker.patch("trxo_lib.utils.imports.sync_handler.success")
+    mocker.patch("trxo_lib.imports.helpers.sync_handler.info")
+    mocker.patch("trxo_lib.imports.helpers.sync_handler.warning")
+    mocker.patch("trxo_lib.imports.helpers.sync_handler.success")
 
     diff_manager = MagicMock()
     diff_manager.perform_diff.return_value = None
     mocker.patch(
-        "trxo_lib.utils.imports.sync_handler.DiffManager", return_value=diff_manager
+        "trxo_lib.imports.helpers.sync_handler.DiffManager", return_value=diff_manager
     )
 
     result = SyncHandler.handle_sync_deletions(
@@ -28,20 +28,20 @@ def test_handle_sync_deletions_diff_fails(mocker):
 
 
 def test_handle_sync_deletions_no_items_to_delete(mocker):
-    mocker.patch("trxo_lib.utils.imports.sync_handler.info")
-    mocker.patch("trxo_lib.utils.imports.sync_handler.warning")
-    success_mock = mocker.patch("trxo_lib.utils.imports.sync_handler.success")
+    mocker.patch("trxo_lib.imports.helpers.sync_handler.info")
+    mocker.patch("trxo_lib.imports.helpers.sync_handler.warning")
+    success_mock = mocker.patch("trxo_lib.imports.helpers.sync_handler.success")
 
     diff_manager = MagicMock()
     diff_manager.perform_diff.return_value = {"removed": []}
     mocker.patch(
-        "trxo_lib.utils.imports.sync_handler.DiffManager", return_value=diff_manager
+        "trxo_lib.imports.helpers.sync_handler.DiffManager", return_value=diff_manager
     )
 
     deletion_manager = MagicMock()
     deletion_manager.get_items_to_delete.return_value = []
     mocker.patch(
-        "trxo_lib.utils.imports.sync_handler.DeletionManager", return_value=deletion_manager
+        "trxo_lib.imports.helpers.sync_handler.DeletionManager", return_value=deletion_manager
     )
 
     result = SyncHandler.handle_sync_deletions(
@@ -57,20 +57,20 @@ def test_handle_sync_deletions_no_items_to_delete(mocker):
 
 
 def test_handle_sync_deletions_user_cancels(mocker):
-    mocker.patch("trxo_lib.utils.imports.sync_handler.info")
-    warning_mock = mocker.patch("trxo_lib.utils.imports.sync_handler.warning")
+    mocker.patch("trxo_lib.imports.helpers.sync_handler.info")
+    warning_mock = mocker.patch("trxo_lib.imports.helpers.sync_handler.warning")
 
     diff_manager = MagicMock()
     diff_manager.perform_diff.return_value = {"removed": [{"_id": "1"}]}
     mocker.patch(
-        "trxo_lib.utils.imports.sync_handler.DiffManager", return_value=diff_manager
+        "trxo_lib.imports.helpers.sync_handler.DiffManager", return_value=diff_manager
     )
 
     deletion_manager = MagicMock()
     deletion_manager.get_items_to_delete.return_value = [{"_id": "1"}]
     deletion_manager.confirm_deletions.return_value = False
     mocker.patch(
-        "trxo_lib.utils.imports.sync_handler.DeletionManager", return_value=deletion_manager
+        "trxo_lib.imports.helpers.sync_handler.DeletionManager", return_value=deletion_manager
     )
 
     result = SyncHandler.handle_sync_deletions(
@@ -86,14 +86,14 @@ def test_handle_sync_deletions_user_cancels(mocker):
 
 
 def test_handle_sync_deletions_success(mocker):
-    mocker.patch("trxo_lib.utils.imports.sync_handler.info")
-    mocker.patch("trxo_lib.utils.imports.sync_handler.warning")
-    mocker.patch("trxo_lib.utils.imports.sync_handler.success")
+    mocker.patch("trxo_lib.imports.helpers.sync_handler.info")
+    mocker.patch("trxo_lib.imports.helpers.sync_handler.warning")
+    mocker.patch("trxo_lib.imports.helpers.sync_handler.success")
 
     diff_manager = MagicMock()
     diff_manager.perform_diff.return_value = {"removed": [{"_id": "1"}]}
     mocker.patch(
-        "trxo_lib.utils.imports.sync_handler.DiffManager", return_value=diff_manager
+        "trxo_lib.imports.helpers.sync_handler.DiffManager", return_value=diff_manager
     )
 
     deletion_manager = MagicMock()
@@ -101,7 +101,7 @@ def test_handle_sync_deletions_success(mocker):
     deletion_manager.confirm_deletions.return_value = True
     deletion_manager.execute_deletions.return_value = {"deleted": 1}
     mocker.patch(
-        "trxo_lib.utils.imports.sync_handler.DeletionManager", return_value=deletion_manager
+        "trxo_lib.imports.helpers.sync_handler.DeletionManager", return_value=deletion_manager
     )
 
     result = SyncHandler.handle_sync_deletions(
@@ -120,14 +120,14 @@ def test_handle_sync_deletions_success(mocker):
 
 def test_handle_sync_deletions_passes_all_args(mocker):
     """Verify that all onprem / IDM / am_base_url args are forwarded to DiffManager."""
-    mocker.patch("trxo_lib.utils.imports.sync_handler.info")
-    mocker.patch("trxo_lib.utils.imports.sync_handler.warning")
-    mocker.patch("trxo_lib.utils.imports.sync_handler.success")
+    mocker.patch("trxo_lib.imports.helpers.sync_handler.info")
+    mocker.patch("trxo_lib.imports.helpers.sync_handler.warning")
+    mocker.patch("trxo_lib.imports.helpers.sync_handler.success")
 
     diff_manager = MagicMock()
     diff_manager.perform_diff.return_value = {"removed": [{"_id": "1"}]}
     mocker.patch(
-        "trxo_lib.utils.imports.sync_handler.DiffManager", return_value=diff_manager
+        "trxo_lib.imports.helpers.sync_handler.DiffManager", return_value=diff_manager
     )
 
     deletion_manager = MagicMock()
@@ -135,7 +135,7 @@ def test_handle_sync_deletions_passes_all_args(mocker):
     deletion_manager.confirm_deletions.return_value = True
     deletion_manager.execute_deletions.return_value = {"deleted": 1}
     mocker.patch(
-        "trxo_lib.utils.imports.sync_handler.DeletionManager", return_value=deletion_manager
+        "trxo_lib.imports.helpers.sync_handler.DeletionManager", return_value=deletion_manager
     )
 
     SyncHandler.handle_sync_deletions(

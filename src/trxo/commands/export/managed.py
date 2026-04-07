@@ -27,7 +27,7 @@ from trxo.commands.shared.options import (
     ViewColumnsOpt,
     ViewOpt,
 )
-from trxo_lib.operations.export.service import ExportService
+from trxo_lib.exports.service import ExportService
 
 
 def create_managed_export_command():

@@ -1,6 +1,6 @@
 import pytest
 
-from trxo_lib.operations.export.journeys import JourneyExporter
+from trxo_lib.exports.domains.journeys import JourneyExporter
 from trxo.commands.export.journeys import create_journeys_export_command
 from trxo.constants import DEFAULT_REALM
 
@@ -10,12 +10,12 @@ def mock_exporter(mocker):
     exporter = mocker.Mock(spec=JourneyExporter)
     exporter.export_data.return_value = {"trees": {"tree_1": {}}}
     mocker.patch(
-        "trxo_lib.operations.export.journeys.JourneyExporter",
+        "trxo_lib.exports.domains.journeys.JourneyExporter",
         return_value=exporter,
     )
     # process_journey_response would be called with the exporter; mock it out
     mocker.patch(
-        "trxo_lib.operations.export.journeys.process_journey_response",
+        "trxo_lib.exports.domains.journeys.process_journey_response",
         return_value=mocker.Mock(),
     )
     return exporter

@@ -8,7 +8,7 @@ def test_authn_export_calls_exporter(mocker):
     mock_exporter.export_data.return_value.data = {}
     mock_exporter.export_data.return_value.metadata = {}
     mocker.patch(
-        "trxo_lib.operations.export.authn.BaseExporter", return_value=mock_exporter
+        "trxo_lib.exports.domains.authn.BaseExporter", return_value=mock_exporter
     )
 
     export_authn = create_authn_export_command()
@@ -53,7 +53,7 @@ def test_authn_export_default_realm(mocker):
     mock_exporter.export_data.return_value.data = {}
     mock_exporter.export_data.return_value.metadata = {}
     mocker.patch(
-        "trxo_lib.operations.export.authn.BaseExporter", return_value=mock_exporter
+        "trxo_lib.exports.domains.authn.BaseExporter", return_value=mock_exporter
     )
 
     export_authn = create_authn_export_command()

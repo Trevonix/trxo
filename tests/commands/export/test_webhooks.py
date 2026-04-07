@@ -9,7 +9,7 @@ def test_export_webhooks_defaults(mocker):
     exporter.export_data.return_value.data = {}
     exporter.export_data.return_value.metadata = {}
     mocker.patch(
-        "trxo_lib.operations.export.webhooks.BaseExporter",
+        "trxo_lib.exports.domains.webhooks.BaseExporter",
         return_value=exporter,
     )
 
@@ -35,7 +35,7 @@ def test_export_webhooks_custom_args(mocker):
     exporter.export_data.return_value.data = {}
     exporter.export_data.return_value.metadata = {}
     mocker.patch(
-        "trxo_lib.operations.export.webhooks.BaseExporter",
+        "trxo_lib.exports.domains.webhooks.BaseExporter",
         return_value=exporter,
     )
 

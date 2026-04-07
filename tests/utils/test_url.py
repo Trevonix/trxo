@@ -1,6 +1,6 @@
 import pytest
 
-from trxo_lib.utils.url import construct_api_url
+from trxo_lib.core.url import construct_api_url
 
 
 def test_simple_base_and_endpoint():

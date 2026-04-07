@@ -1,1 +1,1 @@
-# tests for trxo_lib.utils.diff
+# tests for trxo_lib.state.diff

@@ -10,7 +10,7 @@ def mock_exporter(mocker):
     exporter.export_data.return_value.data = {}
     exporter.export_data.return_value.metadata = {}
     mocker.patch(
-        "trxo_lib.operations.export.endpoints.BaseExporter",
+        "trxo_lib.exports.domains.endpoints.BaseExporter",
         return_value=exporter,
     )
     return exporter

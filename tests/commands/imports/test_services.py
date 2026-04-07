@@ -1,6 +1,6 @@
 import pytest
 from trxo.commands.imports.services import create_services_import_command
-from trxo_lib.operations.imports.services import ServicesImporter
+from trxo_lib.imports.domains.services import ServicesImporter
 
 
 def test_services_importer_get_api_endpoint_global():
@@ -38,7 +38,7 @@ def test_prepare_service_payload_removes_dynamic_fields():
 
 def test_update_item_missing_id(mocker):
     importer = ServicesImporter()
-    mocker.patch("trxo_lib.operations.imports.services.error")
+    mocker.patch("trxo_lib.imports.domains.services.error")
 
     result = importer.update_item({}, "t", "http://x")
 
@@ -49,7 +49,7 @@ def test_update_item_global_success(mocker):
     importer = ServicesImporter(scope="global")
 
     importer.make_http_request = mocker.Mock()
-    mocker.patch("trxo_lib.operations.imports.services.info")
+    mocker.patch("trxo_lib.imports.domains.services.info")
 
     data = {"_type": {"_id": "svc1"}, "enabled": True}
 
@@ -61,7 +61,7 @@ def test_update_item_realm_success(mocker):
     importer = ServicesImporter(scope="realm", realm="alpha")
 
     importer.make_http_request = mocker.Mock()
-    mocker.patch("trxo_lib.operations.imports.services.info")
+    mocker.patch("trxo_lib.imports.domains.services.info")
 
     data = {"_type": {"_id": "svc1"}, "enabled": True}
 
@@ -73,7 +73,7 @@ def test_update_item_http_error(mocker):
     importer = ServicesImporter(scope="realm", realm="alpha")
 
     importer.make_http_request = mocker.Mock(side_effect=Exception("boom"))
-    mocker.patch("trxo_lib.operations.imports.services.error")
+    mocker.patch("trxo_lib.imports.domains.services.error")
 
     data = {"_type": {"_id": "svc1"}, "enabled": True}
 

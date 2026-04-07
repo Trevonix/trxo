@@ -1,7 +1,7 @@
 import json
 import pytest
 from trxo.commands.imports.privileges import create_privileges_import_command
-from trxo_lib.operations.imports.privileges import PrivilegesImporter
+from trxo_lib.imports.domains.privileges import PrivilegesImporter
 
 
 def test_privileges_get_required_fields():
@@ -32,7 +32,7 @@ def test_update_item_success(monkeypatch):
 
     monkeypatch.setattr(imp, "make_http_request", fake_http)
     monkeypatch.setattr(
-        "trxo_lib.operations.imports.privileges.info", lambda *a, **k: None
+        "trxo_lib.imports.domains.privileges.info", lambda *a, **k: None
     )
 
     data = {"_id": "p1", "a": 1}
@@ -48,7 +48,7 @@ def test_update_item_success(monkeypatch):
 def test_update_item_missing_id(monkeypatch):
     imp = PrivilegesImporter()
     monkeypatch.setattr(
-        "trxo_lib.operations.imports.privileges.error", lambda *a, **k: None
+        "trxo_lib.imports.domains.privileges.error", lambda *a, **k: None
     )
     ok = imp.update_item({}, "t", "http://x")
     assert ok is False
@@ -62,7 +62,7 @@ def test_update_item_exception(monkeypatch):
 
     monkeypatch.setattr(imp, "make_http_request", boom)
     monkeypatch.setattr(
-        "trxo_lib.operations.imports.privileges.error", lambda *a, **k: None
+        "trxo_lib.imports.domains.privileges.error", lambda *a, **k: None
     )
 
     ok = imp.update_item({"_id": "p1"}, "t", "http://x")

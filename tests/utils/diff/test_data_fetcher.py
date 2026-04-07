@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 from trxo.constants import DEFAULT_REALM
-from trxo_lib.utils.diff.data_fetcher import DataFetcher, get_command_api_endpoint
+from trxo_lib.state.diff.data_fetcher import DataFetcher, get_command_api_endpoint
 
 
 def test_get_command_api_endpoint_known_command():
@@ -45,7 +45,7 @@ def test_fetch_data_failure_returns_none(mocker):
     mock_exporter = mocker.Mock()
     fetcher.exporter = mock_exporter
 
-    mocker.patch("trxo_lib.utils.diff.data_fetcher.error")
+    mocker.patch("trxo_lib.state.diff.data_fetcher.error")
     mock_exporter.export_data.side_effect = Exception("boom")
 
     result = fetcher.fetch_data("scripts", "/am/json/x")
@@ -73,7 +73,7 @@ def test_fetch_from_local_file_not_found(mocker):
     fetcher = DataFetcher()
 
     mocker.patch.object(fetcher, "_get_storage_mode", return_value="local")
-    mocker.patch("trxo_lib.utils.diff.data_fetcher.error")
+    mocker.patch("trxo_lib.state.diff.data_fetcher.error")
 
     result = fetcher.fetch_from_file_or_git(
         command_name="scripts",
@@ -95,10 +95,10 @@ def test_fetch_from_git_no_repo_returns_none(mocker, tmp_path):
         "token": "t",
     }
 
-    mocker.patch("trxo_lib.utils.config_store.ConfigStore", return_value=mock_config)
-    mocker.patch("trxo_lib.utils.git.get_repo_base_path", return_value=tmp_path)
-    mocker.patch("trxo_lib.utils.diff.data_fetcher.warning")
-    mocker.patch("trxo_lib.utils.diff.data_fetcher.error")
+    mocker.patch("trxo_lib.config.config_store.ConfigStore", return_value=mock_config)
+    mocker.patch("trxo_lib.git.get_repo_base_path", return_value=tmp_path)
+    mocker.patch("trxo_lib.state.diff.data_fetcher.warning")
+    mocker.patch("trxo_lib.state.diff.data_fetcher.error")
 
     result = fetcher.fetch_from_file_or_git(
         command_name="scripts",
@@ -127,8 +127,8 @@ def test_fetch_from_git_happy_path(mocker, tmp_path):
         "token": "t",
     }
 
-    mocker.patch("trxo_lib.utils.config_store.ConfigStore", return_value=mock_config)
-    mocker.patch("trxo_lib.utils.git.get_repo_base_path", return_value=tmp_path)
+    mocker.patch("trxo_lib.config.config_store.ConfigStore", return_value=mock_config)
+    mocker.patch("trxo_lib.git.get_repo_base_path", return_value=tmp_path)
 
     result = fetcher.fetch_from_file_or_git(
         command_name="scripts",

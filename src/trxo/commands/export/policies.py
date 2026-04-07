@@ -28,7 +28,7 @@ from trxo.commands.shared.options import (
     ViewOpt,
 )
 from trxo_lib.constants import DEFAULT_REALM
-from trxo_lib.operations.export.service import ExportService
+from trxo_lib.exports.service import ExportService
 
 
 def create_policies_export_command():

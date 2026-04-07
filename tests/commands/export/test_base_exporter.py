@@ -1,7 +1,7 @@
 import pytest
 import typer
 
-from trxo_lib.operations.export.base_exporter import BaseExporter
+from trxo_lib.exports.processor import BaseExporter
 
 
 @pytest.fixture
@@ -24,7 +24,7 @@ def exporter(mocker):
     be.make_http_request.return_value = response
 
     mocker.patch(
-        "trxo_lib.operations.export.base_exporter.MetadataBuilder.build_metadata",
+        "trxo_lib.exports.processor.MetadataBuilder.build_metadata",
         return_value={"m": 1},
     )
     return be
@@ -55,11 +55,11 @@ def test_export_data_non_200_response(exporter):
 
 def test_handle_pagination_success(exporter, mocker):
     mocker.patch(
-        "trxo_lib.operations.export.base_exporter.PaginationHandler.is_paginated",
+        "trxo_lib.exports.processor.PaginationHandler.is_paginated",
         return_value=True,
     )
     mocker.patch(
-        "trxo_lib.operations.export.base_exporter.PaginationHandler.fetch_all_pages",
+        "trxo_lib.exports.processor.PaginationHandler.fetch_all_pages",
         return_value={"items": []},
     )
 
@@ -70,11 +70,11 @@ def test_handle_pagination_success(exporter, mocker):
 
 def test_handle_pagination_failure_fallback(exporter, mocker):
     mocker.patch(
-        "trxo_lib.operations.export.base_exporter.PaginationHandler.is_paginated",
+        "trxo_lib.exports.processor.PaginationHandler.is_paginated",
         return_value=True,
     )
     mocker.patch(
-        "trxo_lib.operations.export.base_exporter.PaginationHandler.fetch_all_pages",
+        "trxo_lib.exports.processor.PaginationHandler.fetch_all_pages",
         side_effect=Exception("boom"),
     )
 

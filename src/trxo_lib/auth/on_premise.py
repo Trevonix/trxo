@@ -20,7 +20,7 @@ class OnPremAuth:
 
     @property
     def auth_url(self) -> str:
-        from trxo_lib.utils.url import construct_api_url
+        from trxo_lib.core.url import construct_api_url
 
         endpoint = f"/am/json/realms/{self.realm}/authenticate"
         return construct_api_url(self.base_url, endpoint)

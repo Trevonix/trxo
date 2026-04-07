@@ -50,7 +50,7 @@ def setup_logging(
             try:
                 import json
 
-                from trxo_lib.utils.config_store import ConfigStore
+                from trxo_lib.config.config_store import ConfigStore
 
                 config_store = ConfigStore()
                 global_settings_file = config_store.base_dir / "settings.json"

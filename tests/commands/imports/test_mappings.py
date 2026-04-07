@@ -3,7 +3,7 @@ import os
 import tempfile
 import pytest
 from trxo.commands.imports.mappings import create_mappings_import_command
-from trxo_lib.operations.imports.mappings import MappingsImporter
+from trxo_lib.imports.domains.mappings import MappingsImporter
 
 
 def test_mappings_required_fields():
@@ -55,7 +55,7 @@ def test_generate_patch_operations_list_replace():
 
 def test_update_item_missing_name(mocker):
     importer = MappingsImporter()
-    mocker.patch("trxo_lib.operations.imports.mappings.error")
+    mocker.patch("trxo_lib.imports.domains.mappings.error")
 
     assert importer.update_item({}, "t", "http://x") is False
 
@@ -63,7 +63,7 @@ def test_update_item_missing_name(mocker):
 def test_update_item_no_current_config(mocker):
     importer = MappingsImporter()
     importer._get_current_sync_config = mocker.Mock(return_value={})
-    mocker.patch("trxo_lib.operations.imports.mappings.error")
+    mocker.patch("trxo_lib.imports.domains.mappings.error")
 
     assert importer.update_item({"name": "a"}, "t", "http://x") is False
 
@@ -74,7 +74,7 @@ def test_update_item_existing_no_changes(mocker):
     importer._get_current_sync_config = mocker.Mock(
         return_value={"mappings": [{"name": "a"}]}
     )
-    mocker.patch("trxo_lib.operations.imports.mappings.info")
+    mocker.patch("trxo_lib.imports.domains.mappings.info")
 
     assert importer.update_item({"name": "a"}, "t", "http://x") is True
 
@@ -85,7 +85,7 @@ def test_update_item_existing_with_patch(mocker):
     importer._get_current_sync_config = mocker.Mock(
         return_value={"mappings": [{"name": "a", "x": 1}]}
     )
-    mocker.patch("trxo_lib.operations.imports.mappings.info")
+    mocker.patch("trxo_lib.imports.domains.mappings.info")
 
     assert importer.update_item({"name": "a", "x": 2}, "t", "http://x") is True
 
@@ -94,7 +94,7 @@ def test_update_item_create_new(mocker):
     importer = MappingsImporter()
     importer.make_http_request = mocker.Mock()
     importer._get_current_sync_config = mocker.Mock(return_value={"mappings": []})
-    mocker.patch("trxo_lib.operations.imports.mappings.info")
+    mocker.patch("trxo_lib.imports.domains.mappings.info")
 
     assert importer.update_item({"name": "a"}, "t", "http://x") is True
 

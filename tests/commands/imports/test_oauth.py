@@ -1,10 +1,10 @@
 import json
 
 import pytest
-from trxo_lib.operations.imports.base_importer import TrxoAbort
+from trxo_lib.imports.processor import TrxoAbort
 
 from trxo.commands.imports.oauth import create_oauth_import_command
-from trxo_lib.operations.imports.oauth import OAuthImporter
+from trxo_lib.imports.domains.oauth import OAuthImporter
 from trxo_lib.constants import DEFAULT_REALM
 
 
@@ -84,7 +84,7 @@ def test_process_items_calls_script_importer_first(mocker):
     mocker.patch.object(importer.script_importer, "update_item", return_value=True)
 
     mocker.patch(
-        "trxo_lib.operations.imports.oauth.BaseImporter.process_items",
+        "trxo_lib.imports.domains.oauth.BaseImporter.process_items",
         return_value=None,
     )
 
@@ -114,7 +114,7 @@ def test_update_item_happy_path(mocker):
 def test_update_item_missing_id_returns_false(mocker):
     importer = OAuthImporter(realm=DEFAULT_REALM)
 
-    mocker.patch("trxo_lib.operations.imports.oauth.error")
+    mocker.patch("trxo_lib.imports.domains.oauth.error")
 
     result = importer.update_item({}, "token", "https://base")
 
@@ -140,7 +140,7 @@ def test_delete_item_failure_returns_false(mocker):
 
     mocker.patch.object(importer, "make_http_request", side_effect=Exception("fail"))
     mocker.patch.object(importer, "build_auth_headers", return_value={})
-    mocker.patch("trxo_lib.operations.imports.oauth.error")
+    mocker.patch("trxo_lib.imports.domains.oauth.error")
 
     result = importer.delete_item("c1", "token", "https://base")
 

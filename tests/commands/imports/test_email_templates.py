@@ -1,6 +1,6 @@
 import pytest
 from trxo.commands.imports.email_templates import create_email_templates_import_command
-from trxo_lib.operations.imports.email_templates import EmailTemplatesImporter
+from trxo_lib.imports.domains.email_templates import EmailTemplatesImporter
 
 
 def test_email_templates_importer_required_fields():
@@ -23,7 +23,7 @@ def test_update_item_success(mocker):
     importer = EmailTemplatesImporter()
 
     importer.make_http_request = mocker.Mock()
-    mocker.patch("trxo_lib.operations.imports.email_templates.info")
+    mocker.patch("trxo_lib.imports.domains.email_templates.info")
 
     data = {"_id": "emailTemplate/test", "subject": "Hi"}
 
@@ -35,7 +35,7 @@ def test_update_item_success(mocker):
 
 def test_update_item_missing_id(mocker):
     importer = EmailTemplatesImporter()
-    mocker.patch("trxo_lib.operations.imports.email_templates.error")
+    mocker.patch("trxo_lib.imports.domains.email_templates.error")
 
     result = importer.update_item({}, "t", "http://x")
 
@@ -46,7 +46,7 @@ def test_update_item_http_error(mocker):
     importer = EmailTemplatesImporter()
 
     importer.make_http_request = mocker.Mock(side_effect=Exception("boom"))
-    mocker.patch("trxo_lib.operations.imports.email_templates.error")
+    mocker.patch("trxo_lib.imports.domains.email_templates.error")
 
     data = {"_id": "emailTemplate/test"}
 
@@ -59,7 +59,7 @@ def test_update_item_http_error(mocker):
 def test_delete_item_success(mocker):
     importer = EmailTemplatesImporter()
     importer.make_http_request = mocker.Mock()
-    mocker.patch("trxo_lib.operations.imports.email_templates.info")
+    mocker.patch("trxo_lib.imports.domains.email_templates.info")
 
     result = importer.delete_item("emailTemplate/test", "t", "http://x")
 
@@ -72,7 +72,7 @@ def test_delete_item_success(mocker):
 def test_delete_item_failure(mocker):
     importer = EmailTemplatesImporter()
     importer.make_http_request = mocker.Mock(side_effect=Exception("boom"))
-    mocker.patch("trxo_lib.operations.imports.email_templates.error")
+    mocker.patch("trxo_lib.imports.domains.email_templates.error")
 
     result = importer.delete_item("emailTemplate/test", "t", "http://x")
 

@@ -7,7 +7,7 @@ def test_export_themes_with_realm(mocker):
     exporter.export_data.return_value.data = {}
     exporter.export_data.return_value.metadata = {}
     mocker.patch(
-        "trxo_lib.operations.export.themes.BaseExporter",
+        "trxo_lib.exports.domains.themes.BaseExporter",
         return_value=exporter,
     )
 

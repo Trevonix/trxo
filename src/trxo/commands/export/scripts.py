@@ -29,7 +29,7 @@ from trxo.commands.shared.options import (
     ViewOpt,
 )
 from trxo_lib.constants import DEFAULT_REALM
-from trxo_lib.operations.export.service import ExportService
+from trxo_lib.exports.service import ExportService
 
 
 def create_scripts_export_command():
@@ -59,28 +59,11 @@ def create_scripts_export_command():
         idm_password: IdmPasswordOpt = None,
     ):
         """Export scripts configuration"""
-        ExportService().export_scripts(
-            realm=realm,
-            view=view,
-            view_columns=view_columns,
-            version=version,
-            no_version=no_version,
-            branch=branch,
-            commit_message=commit,
-            jwk_path=jwk_path,
-            sa_id=sa_id,
-            base_url=base_url,
-            project_name=project_name,
-            output_dir=output_dir,
-            output_file=output_file,
-            auth_mode=auth_mode,
-            onprem_username=onprem_username,
-            onprem_password=onprem_password,
-            onprem_realm=onprem_realm,
-            idm_base_url=idm_base_url,
-            idm_username=idm_username,
-            idm_password=idm_password,
-            am_base_url=am_base_url,
+        kwargs = locals()
+        from trxo.utils.export.cli_handler import CLIExportHandler
+
+        CLIExportHandler().handle_export(
+            "scripts", ExportService().export_scripts, kwargs
         )
 
     return export_scripts

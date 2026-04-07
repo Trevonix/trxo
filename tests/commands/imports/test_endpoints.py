@@ -1,6 +1,6 @@
 import pytest
 from trxo.commands.imports.endpoints import create_endpoints_import_command
-from trxo_lib.operations.imports.endpoints import EndpointsImporter
+from trxo_lib.imports.domains.endpoints import EndpointsImporter
 
 
 def test_endpoints_importer_required_fields():
@@ -23,7 +23,7 @@ def test_update_item_success(mocker):
     importer = EndpointsImporter()
 
     importer.make_http_request = mocker.Mock()
-    mocker.patch("trxo_lib.operations.imports.endpoints.info")
+    mocker.patch("trxo_lib.imports.domains.endpoints.info")
 
     data = {"_id": "endpoint/test", "name": "Test"}
 
@@ -35,7 +35,7 @@ def test_update_item_success(mocker):
 
 def test_update_item_missing_id(mocker):
     importer = EndpointsImporter()
-    mocker.patch("trxo_lib.operations.imports.endpoints.error")
+    mocker.patch("trxo_lib.imports.domains.endpoints.error")
 
     result = importer.update_item({}, "t", "http://x")
 
@@ -46,7 +46,7 @@ def test_update_item_http_error(mocker):
     importer = EndpointsImporter()
 
     importer.make_http_request = mocker.Mock(side_effect=Exception("boom"))
-    mocker.patch("trxo_lib.operations.imports.endpoints.error")
+    mocker.patch("trxo_lib.imports.domains.endpoints.error")
 
     data = {"_id": "endpoint/test"}
 

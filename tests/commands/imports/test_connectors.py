@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock
 import pytest
 from trxo.commands.imports.connectors import create_connectors_import_command
-from trxo_lib.operations.imports.connectors import ConnectorsImporter
+from trxo_lib.imports.domains.connectors import ConnectorsImporter
 
 
 def test_get_required_fields():
@@ -42,7 +42,7 @@ def test_update_item_invalid_id(mocker):
     client.put.return_value = response
 
     mocker.patch("httpx.Client", return_value=client)
-    mocker.patch("trxo_lib.operations.imports.connectors.error")
+    mocker.patch("trxo_lib.imports.domains.connectors.error")
 
     result = importer.update_item({"_id": "bad.id"}, "token", "http://x")
 
@@ -62,7 +62,7 @@ def test_update_item_success_normal_connector(mocker):
     client.put.return_value = response
 
     mocker.patch("httpx.Client", return_value=client)
-    mocker.patch("trxo_lib.operations.imports.connectors.success")
+    mocker.patch("trxo_lib.imports.domains.connectors.success")
 
     data = {
         "_id": "provisioner.openicf/mysql",
@@ -85,7 +85,7 @@ def test_update_item_error(mocker):
     client.put.side_effect = Exception("boom")
 
     mocker.patch("httpx.Client", return_value=client)
-    mocker.patch("trxo_lib.operations.imports.connectors.error")
+    mocker.patch("trxo_lib.imports.domains.connectors.error")
 
     data = {"_id": "provisioner.openicf.mysql"}
 

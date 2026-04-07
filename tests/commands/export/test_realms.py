@@ -10,7 +10,7 @@ def test_realms_export_happy_path(mocker):
     mock_exporter.export_data.return_value.data = {}
     mock_exporter.export_data.return_value.metadata = {}
     mocker.patch(
-        "trxo_lib.operations.export.realms.BaseExporter", return_value=mock_exporter
+        "trxo_lib.exports.domains.realms.BaseExporter", return_value=mock_exporter
     )
 
     mock_exporter.export_data.return_value = None
@@ -37,7 +37,7 @@ def test_realms_export_view_columns_without_view(mocker):
     mock_exporter.export_data.return_value.data = {}
     mock_exporter.export_data.return_value.metadata = {}
     mocker.patch(
-        "trxo_lib.operations.export.realms.BaseExporter", return_value=mock_exporter
+        "trxo_lib.exports.domains.realms.BaseExporter", return_value=mock_exporter
     )
 
     mock_exporter.export_data.return_value = None

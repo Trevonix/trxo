@@ -137,14 +137,14 @@ class ConfigStore:
 
     def save_hashes(self, command_name: str, hash_value: str):
         """Deprecated: Use HashManager.save_export_hash() instead"""
-        from trxo_lib.utils.hash_manager import HashManager
+        from trxo_lib.state.hash import HashManager
 
         hash_manager = HashManager(self)
         hash_manager.save_export_hash(command_name, hash_value)
 
     def get_hash(self, command_name: str) -> Optional[str]:
         """Deprecated: Use HashManager.get_hash_info() instead"""
-        from trxo_lib.utils.hash_manager import HashManager
+        from trxo_lib.state.hash import HashManager
 
         hash_manager = HashManager(self)
         metadata = hash_manager.get_hash_info(command_name)

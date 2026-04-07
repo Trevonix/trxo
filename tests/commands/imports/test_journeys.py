@@ -3,7 +3,7 @@ import json
 import pytest  # noqa: F401 – kept for pytest.raises if needed in future
 
 from trxo.commands.imports.journeys import create_journey_import_command
-from trxo_lib.operations.imports.journeys import (
+from trxo_lib.imports.domains.journeys import (
     JourneyImporter,
     _scripts_needed_by_trees,
 )
@@ -47,14 +47,14 @@ def test_journey_update_success(mocker):
 
 def test_journey_update_missing_id(mocker):
     importer = JourneyImporter()
-    mocker.patch("trxo_lib.operations.imports.journeys.error")
+    mocker.patch("trxo_lib.imports.domains.journeys.error")
     assert importer.update_item({}, "tok", "http://x") is False
 
 
 def test_journey_update_failure(mocker):
     importer = JourneyImporter()
     importer.make_http_request = mocker.Mock(side_effect=Exception("boom"))
-    mocker.patch("trxo_lib.operations.imports.journeys.error")
+    mocker.patch("trxo_lib.imports.domains.journeys.error")
 
     data = {"_id": "j1"}
     assert importer.update_item(data, "tok", "http://x") is False
@@ -67,7 +67,7 @@ def test_journey_update_failure(mocker):
 
 def test_import_script_missing_id(mocker):
     importer = JourneyImporter()
-    mocker.patch("trxo_lib.operations.imports.journeys.error")
+    mocker.patch("trxo_lib.imports.domains.journeys.error")
     assert importer._import_single_script({"name": "s"}, "tok", "http://x") is False
 
 
@@ -108,7 +108,7 @@ def test_import_script_string_field(mocker):
 def test_import_script_request_failure(mocker):
     importer = JourneyImporter()
     mocker.patch("httpx.Client", side_effect=Exception("500 err"))
-    mocker.patch("trxo_lib.operations.imports.journeys.error")
+    mocker.patch("trxo_lib.imports.domains.journeys.error")
 
     data = {"_id": "s1", "script": "x"}
     assert importer._import_single_script(data, "tok", "http://x") is False
@@ -134,7 +134,7 @@ def test_import_email_template_success(mocker):
 def test_import_email_template_failure(mocker):
     importer = JourneyImporter()
     importer.make_http_request = mocker.Mock(side_effect=Exception("fail"))
-    mocker.patch("trxo_lib.operations.imports.journeys.error")
+    mocker.patch("trxo_lib.imports.domains.journeys.error")
 
     assert importer._import_email_template("welcome", {}, "tok", "http://x") is False
 
@@ -146,7 +146,7 @@ def test_import_email_template_failure(mocker):
 
 def test_import_node_missing_type(mocker):
     importer = JourneyImporter()
-    mocker.patch("trxo_lib.operations.imports.journeys.error")
+    mocker.patch("trxo_lib.imports.domains.journeys.error")
     assert importer._import_node("n1", {}, "tok", "http://x") is False
 
 
@@ -161,7 +161,7 @@ def test_import_node_success(mocker):
 def test_import_node_failure(mocker):
     importer = JourneyImporter()
     importer.make_http_request = mocker.Mock(side_effect=Exception("500"))
-    mocker.patch("trxo_lib.operations.imports.journeys.error")
+    mocker.patch("trxo_lib.imports.domains.journeys.error")
 
     node = {"_type": {"_id": "PageNode"}}
     assert importer._import_node("n1", node, "tok", "http://x") is False
@@ -190,7 +190,7 @@ def _make_enriched(
 
 def test_import_journey_data_empty(mocker):
     importer = JourneyImporter()
-    mocker.patch("trxo_lib.operations.imports.journeys.warning")
+    mocker.patch("trxo_lib.imports.domains.journeys.warning")
     assert importer.import_journey_data({}, "tok", "http://x") is True
 
 
@@ -207,8 +207,8 @@ def test_import_journey_data_scripts_imported_first(mocker):
     )
     importer._import_email_template = mocker.Mock(return_value=True)
     importer._import_node = mocker.Mock(return_value=True)
-    mocker.patch("trxo_lib.operations.imports.journeys.info")
-    mocker.patch("trxo_lib.operations.imports.journeys.success")
+    mocker.patch("trxo_lib.imports.domains.journeys.info")
+    mocker.patch("trxo_lib.imports.domains.journeys.success")
 
     data = _make_enriched(
         trees={"j1": {"_id": "j1"}},
@@ -231,8 +231,8 @@ def test_import_journey_data_inner_nodes_before_root(mocker):
     importer._import_node = mocker.Mock(
         side_effect=lambda nid, *a, **kw: call_order.append(nid) or True
     )
-    mocker.patch("trxo_lib.operations.imports.journeys.info")
-    mocker.patch("trxo_lib.operations.imports.journeys.success")
+    mocker.patch("trxo_lib.imports.domains.journeys.info")
+    mocker.patch("trxo_lib.imports.domains.journeys.success")
 
     data = _make_enriched(
         trees={"j1": {"_id": "j1"}},
@@ -250,8 +250,8 @@ def test_import_journey_data_all_sections(mocker):
     importer._import_email_template = mocker.Mock(return_value=True)
     importer._import_node = mocker.Mock(return_value=True)
     importer.update_item = mocker.Mock(return_value=True)
-    mocker.patch("trxo_lib.operations.imports.journeys.info")
-    mocker.patch("trxo_lib.operations.imports.journeys.success")
+    mocker.patch("trxo_lib.imports.domains.journeys.info")
+    mocker.patch("trxo_lib.imports.domains.journeys.success")
 
     data = _make_enriched(
         trees={"j1": {"_id": "j1"}, "j2": {"_id": "j2"}},
@@ -275,8 +275,8 @@ def test_import_journey_data_error_propagated(mocker):
     importer._import_email_template = mocker.Mock(return_value=True)
     importer._import_node = mocker.Mock(return_value=True)
     importer.update_item = mocker.Mock(return_value=True)
-    mocker.patch("trxo_lib.operations.imports.journeys.info")
-    mocker.patch("trxo_lib.operations.imports.journeys.warning")
+    mocker.patch("trxo_lib.imports.domains.journeys.info")
+    mocker.patch("trxo_lib.imports.domains.journeys.warning")
 
     data = _make_enriched(
         trees={"j1": {"_id": "j1"}},
@@ -301,8 +301,8 @@ def test_import_journey_data_cherry_pick(mocker):
     importer.update_item = mocker.Mock(
         side_effect=lambda item, *a: called_trees.append(item["_id"]) or True
     )
-    mocker.patch("trxo_lib.operations.imports.journeys.info")
-    mocker.patch("trxo_lib.operations.imports.journeys.success")
+    mocker.patch("trxo_lib.imports.domains.journeys.info")
+    mocker.patch("trxo_lib.imports.domains.journeys.success")
 
     data = _make_enriched(
         trees={"j1": {"_id": "j1", "nodes": {}}, "j2": {"_id": "j2", "nodes": {}}},

@@ -12,7 +12,7 @@ import typer
 
 from trxo_lib.auth.on_premise import OnPremAuth
 from trxo_lib.auth.token_manager import TokenManager
-from trxo_lib.utils.config_store import ConfigStore
+from trxo_lib.config.config_store import ConfigStore
 from trxo.utils.console import console, error, info, warning
 
 

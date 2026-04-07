@@ -1,4 +1,4 @@
-from trxo_lib.operations.imports.authn import AuthnImporter
+from trxo_lib.imports.domains.authn import AuthnImporter
 from trxo.commands.imports.authn import create_authn_import_command
 
 
@@ -37,7 +37,7 @@ def test_authn_importer_update_item_success(mocker):
         importer, "make_http_request", return_value=mock_response
     )
 
-    mocker.patch("trxo_lib.operations.imports.authn.info")
+    mocker.patch("trxo_lib.imports.domains.authn.info")
 
     result = importer.update_item({"a": 1, "_rev": "x"}, "t", "http://base")
 
@@ -52,7 +52,7 @@ def test_authn_importer_update_item_failure(mocker):
         importer, "build_auth_headers", return_value={"Authorization": "Bearer t"}
     )
     mocker.patch.object(importer, "make_http_request", side_effect=Exception("boom"))
-    mocker.patch("trxo_lib.operations.imports.authn.error")
+    mocker.patch("trxo_lib.imports.domains.authn.error")
 
     result = importer.update_item({"a": 1}, "t", "http://base")
 

@@ -29,7 +29,7 @@ from trxo.commands.shared.options import (
     ViewOpt,
 )
 
-from trxo_lib.operations.export.service import ExportService
+from trxo_lib.exports.service import ExportService
 
 
 def create_privileges_export_command():

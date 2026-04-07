@@ -1,7 +1,7 @@
 import json
 import pytest
 from trxo.commands.imports.webhooks import create_webhooks_import_command
-from trxo_lib.operations.imports.webhooks import WebhooksImporter
+from trxo_lib.imports.domains.webhooks import WebhooksImporter
 
 
 def test_get_required_fields():
@@ -24,7 +24,7 @@ def test_update_item_success_strips_rev(mocker):
     importer = WebhooksImporter(realm="alpha")
 
     importer.make_http_request = mocker.Mock()
-    mocker.patch("trxo_lib.operations.imports.webhooks.info")
+    mocker.patch("trxo_lib.imports.domains.webhooks.info")
 
     data = {"_id": "w1", "_rev": "123", "name": "hook"}
 
@@ -42,7 +42,7 @@ def test_update_item_success_strips_rev(mocker):
 def test_update_item_missing_id(mocker):
     importer = WebhooksImporter(realm="alpha")
 
-    mocker.patch("trxo_lib.operations.imports.webhooks.error")
+    mocker.patch("trxo_lib.imports.domains.webhooks.error")
 
     result = importer.update_item({}, "t", "http://x")
 
@@ -53,7 +53,7 @@ def test_update_item_exception(mocker):
     importer = WebhooksImporter(realm="alpha")
 
     importer.make_http_request = mocker.Mock(side_effect=Exception("boom"))
-    mocker.patch("trxo_lib.operations.imports.webhooks.error")
+    mocker.patch("trxo_lib.imports.domains.webhooks.error")
 
     data = {"_id": "w1"}
 

@@ -1,7 +1,7 @@
 import json
 import pytest
 from trxo.commands.imports.themes import create_themes_import_command
-from trxo_lib.operations.imports.themes import ThemesImporter
+from trxo_lib.imports.domains.themes import ThemesImporter
 
 
 def test_get_item_type():
@@ -113,7 +113,7 @@ def test_update_item_put_success(mocker):
         return_value={"_rev": "some-rev", "realm": {}}
     )
     importer.make_http_request = mocker.Mock()
-    mocker.patch("trxo_lib.operations.imports.themes.info")
+    mocker.patch("trxo_lib.imports.domains.themes.info")
 
     incoming = {"realm": {"alpha": [{"_id": "1", "name": "theme1"}]}}
 
@@ -133,7 +133,7 @@ def test_update_item_put_failure(mocker):
 
     importer._fetch_current = mocker.Mock(return_value={"realm": {}})
     importer.make_http_request = mocker.Mock(side_effect=Exception("boom"))
-    mocker.patch("trxo_lib.operations.imports.themes.error")
+    mocker.patch("trxo_lib.imports.domains.themes.error")
 
     incoming = {"realm": {"alpha": [{"_id": "1", "name": "theme1"}]}}
 

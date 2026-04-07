@@ -1,6 +1,6 @@
 import base64
 
-from trxo_lib.operations.imports.scripts import (
+from trxo_lib.imports.domains.scripts import (
     ScriptImporter,
     is_base64_encoded,
 )
@@ -24,7 +24,7 @@ def test_update_item_skips_ignored_script_id(mocker):
     script_id = list(IGNORED_SCRIPT_IDS)[0]
     data = {"_id": script_id, "name": "x"}
 
-    mocker.patch("trxo_lib.operations.imports.scripts.info")
+    mocker.patch("trxo_lib.imports.domains.scripts.info")
 
     result = importer.update_item(data, "token", "https://base")
 
@@ -37,7 +37,7 @@ def test_update_item_skips_ignored_script_name(mocker):
     script_name = list(IGNORED_SCRIPT_NAMES)[0]
     data = {"_id": "id1", "name": script_name}
 
-    mocker.patch("trxo_lib.operations.imports.scripts.info")
+    mocker.patch("trxo_lib.imports.domains.scripts.info")
 
     result = importer.update_item(data, "token", "https://base")
 
@@ -47,7 +47,7 @@ def test_update_item_skips_ignored_script_name(mocker):
 def test_update_item_missing_id_returns_false(mocker):
     importer = ScriptImporter(realm=DEFAULT_REALM)
 
-    mocker.patch("trxo_lib.operations.imports.scripts.error")
+    mocker.patch("trxo_lib.imports.domains.scripts.error")
 
     result = importer.update_item({"name": "test"}, "token", "https://base")
 
@@ -101,7 +101,7 @@ def test_update_item_encodes_script_string(mocker):
 def test_update_item_invalid_script_type_returns_false(mocker):
     importer = ScriptImporter(realm=DEFAULT_REALM)
 
-    mocker.patch("trxo_lib.operations.imports.scripts.error")
+    mocker.patch("trxo_lib.imports.domains.scripts.error")
 
     data = {
         "_id": "s1",
@@ -119,7 +119,7 @@ def test_update_item_http_failure_returns_false(mocker):
 
     mocker.patch("httpx.Client", side_effect=Exception("boom"))
     mocker.patch.object(importer, "build_auth_headers", return_value={})
-    mocker.patch("trxo_lib.operations.imports.scripts.error")
+    mocker.patch("trxo_lib.imports.domains.scripts.error")
 
     data = {
         "_id": "s1",
@@ -151,7 +151,7 @@ def test_delete_item_failure_returns_false(mocker):
 
     mocker.patch.object(importer, "make_http_request", side_effect=Exception("boom"))
     mocker.patch.object(importer, "build_auth_headers", return_value={})
-    mocker.patch("trxo_lib.operations.imports.scripts.error")
+    mocker.patch("trxo_lib.imports.domains.scripts.error")
 
     result = importer.delete_item("s1", "token", "https://base")
 

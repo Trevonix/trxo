@@ -1,6 +1,6 @@
 import json
 
-from trxo_lib.operations.imports.applications import ApplicationsImporter
+from trxo_lib.imports.domains.applications import ApplicationsImporter
 from trxo.commands.imports.applications import create_applications_import_command
 
 
@@ -22,7 +22,7 @@ def test_applications_importer_api_endpoint():
 
 def test_applications_importer_update_item_missing_id(mocker):
     importer = ApplicationsImporter()
-    mocker.patch("trxo_lib.operations.imports.applications.error")
+    mocker.patch("trxo_lib.imports.domains.applications.error")
 
     result = importer.update_item({}, "t", "b")
 
@@ -36,7 +36,7 @@ def test_applications_importer_update_item_success(mocker):
         importer, "build_auth_headers", return_value={"Authorization": "Bearer t"}
     )
     mocker.patch.object(importer, "make_http_request")
-    mocker.patch("trxo_lib.operations.imports.applications.info")
+    mocker.patch("trxo_lib.imports.domains.applications.info")
 
     result = importer.update_item({"_id": "app1", "k": "v"}, "t", "http://base")
 
@@ -51,7 +51,7 @@ def test_applications_importer_update_item_failure(mocker):
         importer, "build_auth_headers", return_value={"Authorization": "Bearer t"}
     )
     mocker.patch.object(importer, "make_http_request", side_effect=Exception("boom"))
-    mocker.patch("trxo_lib.operations.imports.applications.error")
+    mocker.patch("trxo_lib.imports.domains.applications.error")
 
     result = importer.update_item({"_id": "app1"}, "t", "http://base")
 

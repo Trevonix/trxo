@@ -25,7 +25,7 @@ from trxo.commands.shared.options import (
     SaIdOpt,
     SyncOpt,
 )
-from trxo_lib.operations.imports.service import ImportService
+from trxo_lib.imports.service import ImportService
 
 
 def create_endpoints_import_command():

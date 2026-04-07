@@ -1,6 +1,6 @@
 import pytest
 from trxo.commands.imports.policies import create_policies_import_command
-from trxo_lib.operations.imports.policies import PoliciesImporter
+from trxo_lib.imports.domains.policies import PoliciesImporter
 
 
 def test_policies_required_fields():
@@ -26,7 +26,7 @@ def test_policies_api_endpoint():
 
 def test_update_item_missing_id(mocker):
     importer = PoliciesImporter()
-    mocker.patch("trxo_lib.operations.imports.policies.error")
+    mocker.patch("trxo_lib.imports.domains.policies.error")
 
     result = importer.update_item({}, "t", "http://x")
 
@@ -36,7 +36,7 @@ def test_update_item_missing_id(mocker):
 def test_update_item_success(mocker):
     importer = PoliciesImporter(realm="alpha")
     importer.make_http_request = mocker.Mock()
-    mocker.patch("trxo_lib.operations.imports.policies.info")
+    mocker.patch("trxo_lib.imports.domains.policies.info")
 
     data = {"_id": "p1", "x": 1}
     result = importer.update_item(data, "t", "http://x")
@@ -48,7 +48,7 @@ def test_update_item_success(mocker):
 def test_update_item_failure(mocker):
     importer = PoliciesImporter(realm="alpha")
     importer.make_http_request = mocker.Mock(side_effect=Exception("boom"))
-    mocker.patch("trxo_lib.operations.imports.policies.error")
+    mocker.patch("trxo_lib.imports.domains.policies.error")
 
     data = {"_id": "p1"}
     result = importer.update_item(data, "t", "http://x")
@@ -77,7 +77,7 @@ def test_policies_get_item_id():
 def test_delete_item_success(mocker):
     importer = PoliciesImporter(realm="alpha")
     importer.make_http_request = mocker.Mock()
-    mocker.patch("trxo_lib.operations.imports.policies.info")
+    mocker.patch("trxo_lib.imports.domains.policies.info")
 
     result = importer.delete_item("p1", "tok", "http://x")
 
@@ -90,7 +90,7 @@ def test_delete_item_success(mocker):
 def test_delete_item_failure(mocker):
     importer = PoliciesImporter(realm="alpha")
     importer.make_http_request = mocker.Mock(side_effect=Exception("403 Forbidden"))
-    mocker.patch("trxo_lib.operations.imports.policies.error")
+    mocker.patch("trxo_lib.imports.domains.policies.error")
 
     result = importer.delete_item("p1", "tok", "http://x")
 

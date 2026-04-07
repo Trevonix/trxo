@@ -11,7 +11,7 @@ def mock_exporter(mocker):
     exporter.export_data.return_value.data = {}
     exporter.export_data.return_value.metadata = {}
     mocker.patch(
-        "trxo_lib.operations.export.applications.BaseExporter",
+        "trxo_lib.exports.domains.applications.BaseExporter",
         return_value=exporter,
     )
     return exporter
@@ -111,10 +111,10 @@ def test_export_applications_custom_values(mock_exporter):
 
 def test_export_applications_with_deps_invokes_bundle(mocker):
     mock_run = mocker.patch(
-        "trxo_lib.operations.export.applications._export_applications_with_deps",
+        "trxo_lib.exports.domains.applications._export_applications_with_deps",
     )
     mock_exporter_cls = mocker.patch(
-        "trxo_lib.operations.export.applications.BaseExporter",
+        "trxo_lib.exports.domains.applications.BaseExporter",
     )
     export_applications = create_applications_export_command()
 
@@ -149,14 +149,14 @@ def test_export_applications_with_deps_invokes_bundle(mocker):
 
 def test_export_applications_with_deps_ignored_when_view(mocker):
     mock_run = mocker.patch(
-        "trxo_lib.operations.export.applications._export_applications_with_deps",
+        "trxo_lib.exports.domains.applications._export_applications_with_deps",
     )
     mock_exporter = mocker.Mock()
     mock_exporter.export_data.return_value.status_code = 200
     mock_exporter.export_data.return_value.data = {}
     mock_exporter.export_data.return_value.metadata = {}
     mocker.patch(
-        "trxo_lib.operations.export.applications.BaseExporter",
+        "trxo_lib.exports.domains.applications.BaseExporter",
         return_value=mock_exporter,
     )
     export_applications = create_applications_export_command()

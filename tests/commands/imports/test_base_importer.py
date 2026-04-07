@@ -3,7 +3,7 @@ import json
 import pytest
 import typer
 
-from trxo_lib.operations.imports.base_importer import BaseImporter, SimpleImporter
+from trxo_lib.imports.processor import BaseImporter, SimpleImporter
 
 
 class DummyImporter(BaseImporter):

@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from trxo_lib.utils.git.operations import (
+from trxo_lib.git.operations import (
     commit_and_push,
     get_diff,
     get_working_tree_status,
@@ -145,7 +145,7 @@ def test_validate_clean_state_for_operation_untracked():
 
 def test_commit_and_push_success(mocker):
     repo = make_repo(staged=["a.txt"])
-    mocker.patch("trxo_lib.utils.git.operations.logger")
+    mocker.patch("trxo_lib.git.operations.logger")
     ok = commit_and_push(repo, ["a.txt"], "msg")
     assert ok is True
 

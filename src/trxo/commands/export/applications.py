@@ -32,7 +32,7 @@ from trxo.commands.shared.options import (
     WithDepsOpt,
 )
 from trxo_lib.constants import DEFAULT_REALM
-from trxo_lib.operations.export.service import ExportService
+from trxo_lib.exports.service import ExportService
 
 
 def create_applications_export_command():
