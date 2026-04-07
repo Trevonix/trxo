@@ -6,6 +6,9 @@ from trxo.commands.export.email_templates import create_email_export_command
 @pytest.fixture
 def mock_exporter(mocker):
     exporter = mocker.Mock()
+    exporter.export_data.return_value.status_code = 200
+    exporter.export_data.return_value.data = {}
+    exporter.export_data.return_value.metadata = {}
     mocker.patch(
         "trxo_lib.operations.export.email_templates.BaseExporter",
         return_value=exporter,

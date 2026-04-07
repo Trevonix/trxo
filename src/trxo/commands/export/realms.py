@@ -56,6 +56,7 @@ def create_realms_export_command():
     ):
         """Export realms configuration"""
         kwargs = locals()
-        ExportService().export_realms(**kwargs)
+        from trxo.utils.export.cli_handler import CLIExportHandler
+        CLIExportHandler().handle_export("realms", ExportService().export_realms, kwargs)
 
     return export_realms

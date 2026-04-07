@@ -64,6 +64,7 @@ def create_privileges_export_command():
         With --realm: Export realm-specific privileges (realmOrgPrivileges + privilegeAssignments)
         """
         kwargs = locals()
-        ExportService().export_privileges(**kwargs)
+        from trxo.utils.export.cli_handler import CLIExportHandler
+        CLIExportHandler().handle_export("privileges", ExportService().export_privileges, kwargs)
 
     return export_privileges

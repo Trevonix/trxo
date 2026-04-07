@@ -3,6 +3,9 @@ from trxo.commands.export.themes import create_themes_export_command
 
 def test_export_themes_with_realm(mocker):
     exporter = mocker.Mock()
+    exporter.export_data.return_value.status_code = 200
+    exporter.export_data.return_value.data = {}
+    exporter.export_data.return_value.metadata = {}
     mocker.patch(
         "trxo_lib.operations.export.themes.BaseExporter",
         return_value=exporter,

@@ -60,6 +60,7 @@ def create_webhooks_export_command():
     ):
         """Export webhooks configuration from specified realm"""
         kwargs = locals()
-        ExportService().export_webhooks(**kwargs)
+        from trxo.utils.export.cli_handler import CLIExportHandler
+        CLIExportHandler().handle_export("webhooks", ExportService().export_webhooks, kwargs)
 
     return export_webhooks

@@ -60,6 +60,7 @@ def create_journeys_export_command():
     ):
         """Export journeys along with all required dependencies."""
         kwargs = locals()
-        ExportService().export_journeys(**kwargs)
+        from trxo.utils.export.cli_handler import CLIExportHandler
+        CLIExportHandler().handle_export("journeys", ExportService().export_journeys, kwargs)
 
     return export_journeys

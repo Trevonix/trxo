@@ -68,6 +68,7 @@ def create_services_export_command():
     ):
         """Export PingOne Advanced Identity Cloud services configurations"""
         kwargs = locals()
-        ExportService().export_services(**kwargs)
+        from trxo.utils.export.cli_handler import CLIExportHandler
+        CLIExportHandler().handle_export("services", ExportService().export_services, kwargs)
 
     return export_services

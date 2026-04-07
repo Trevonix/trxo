@@ -5,7 +5,7 @@ This module provides the base class that contains common functionality
 used by both import and export commands.
 """
 
-from trxo_lib.exceptions import TrxoAbort
+from trxo_lib.exceptions import TrxoAbort, TrxoAuthError
 import json
 import os
 import time
@@ -17,7 +17,6 @@ import httpx
 from trxo_lib.auth.token_manager import TokenManager
 from trxo_lib.logging import get_logger, log_api_call
 from trxo_lib.utils.config_store import ConfigStore
-from trxo_lib.utils.console import error, success, warning
 from trxo_lib.utils.url import construct_api_url
 
 from trxo_lib.operations.auth_manager import AuthManager
@@ -146,22 +145,26 @@ class BaseCommand(ABC):
         if self.auth_mode == "onprem":
             if product == "idm":
                 if not self._idm_username or not self._idm_password:
-                    error(
+                    self.logger.error(
+                        "IDM credentials not available for building auth headers"
+                    )
+                    raise TrxoAuthError(
                         "IDM credentials not available. Configure IDM access or "
                         "provide --idm-username and --idm-password."
                     )
-                    raise TrxoAbort(code=1)
                 return {
                     "X-OpenIDM-Username": self._idm_username,
                     "X-OpenIDM-Password": self._idm_password,
                 }
             else:
                 if not token_or_session:
-                    error(
+                    self.logger.error(
+                        "AM session token not available for building auth headers"
+                    )
+                    raise TrxoAuthError(
                         "AM session token not available. Configure AM access or "
                         "provide --onprem-username and --onprem-password."
                     )
-                    raise TrxoAbort(code=1)
                 return {"Cookie": f"iPlanetDirectoryPro={token_or_session}"}
         return {"Authorization": f"Bearer {token_or_session}"}
 
@@ -333,22 +336,41 @@ class BaseCommand(ABC):
                 error=error_msg,
             )
 
-            error(f"Request error: {error_msg}")
+            self.logger.error(f"Request error: {error_msg}")
             raise
 
+    def get_summary(self) -> dict:
+        """Return a structured summary of operations.
+
+        Returns:
+            dict with item_type, successful count, and failed count.
+        """
+        return {
+            "item_type": self.get_item_type(),
+            "successful": self.successful_updates,
+            "failed": self.failed_updates,
+        }
+
     def print_summary(self) -> None:
-        """Print summary of operations and exit with appropriate code"""
-        item_type = self.get_item_type()
+        """Evaluate operation summary and raise TrxoAbort on failures.
 
-        if self.successful_updates > 0:
-            success(f"Successfully processed {self.successful_updates} {item_type}")
+        This is a thin wrapper around get_summary() kept for backward
+        compatibility with existing callers. It logs instead of printing.
+        """
+        summary = self.get_summary()
+        item_type = summary["item_type"]
 
-        if self.failed_updates > 0:
-            error(f"Failed to process {self.failed_updates} {item_type}")
+        if summary["successful"] > 0:
+            self.logger.info(
+                f"Successfully processed {summary['successful']} {item_type}"
+            )
+
+        if summary["failed"] > 0:
+            self.logger.error(f"Failed to process {summary['failed']} {item_type}")
             raise TrxoAbort(code=1)
 
-        if self.successful_updates == 0:
-            warning(f"No {item_type} were processed")
+        if summary["successful"] == 0:
+            self.logger.warning(f"No {item_type} were processed")
             raise TrxoAbort(code=1)
 
     @abstractmethod

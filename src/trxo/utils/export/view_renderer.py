@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 
 from rich.table import Table
 
-from trxo_lib.utils.console import console, error, info
+from trxo.utils.console import console, error, info
 
 
 class ViewRenderer:

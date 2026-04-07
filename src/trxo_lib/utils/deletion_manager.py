@@ -7,7 +7,7 @@ Handles identification and deletion of orphaned items during sync imports.
 from typing import Any, Callable, Dict, List
 
 
-from trxo_lib.utils.console import error, info, success, warning
+from trxo.utils.console import error, info, success, warning
 from trxo_lib.utils.diff.diff_engine import DiffItem, DiffResult
 
 

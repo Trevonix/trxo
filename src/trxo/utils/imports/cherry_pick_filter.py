@@ -6,7 +6,7 @@ Handles filtering items based on cherry-pick IDs.
 
 from typing import Any, Dict, List
 
-from trxo_lib.utils.console import error, info
+from trxo.utils.console import error, info
 
 
 class CherryPickFilter:

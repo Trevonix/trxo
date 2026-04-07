@@ -8,7 +8,7 @@ import json
 
 import typer
 
-from trxo_lib.utils.console import info, success
+from trxo.utils.console import info, success
 
 
 def create_config_generator_command():

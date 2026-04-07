@@ -63,6 +63,7 @@ def create_saml_export_command():
         providers, metadata, and scripts
         """
         kwargs = locals()
-        ExportService().export_saml(**kwargs)
+        from trxo.utils.export.cli_handler import CLIExportHandler
+        CLIExportHandler().handle_export("saml", ExportService().export_saml, kwargs)
 
     return export_saml

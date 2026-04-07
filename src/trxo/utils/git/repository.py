@@ -8,7 +8,7 @@ from pathlib import Path
 from git import GitCommandError, InvalidGitRepositoryError, Repo
 
 from trxo_lib.logging import get_logger
-from trxo_lib.utils.console import info
+from trxo.utils.console import info
 
 logger = get_logger("trxo.utils.git.repository")
 

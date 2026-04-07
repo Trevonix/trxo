@@ -7,6 +7,9 @@ from trxo.commands.export.esv import create_esv_callback, create_esv_commands
 @pytest.fixture
 def mock_exporter(mocker):
     exporter = mocker.Mock()
+    exporter.export_data.return_value.status_code = 200
+    exporter.export_data.return_value.data = {}
+    exporter.export_data.return_value.metadata = {}
     mocker.patch("trxo_lib.operations.export.esv.BaseExporter", return_value=exporter)
     return exporter
 

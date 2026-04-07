@@ -27,19 +27,6 @@ def exporter(mocker):
         "trxo_lib.operations.export.base_exporter.MetadataBuilder.build_metadata",
         return_value={"m": 1},
     )
-    mocker.patch("trxo_lib.operations.export.base_exporter.ViewRenderer.display_table_view")
-    mocker.patch(
-        "trxo_lib.operations.export.base_exporter.PaginationHandler.is_paginated",
-        return_value=False,
-    )
-    mocker.patch(
-        "trxo_lib.operations.export.base_exporter.FileSaver.save_to_local",
-        return_value="file.json",
-    )
-    mocker.patch("trxo_lib.operations.export.base_exporter.success")
-    mocker.patch("trxo_lib.operations.export.base_exporter.error")
-    mocker.patch("trxo_lib.operations.export.base_exporter.info")
-
     return be
 
 
@@ -52,44 +39,6 @@ def test_export_data_headers_none_path(exporter):
     )
 
     exporter.make_http_request.assert_called_once()
-
-
-def test_export_data_view_mode(exporter):
-    exporter.export_data(
-        command_name="test",
-        api_endpoint="/endpoint",
-        headers={},
-        view=True,
-        view_columns="_id",
-    )
-
-
-def test_export_data_view_columns_without_view_warns(exporter, mocker):
-    warn = mocker.patch("trxo_lib.operations.export.base_exporter.warning")
-
-    exporter.export_data(
-        command_name="test",
-        api_endpoint="/endpoint",
-        headers={},
-        view=False,
-        view_columns="_id",
-    )
-
-    warn.assert_called_once()
-
-
-def test_export_data_git_storage(exporter, mocker):
-    exporter._get_storage_mode = mocker.Mock(return_value="git")
-    exporter.git_handler.save_to_git = mocker.Mock(return_value="git.json")
-
-    exporter.export_data(
-        command_name="test",
-        api_endpoint="/endpoint",
-        headers={},
-        view=False,
-    )
-
-    exporter.git_handler.save_to_git.assert_called_once()
 
 
 def test_export_data_non_200_response(exporter):
@@ -133,28 +82,6 @@ def test_handle_pagination_failure_fallback(exporter, mocker):
     out = exporter._handle_pagination(raw, "/e", {}, "https://api")
 
     assert out == raw
-
-
-def test_get_storage_mode_exception_defaults_local(exporter, mocker):
-    exporter.config_store.get_current_project.side_effect = Exception("boom")
-
-    assert exporter._get_storage_mode() == "local"
-
-
-def test_save_response_git_path(exporter, mocker):
-    exporter._get_storage_mode = mocker.Mock(return_value="git")
-    exporter.git_handler.save_to_git = mocker.Mock(return_value="git.json")
-
-    path = exporter.save_response({}, "cmd", branch="b", commit_message="m")
-
-    assert path == "git.json"
-
-
-def test_save_response_local_path(exporter):
-    exporter._get_storage_mode = lambda: "local"
-    path = exporter.save_response({}, "cmd", output_dir="d")
-
-    assert path == "file.json"
 
 
 def test_remove_rev_fields_recursive(exporter):

@@ -59,6 +59,7 @@ def create_email_export_command():
     ):
         """Export email configuration"""
         kwargs = locals()
-        ExportService().export_email_templates(**kwargs)
+        from trxo.utils.export.cli_handler import CLIExportHandler
+        CLIExportHandler().handle_export("email_templates", ExportService().export_email_templates, kwargs)
 
     return export_email

@@ -59,6 +59,7 @@ def create_policies_export_command():
     ):
         """Export policies configuration from specified realm"""
         kwargs = locals()
-        ExportService().export_policies(**kwargs)
+        from trxo.utils.export.cli_handler import CLIExportHandler
+        CLIExportHandler().handle_export("policies", ExportService().export_policies, kwargs)
 
     return export_policies

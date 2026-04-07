@@ -13,7 +13,6 @@ from typing import Any, Dict, List, Optional
 
 
 from trxo_lib.constants import DEFAULT_REALM
-from trxo_lib.utils.console import error, info, success, warning
 from trxo_lib.utils.git import GitManager, setup_git_for_import
 from trxo_lib.utils.hash_manager import (
     HashManager,
@@ -119,12 +118,11 @@ class BaseImporter(BaseCommand):
                 )
             else:
                 if not file_path:
-                    error("File path is required for local storage mode")
-                    raise TrxoAbort(code=1)
+                    raise TrxoAbort("File path is required for local storage mode")
                 items_to_process = self._import_from_local(file_path, force_import)
 
             if not items_to_process:
-                warning("No items found to import")
+                self.logger.warning("No items found to import")
                 return
 
             # Apply cherry-pick filtering if specified
@@ -135,7 +133,7 @@ class BaseImporter(BaseCommand):
                 if not items_to_process:
                     return
 
-            success(f"Loaded {len(items_to_process)} {item_type} for import")
+            self.logger.info(f"Loaded {len(items_to_process)} {item_type} for import")
 
             # If rollback requested, create a baseline snapshot first
             rollback_manager = self._setup_rollback_manager(
@@ -192,7 +190,7 @@ class BaseImporter(BaseCommand):
     ) -> None:
         """Process all items and track success/failure"""
         item_type = self.get_item_type()
-        info(f"Processing {len(items)} {item_type}...")
+        self.logger.info(f"Processing {len(items)} {item_type}...")
 
         items = [item for item in items if isinstance(item, dict)]
 
@@ -240,12 +238,12 @@ class BaseImporter(BaseCommand):
                 self.failed_updates += 1
 
                 if rollback_on_failure and rollback_manager:
-                    info(
+                    self.logger.info(
                         f"Import failed on item {item_id or '<unknown>'} - executing rollback"
                     )
 
                     report = rollback_manager.execute_rollback(token, base_url)
-                    self._print_rollback_report(report)
+                    self._format_rollback_report(report)
 
                     raise TrxoAbort(code=1)
 
@@ -269,19 +267,20 @@ class BaseImporter(BaseCommand):
                 current_project = self.config_store.get_current_project()
                 git_credentials = self.config_store.get_git_credentials(current_project)
                 if not git_credentials or not all(git_credentials.values()):
-                    error(
+                    raise TrxoAbort(
                         "Git credentials not found. Please run 'trxo config' "
                         "to set up Git integration."
                     )
-                    raise TrxoAbort(code=1)
 
                 username, repo_url, token = git_credentials.values()
                 self._git_manager = setup_git_for_import(
                     username, token, repo_url, branch
                 )
+            except TrxoAbort:
+                raise
             except Exception as e:
-                error(f"Failed to setup Git manager: {e}")
-                raise TrxoAbort(code=1)
+                self.logger.error(f"Failed to setup Git manager: {e}")
+                raise TrxoAbort(f"Failed to setup Git manager: {e}")
         return self._git_manager
 
     def _import_from_local(
@@ -289,7 +288,7 @@ class BaseImporter(BaseCommand):
     ) -> List[Dict[str, Any]]:
         """Import from local file with hash validation"""
         item_type = self.get_item_type()
-        info(f"Loading {item_type} from local file: {file_path}")
+        self.logger.info(f"Loading {item_type} from local file: {file_path}")
 
         try:
             # Read raw file content first so hash validation can use
@@ -318,13 +317,19 @@ class BaseImporter(BaseCommand):
             # Validate import hash against raw file content so the hash
             # matches whatever was generated at export time (wrapper vs list)
             if not self.validate_import_hash(raw_data, force_import):
-                error("Import validation failed: Hash mismatch with exported data")
-                raise TrxoAbort(code=1)
+                self.logger.error(
+                    "Import validation failed: Hash mismatch with exported data"
+                )
+                raise TrxoAbort(
+                    "Import validation failed: Hash mismatch with exported data"
+                )
 
             return items_to_process
+        except TrxoAbort:
+            raise
         except Exception as e:
-            error(f"Failed to load {item_type} from local file: {str(e)}")
-            raise TrxoAbort(code=1)
+            self.logger.error(f"Failed to load {item_type} from local file: {str(e)}")
+            raise TrxoAbort(f"Failed to load {item_type} from local file: {str(e)}")
 
     def _import_from_git(
         self, realm: Optional[str], force_import: bool, branch: Optional[str] = None
@@ -372,23 +377,23 @@ class BaseImporter(BaseCommand):
         if self.component_mapper.is_root_level_component(item_type):
             # Root-level configs always use 'root' realm
             if branch:
-                info(
+                self.logger.info(
                     f"Loading {item_type} from Git repository "
                     f"(root level, branch: {branch})..."
                 )
             else:
-                info(f"Loading {item_type} from Git repository...")
+                self.logger.info(f"Loading {item_type} from Git repository...")
             return "root"
         else:
             # Realm-specific configs default to DEFAULT_REALM
             effective_realm = realm if realm is not None else DEFAULT_REALM
             if branch:
-                info(
+                self.logger.info(
                     f"Loading {item_type} from Git repository "
                     f"(realm: {effective_realm}, branch: {branch})..."
                 )
             else:
-                info(
+                self.logger.info(
                     f"Loading {item_type} from Git repository "
                     f"(realm: {effective_realm})..."
                 )
@@ -402,14 +407,16 @@ class BaseImporter(BaseCommand):
     ):
         """Handle case when no Git files are found"""
         if self.component_mapper.is_root_level_component(item_type):
-            error(f"No {item_type} files found in Git repository (root level)")
+            self.logger.error(
+                f"No {item_type} files found in Git repository (root level)"
+            )
         else:
-            error(
+            self.logger.error(
                 f"No {item_type} files found for realm '{effective_realm}' "
                 "in Git repository"
             )
             if realm is None:
-                error(
+                self.logger.error(
                     f"Defaulted to '{DEFAULT_REALM}' realm. Use --realm to "
                     "specify a different realm"
                 )
@@ -433,27 +440,26 @@ class BaseImporter(BaseCommand):
         """Apply cherry-pick filtering to items"""
         # Validate cherry-pick argument
         if not self.cherry_pick_filter.validate_cherry_pick_argument(cherry_pick):
-            error(
+            raise TrxoAbort(
                 f"Invalid cherry-pick ID: '{cherry_pick}'. "
-                "Please provide a valid item ID."
+                "Please provide a valid item ID. "
+                "Usage: --cherry-pick <id1> or --cherry-pick <id1,id2,id3>"
             )
-            error("Usage: --cherry-pick <id1> or --cherry-pick <id1,id2,id3>")
-            raise TrxoAbort(code=1)
 
         filtered_items = self.cherry_pick_filter.apply_filter(items, cherry_pick)
 
         if not filtered_items:
-            # Parse IDs for better error message
+            # Parse IDs for better log message
             cherry_pick_ids = [
                 id.strip() for id in cherry_pick.split(",") if id.strip()
             ]
             if len(cherry_pick_ids) == 1:
-                warning(
+                self.logger.warning(
                     f"No items found with ID '{cherry_pick_ids[0]}' "
                     "for cherry-pick import"
                 )
             else:
-                warning(
+                self.logger.warning(
                     f"No items found with IDs {cherry_pick_ids} "
                     "for cherry-pick import"
                 )
@@ -496,14 +502,14 @@ class BaseImporter(BaseCommand):
             )
 
             if not created:
-                warning(
+                self.logger.warning(
                     "Could not create baseline snapshot - "
                     "rollback will be unavailable if import fails"
                 )
 
             return rollback_manager
         except Exception as e:
-            warning(f"Failed to initialize rollback manager: {e}")
+            self.logger.warning(f"Failed to initialize rollback manager: {e}")
             return None
 
     def _execute_rollback_and_exit(
@@ -514,11 +520,11 @@ class BaseImporter(BaseCommand):
         item_id: Optional[str],
     ):
         """Execute rollback and exit"""
-        info(
-            f"\nImport failed on item {item_id or '<unknown>'} - " "executing rollback"
+        self.logger.info(
+            f"Import failed on item {item_id or '<unknown>'} - executing rollback"
         )
         report = rollback_manager.execute_rollback(token, base_url)
-        self._print_rollback_report(report)
+        self._format_rollback_report(report)
         raise TrxoAbort(code=1)
 
     def _get_item_identifier(self, item: Dict[str, Any]) -> Optional[str]:
@@ -560,7 +566,7 @@ class BaseImporter(BaseCommand):
         am_base_url: Optional[str] = None,
         branch: Optional[str] = None,
     ) -> None:
-        """Perform diff analysis and display results"""
+        """Perform diff analysis and return results via logging"""
         try:
             from trxo_lib.utils.diff.diff_manager import DiffManager
 
@@ -598,54 +604,56 @@ class BaseImporter(BaseCommand):
                 )
 
                 if total_changes > 0:
-                    warning(f"Import would make {total_changes} changes")
-                    info(
+                    self.logger.warning(f"Import would make {total_changes} changes")
+                    self.logger.info(
                         "Use the import command without --diff to proceed "
                         "with the import"
                     )
                 else:
-                    success("No changes would be made - data is already up to date")
+                    self.logger.info(
+                        "No changes would be made - data is already up to date"
+                    )
             else:
-                error("Diff analysis failed")
+                self.logger.error("Diff analysis failed")
 
         except ImportError:
-            error(
+            self.logger.error(
                 "Diff functionality requires deepdiff. "
                 "Install with: pip install deepdiff>=6.0.0"
             )
         except Exception as e:
-            error(f"Diff analysis failed: {str(e)}")
+            self.logger.error(f"Diff analysis failed: {str(e)}")
 
-    def _print_rollback_report(self, report: Dict[str, Any]) -> None:
-        """Print a formatted rollback report"""
-        # Print rolled back items
+    def _format_rollback_report(self, report: Dict[str, Any]) -> Dict[str, Any]:
+        """Format and log a rollback report.
+
+        Returns the report dict for callers that need to inspect it.
+        """
         rolled_back = report.get("rolled_back", [])
         if len(rolled_back) >= 1:
-            print("\n" + "=" * 60)
-            print("\t\t\tROLLBACK REPORT")
-            print("=" * 60)
-            info(f"✓ Successfully rolled back {len(rolled_back)} item(s):")
+            self.logger.info(
+                f"ROLLBACK REPORT: Successfully rolled back "
+                f"{len(rolled_back)} item(s)"
+            )
             for item in rolled_back:
                 if "action" in item and "id" not in item:
-                    # Managed config restore
-                    info(f"  • {item['action']}")
+                    self.logger.info(f"  Rolled back: {item['action']}")
                 else:
                     item_id = item.get("id", "unknown")
                     action = item.get("action", "unknown")
-                    info(f"  • {item_id} ({action})")
+                    self.logger.info(f"  Rolled back: {item_id} ({action})")
         else:
-            print("\nNo Items were rolled back, as the first item was failed.")
+            self.logger.info("No items were rolled back, as the first item failed.")
 
-        # Print errors
         errors = report.get("errors", [])
         if errors:
-            warning(f"✗ Failed to roll back {len(errors)} item(s):")
+            self.logger.warning(f"Failed to roll back {len(errors)} item(s)")
             for error_item in errors:
                 item_id = error_item.get("id", "unknown")
                 error_msg = error_item.get("error", "unknown error")
-                warning(f"  • {item_id}: {error_msg}")
+                self.logger.warning(f"  Rollback failed: {item_id}: {error_msg}")
 
-        print("=" * 60 + "\n")
+        return report
 
     def _handle_sync_deletions(
         self,

@@ -32,7 +32,7 @@ from trxo.commands.shared.options import (
 )
 from trxo_lib.config.api_headers import get_headers
 from trxo_lib.constants import DEFAULT_REALM
-from trxo_lib.utils.console import console, info, warning
+from trxo.utils.console import console, info, warning
 
 from trxo_lib.operations.export.service import ExportService
 
@@ -65,7 +65,8 @@ def create_agents_export_command():
     ):
         """Export Identity Gateway Agents"""
         kwargs = locals()
-        ExportService().export_agents_gateway(**kwargs)
+        from trxo.utils.export.cli_handler import CLIExportHandler
+        CLIExportHandler().handle_export("agents_gateway", ExportService().export_agents_gateway, kwargs)
 
     def export_java_agents(
         realm: RealmOpt = DEFAULT_REALM,
@@ -92,7 +93,8 @@ def create_agents_export_command():
     ):
         """Export Java Agents"""
         kwargs = locals()
-        ExportService().export_agents_java(**kwargs)
+        from trxo.utils.export.cli_handler import CLIExportHandler
+        CLIExportHandler().handle_export("agents_java", ExportService().export_agents_java, kwargs)
 
     def export_web_agents(
         realm: RealmOpt = DEFAULT_REALM,
@@ -119,7 +121,8 @@ def create_agents_export_command():
     ):
         """Export Web Agents"""
         kwargs = locals()
-        ExportService().export_agents_web(**kwargs)
+        from trxo.utils.export.cli_handler import CLIExportHandler
+        CLIExportHandler().handle_export("agents_web", ExportService().export_agents_web, kwargs)
 
     return export_identity_gateway_agents, export_java_agents, export_web_agents
 

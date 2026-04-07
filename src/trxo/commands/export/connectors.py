@@ -60,6 +60,7 @@ def create_connectors_export_command():
     ):
         """Export IDM connectors configuration"""
         kwargs = locals()
-        ExportService().export_connectors(**kwargs)
+        from trxo.utils.export.cli_handler import CLIExportHandler
+        CLIExportHandler().handle_export("connectors", ExportService().export_connectors, kwargs)
 
     return export_connectors

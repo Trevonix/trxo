@@ -5,6 +5,9 @@ from trxo.commands.export.webhooks import create_webhooks_export_command
 
 def test_export_webhooks_defaults(mocker):
     exporter = mocker.Mock()
+    exporter.export_data.return_value.status_code = 200
+    exporter.export_data.return_value.data = {}
+    exporter.export_data.return_value.metadata = {}
     mocker.patch(
         "trxo_lib.operations.export.webhooks.BaseExporter",
         return_value=exporter,
@@ -28,6 +31,9 @@ def test_export_webhooks_defaults(mocker):
 
 def test_export_webhooks_custom_args(mocker):
     exporter = mocker.Mock()
+    exporter.export_data.return_value.status_code = 200
+    exporter.export_data.return_value.data = {}
+    exporter.export_data.return_value.metadata = {}
     mocker.patch(
         "trxo_lib.operations.export.webhooks.BaseExporter",
         return_value=exporter,

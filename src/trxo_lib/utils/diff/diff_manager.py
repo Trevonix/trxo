@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from trxo_lib.constants import DEFAULT_REALM
-from trxo_lib.utils.console import error, info
+from trxo.utils.console import error, info
 from trxo_lib.utils.diff.data_fetcher import DataFetcher, get_command_api_endpoint
 from trxo_lib.utils.diff.diff_engine import DiffEngine, DiffResult
 from trxo_lib.utils.diff.diff_reporter import DiffReporter

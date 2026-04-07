@@ -57,6 +57,7 @@ def create_mappings_export_command():
     ):
         """Export sync mappings configuration"""
         kwargs = locals()
-        ExportService().export_mappings(**kwargs)
+        from trxo.utils.export.cli_handler import CLIExportHandler
+        CLIExportHandler().handle_export("mappings", ExportService().export_mappings, kwargs)
 
     return export_mappings

@@ -59,6 +59,7 @@ def create_authn_export_command():
     ):
         """Export authentication settings (authn) from realm"""
         kwargs = locals()
-        ExportService().export_authn(**kwargs)
+        from trxo.utils.export.cli_handler import CLIExportHandler
+        CLIExportHandler().handle_export("authn", ExportService().export_authn, kwargs)
 
     return export_authn

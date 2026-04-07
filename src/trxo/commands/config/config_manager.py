@@ -11,7 +11,7 @@ import typer
 
 from trxo_lib.logging import LogLevel, get_logger, setup_logging
 from trxo_lib.utils.config_store import ConfigStore
-from trxo_lib.utils.console import error, info, success, warning
+from trxo.utils.console import error, info, success, warning
 
 from .auth_handler import (
     setup_onprem_auth,

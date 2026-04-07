@@ -15,6 +15,9 @@ def create_mock_response(json_data=None):
 @pytest.fixture
 def mock_exporter(mocker):
     exporter = mocker.Mock()
+    exporter.export_data.return_value.status_code = 200
+    exporter.export_data.return_value.data = {}
+    exporter.export_data.return_value.metadata = {}
     exporter.build_auth_headers.return_value = {"Authorization": "Bearer token"}
     exporter._construct_api_url.side_effect = lambda base, ep: f"{base}{ep}"
     exporter.get_current_auth.return_value = ("token", "https://api.example.com")
@@ -48,6 +51,9 @@ def test_export_services_scope_realm(mock_exporter):
 
 def test_export_services_invalid_scope(mocker):
     exporter = mocker.Mock()
+    exporter.export_data.return_value.status_code = 200
+    exporter.export_data.return_value.data = {}
+    exporter.export_data.return_value.metadata = {}
     mocker.patch(
         "trxo_lib.operations.export.services.ServicesExporter", return_value=exporter
     )

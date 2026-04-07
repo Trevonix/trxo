@@ -14,7 +14,7 @@ from typing import Any, Dict, Optional
 
 from tqdm import tqdm
 
-from trxo_lib.utils.console import error, info
+from trxo.utils.console import error, info
 
 
 class FileSaver:

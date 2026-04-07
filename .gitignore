@@ -177,4 +177,4 @@ __pycache__
 .coverage
 .coverage.*
 
-hashes.txt
+examples/

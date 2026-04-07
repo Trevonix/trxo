@@ -57,6 +57,7 @@ def create_endpoints_export_command():
     ):
         """Export custom endpoints configuration"""
         kwargs = locals()
-        ExportService().export_endpoints(**kwargs)
+        from trxo.utils.export.cli_handler import CLIExportHandler
+        CLIExportHandler().handle_export("endpoints", ExportService().export_endpoints, kwargs)
 
     return export_endpoints

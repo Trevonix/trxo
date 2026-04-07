@@ -63,6 +63,7 @@ def create_themes_export_command():
         With --realm: fetch only that realm via /openidm/config/ui/themerealm?_fields=realm/{realm}
         """
         kwargs = locals()
-        ExportService().export_themes(**kwargs)
+        from trxo.utils.export.cli_handler import CLIExportHandler
+        CLIExportHandler().handle_export("themes", ExportService().export_themes, kwargs)
 
     return export_themes

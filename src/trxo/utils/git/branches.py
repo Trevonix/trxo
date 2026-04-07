@@ -8,7 +8,7 @@ from contextlib import redirect_stderr
 from git import GitCommandError, Repo
 
 from trxo_lib.logging import get_logger
-from trxo_lib.utils.console import info
+from trxo.utils.console import info
 from trxo_lib.utils.git.common import extract_branch_name_from_ref
 from trxo_lib.utils.git.operations import validate_clean_state_for_operation
 

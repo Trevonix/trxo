@@ -15,7 +15,7 @@ from typing import Any, Dict, List, Optional
 
 from rich.panel import Panel
 
-from trxo_lib.utils.console import console, error, info, success
+from trxo.utils.console import console, error, info, success
 from trxo_lib.utils.diff.diff_engine import DiffResult
 
 

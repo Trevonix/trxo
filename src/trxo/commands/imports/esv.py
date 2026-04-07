@@ -27,7 +27,7 @@ from trxo.commands.shared.options import (
     RollbackOpt,
     SaIdOpt,
 )
-from trxo_lib.utils.console import console, info, warning
+from trxo.utils.console import console, info, warning
 from trxo_lib.operations.imports.service import ImportService
 
 

@@ -16,7 +16,7 @@ from trxo_lib.constants import (
     IGNORED_SCRIPT_IDS,
     IGNORED_SCRIPT_NAMES,
 )
-from trxo_lib.utils.console import error, info
+from trxo.utils.console import error, info
 
 from trxo_lib.operations.imports.base_importer import BaseImporter
 

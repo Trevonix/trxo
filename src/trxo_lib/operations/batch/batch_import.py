@@ -14,7 +14,7 @@ from typing import Dict, List, Optional
 
 from trxo_lib.constants import DEFAULT_REALM
 from trxo_lib.utils.config_store import ConfigStore
-from trxo_lib.utils.console import error, info, success, warning
+from trxo.utils.console import error, info, success, warning
 
 from ..imports.manager import app as import_app
 

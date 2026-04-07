@@ -4,6 +4,9 @@ from trxo.constants import DEFAULT_REALM
 
 def test_authn_export_calls_exporter(mocker):
     mock_exporter = mocker.Mock()
+    mock_exporter.export_data.return_value.status_code = 200
+    mock_exporter.export_data.return_value.data = {}
+    mock_exporter.export_data.return_value.metadata = {}
     mocker.patch(
         "trxo_lib.operations.export.authn.BaseExporter", return_value=mock_exporter
     )
@@ -46,6 +49,9 @@ def test_authn_export_calls_exporter(mocker):
 
 def test_authn_export_default_realm(mocker):
     mock_exporter = mocker.Mock()
+    mock_exporter.export_data.return_value.status_code = 200
+    mock_exporter.export_data.return_value.data = {}
+    mock_exporter.export_data.return_value.metadata = {}
     mocker.patch(
         "trxo_lib.operations.export.authn.BaseExporter", return_value=mock_exporter
     )

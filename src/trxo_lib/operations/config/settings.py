@@ -9,7 +9,7 @@ from typing import Dict, Optional
 
 from rich.prompt import Prompt
 
-from trxo_lib.utils.console import display_panel, warning
+from trxo.utils.console import display_panel, warning
 
 
 def get_credential_value(

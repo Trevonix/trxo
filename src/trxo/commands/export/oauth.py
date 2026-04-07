@@ -60,6 +60,7 @@ def create_oauth_export_command():
     ):
         """Export OAuth2 clients configuration with script dependencies"""
         kwargs = locals()
-        ExportService().export_oauth(**kwargs)
+        from trxo.utils.export.cli_handler import CLIExportHandler
+        CLIExportHandler().handle_export("oauth", ExportService().export_oauth, kwargs)
 
     return export_oauth

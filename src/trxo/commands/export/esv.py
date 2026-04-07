@@ -29,7 +29,7 @@ from trxo.commands.shared.options import (
     ViewColumnsOpt,
     ViewOpt,
 )
-from trxo_lib.utils.console import console, info, warning
+from trxo.utils.console import console, info, warning
 
 from trxo_lib.operations.export.service import ExportService
 
@@ -61,7 +61,8 @@ def create_esv_commands():
     ):
         """Export Environment Secrets"""
         kwargs = locals()
-        ExportService().export_esv_secrets(**kwargs)
+        from trxo.utils.export.cli_handler import CLIExportHandler
+        CLIExportHandler().handle_export("esv_secrets", ExportService().export_esv_secrets, kwargs)
 
     def export_esv_variables(
         view: ViewOpt = None,
@@ -87,7 +88,8 @@ def create_esv_commands():
     ):
         """Export Environment Variables"""
         kwargs = locals()
-        ExportService().export_esv_variables(**kwargs)
+        from trxo.utils.export.cli_handler import CLIExportHandler
+        CLIExportHandler().handle_export("esv_variables", ExportService().export_esv_variables, kwargs)
 
     return export_esv_secrets, export_esv_variables
 

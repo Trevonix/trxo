@@ -15,7 +15,7 @@ from rich.table import Table
 from trxo_lib.constants import LOG_APP_NAME, LOG_LINES_TO_SHOW
 from trxo_lib.logging import get_logger, setup_logging
 from trxo_lib.logging.config import LogConfig, get_log_directory, get_log_file_path
-from trxo_lib.utils.console import error, info, warning
+from trxo.utils.console import error, info, warning
 
 app = typer.Typer(help="Manage TRXO logs")
 console = Console()

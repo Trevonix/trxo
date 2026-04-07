@@ -12,7 +12,7 @@ from typing import Dict, Optional
 import typer
 
 from trxo_lib.auth.service_account import ServiceAccountAuth
-from trxo_lib.utils.console import error, info, success
+from trxo.utils.console import error, info, success
 from trxo_lib.auth.handler import (
     normalize_base_url,
     create_service_account_config,

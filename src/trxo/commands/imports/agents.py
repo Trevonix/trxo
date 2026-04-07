@@ -128,7 +128,7 @@ def create_agents_callback():
 
     def agents_callback(ctx: typer.Context):
         if ctx.invoked_subcommand is None:
-            from trxo_lib.utils.console import console, info, warning
+            from trxo.utils.console import console, info, warning
 
             console.print()
             warning("No agents subcommand selected.")

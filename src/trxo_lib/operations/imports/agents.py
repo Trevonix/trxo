@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional
 
 from trxo_lib.config.api_headers import get_headers
 from trxo_lib.constants import DEFAULT_REALM
-from trxo_lib.utils.console import error, info
+from trxo.utils.console import error, info
 
 from trxo_lib.operations.imports.base_importer import BaseImporter
 
@@ -136,7 +136,7 @@ def create_agents_callback():
 
     def agents_callback(ctx=None):
         if getattr(ctx, "invoked_subcommand", None) is None:
-            from trxo_lib.utils.console import console, info, warning
+            from trxo.utils.console import console, info, warning
 
             console.print()
             warning("No agents subcommand selected.")

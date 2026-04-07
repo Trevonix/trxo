@@ -5,15 +5,17 @@ This module provides common authentication and project management
 functionality used by both import and export commands.
 """
 
-from trxo_lib.exceptions import TrxoAbort
+from trxo_lib.exceptions import TrxoAbort, TrxoAuthError, TrxoConfigError
 import uuid
 from typing import Optional
 
 
 from trxo_lib.auth.on_premise import OnPremAuth
 from trxo_lib.auth.token_manager import TokenManager
+from trxo_lib.logging import get_logger
 from trxo_lib.utils.config_store import ConfigStore
-from trxo_lib.utils.console import console, error, info, warning
+
+logger = get_logger(__name__)
 
 
 class AuthManager:
@@ -24,6 +26,9 @@ class AuthManager:
         self.token_manager = token_manager
         self._temp_project = None
         self._original_project = None
+        self.logger = get_logger(
+            f"trxo.{self.__class__.__module__}.{self.__class__.__name__}"
+        )
 
     def validate_project(
         self,
@@ -55,24 +60,15 @@ class AuthManager:
         argument_mode = sa_arg_mode or onprem_arg_mode
 
         if not current_project and not argument_mode:
-            error("No active project found!")
-            console.print()
-            info("📋 You have two options:")
-            info("   1️⃣  Create and configure a project:")
-            info("      • trxo project create <project-name>")
-            info("      • trxo project switch <project-name>")
-            info("      • trxo config setup")
-            console.print()
-            info("   2️⃣  Use pipeline mode with all credentials:")
-            info("      • --jwk-path <path-to-jwk-file>")
-            info("      • --sa-id <your-service-account-id>")
-            info("      • --base-url <your-ping-aic-url>")
-            console.print()
-            raise TrxoAbort(code=1)
+            raise TrxoConfigError(
+                "No active project found. "
+                "Either create/configure a project (trxo project create + trxo config setup) "
+                "or use pipeline mode with --jwk-path, --sa-id, --base-url."
+            )
 
         if argument_mode:
             # argument mode: create temporary project configuration
-            info("Running in argument mode with provided credentials...")
+            self.logger.info("Running in argument mode with provided credentials...")
             if onprem_arg_mode:
                 return self._initialize_argument_mode_onprem(
                     base_url=base_url,
@@ -142,8 +138,8 @@ class AuthManager:
         idm_username: Optional[str] = None,
         am_base_url: Optional[str] = None,
     ) -> str:
-        """Initialize in argument mode for on-prem with provided credentials "
-        "(no password stored)."""
+        """Initialize in argument mode for on-prem with provided credentials \
+        (no password stored)."""
         # Create temporary project name for this session
         temp_project_name = (
             f"temp_{project_name}" if project_name else f"temp_{uuid.uuid4().hex[:8]}"
@@ -184,8 +180,10 @@ class AuthManager:
         except Exception as e:
             if self._original_project:
                 self.config_store.set_current_project(self._original_project)
-            error(f"Failed to initialize argument mode (onprem): {str(e)}")
-            raise TrxoAbort(code=1)
+            self.logger.error(f"Failed to initialize argument mode (onprem): {str(e)}")
+            raise TrxoAuthError(
+                f"Failed to initialize argument mode (onprem): {str(e)}"
+            )
 
     def cleanup_argument_mode(self):
         """Clean up temporary project created in argument mode"""
@@ -202,9 +200,9 @@ class AuthManager:
                 # Actually delete the temporary project configuration and directory
                 self.config_store.delete_project(self._temp_project)
 
-                info(f"Cleaned up temporary project: {self._temp_project}")
+                self.logger.info(f"Cleaned up temporary project: {self._temp_project}")
             except Exception as e:
-                warning(f"Failed to cleanup temporary project: {str(e)}")
+                self.logger.warning(f"Failed to cleanup temporary project: {str(e)}")
             finally:
                 self._temp_project = None
                 self._original_project = None
@@ -217,11 +215,13 @@ class AuthManager:
     ) -> None:
         """Update configuration if any arguments are provided"""
         if any([jwk_path, sa_id, base_url]):
-            info("Updating configuration with provided arguments...")
+            self.logger.info("Updating configuration with provided arguments...")
             try:
                 current_project = self.config_store.get_current_project()
                 if not current_project:
-                    warning("No current project set, skipping config update")
+                    self.logger.warning(
+                        "No current project set, skipping config update"
+                    )
                     return
 
                 # Get existing config
@@ -243,8 +243,8 @@ class AuthManager:
                 self.config_store.save_project(current_project, current_config)
 
             except Exception as e:
-                error(f"Failed to update configuration: {str(e)}")
-                raise TrxoAbort(code=1)
+                self.logger.error(f"Failed to update configuration: {str(e)}")
+                raise TrxoConfigError(f"Failed to update configuration: {str(e)}")
 
     def get_auth_mode(self, project_name: str, override: Optional[str] = None) -> str:
         """Get the auth mode: 'service-account' (default) or 'onprem'"""
@@ -263,8 +263,8 @@ class AuthManager:
         try:
             return self.token_manager.get_token(project_name)
         except Exception as e:
-            error(f"Failed to get token: {str(e)}")
-            raise TrxoAbort(code=1)
+            self.logger.error(f"Failed to get token: {str(e)}")
+            raise TrxoAuthError(f"Failed to get token: {str(e)}")
 
     def get_onprem_session(
         self,
@@ -274,7 +274,18 @@ class AuthManager:
         realm: Optional[str] = None,
         base_url: Optional[str] = None,
     ) -> str:
-        """Obtain on-prem AM session token (SSO token). Not persisted."""
+        """Obtain on-prem AM session token (SSO token). Not persisted.
+
+        Args:
+            project_name: Active project name.
+            username: AM username. Required — no interactive prompting.
+            password: AM password. Required — no interactive prompting.
+            realm: AM realm (defaults to config value or 'root').
+            base_url: AM base URL override.
+
+        Raises:
+            TrxoAuthError: If username or password is missing, or auth fails.
+        """
         config = self.config_store.get_project_config(project_name) or {}
         base_url = self.get_base_url(project_name, base_url)
 
@@ -282,19 +293,26 @@ class AuthManager:
         username = username or config.get("onprem_username")
         realm = (realm or config.get("onprem_realm") or "root").strip("/")
 
-        # Prompt if missing
+        # Require credentials — no interactive prompting in library
         if not username:
-            username = input("On-Prem AM username [amAdmin]: ").strip() or "amAdmin"
+            raise TrxoAuthError(
+                "On-Prem AM username is required. "
+                "Provide --onprem-username or configure via 'trxo config setup'."
+            )
         if not password:
-            password = __import__("getpass").getpass("On-Prem AM password: ")
+            raise TrxoAuthError(
+                "On-Prem AM password is required. " "Provide --onprem-password."
+            )
 
         try:
             client = OnPremAuth(base_url=base_url, realm=realm)
             data = client.authenticate(username=username, password=password)
             return data["tokenId"]
+        except TrxoAuthError:
+            raise
         except Exception as e:
-            error(f"On-Prem AM authentication failed: {e}")
-            raise TrxoAbort(code=1)
+            self.logger.error(f"On-Prem AM authentication failed: {e}")
+            raise TrxoAuthError(f"On-Prem AM authentication failed: {e}")
 
     def get_idm_credentials(
         self,
@@ -302,24 +320,37 @@ class AuthManager:
         idm_username: Optional[str] = None,
         idm_password: Optional[str] = None,
     ) -> tuple:
-        """Get IDM credentials (username, password). Password is prompted if not provided."""
+        """Get IDM credentials (username, password).
+
+        Args:
+            project_name: Active project name.
+            idm_username: IDM username. Required — no interactive prompting.
+            idm_password: IDM password. Required — no interactive prompting.
+
+        Raises:
+            TrxoAuthError: If credentials are missing or IDM not configured.
+        """
         config = self.config_store.get_project_config(project_name) or {}
 
         # Check if IDM is configured
         products = config.get("onprem_products", [])
         if "idm" not in products and not idm_username:
-            error(
-                "IDM credentials not configured for this project.\n"
-                "💡 Run 'trxo config setup --auth-mode onprem' to add IDM access,\n"
-                "   or provide --idm-username and --idm-password."
+            raise TrxoAuthError(
+                "IDM credentials not configured for this project. "
+                "Run 'trxo config setup --auth-mode onprem' to add IDM access, "
+                "or provide --idm-username and --idm-password."
             )
-            raise TrxoAbort(code=1)
 
         username = idm_username or config.get("idm_username")
         if not username:
-            username = input("On-Prem IDM username [openidm-admin]: ").strip() or "openidm-admin"
+            raise TrxoAuthError(
+                "On-Prem IDM username is required. "
+                "Provide --idm-username or configure via 'trxo config setup'."
+            )
         if not idm_password:
-            idm_password = __import__("getpass").getpass("On-Prem IDM password: ")
+            raise TrxoAuthError(
+                "On-Prem IDM password is required. " "Provide --idm-password."
+            )
 
         return username, idm_password
 
@@ -335,10 +366,10 @@ class AuthManager:
         if idm_url:
             return idm_url
 
-        error(
-            "IDM Base URL not configured. Run 'trxo config setup' first or provide --idm-base-url"
+        raise TrxoConfigError(
+            "IDM Base URL not configured. "
+            "Run 'trxo config setup' first or provide --idm-base-url."
         )
-        raise TrxoAbort(code=1)
 
     def get_base_url(
         self, project_name: str, base_url_override: Optional[str] = None
@@ -359,9 +390,9 @@ class AuthManager:
             api_base_url = config.get("base_url")
 
         if not api_base_url:
-            error(
-                "Base URL not configured. Run 'trxo config setup' first or provide --base-url"
+            raise TrxoConfigError(
+                "Base URL not configured. "
+                "Run 'trxo config setup' first or provide --base-url."
             )
-            raise TrxoAbort(code=1)
 
         return api_base_url

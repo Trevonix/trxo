@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-import trxo_lib.utils.console as console_utils
+import trxo.utils.console as console_utils
 
 
 def test_success_prints(mocker):

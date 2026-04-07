@@ -64,6 +64,7 @@ def create_applications_export_command():
     ):
         """Export custom applications configuration"""
         kwargs = locals()
-        ExportService().export_applications(**kwargs)
+        from trxo.utils.export.cli_handler import CLIExportHandler
+        CLIExportHandler().handle_export("applications", ExportService().export_applications, kwargs)
 
     return export_applications

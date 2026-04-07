@@ -57,6 +57,7 @@ def create_managed_export_command():
     ):
         """Export managed objects configuration"""
         kwargs = locals()
-        ExportService().export_managed(**kwargs)
+        from trxo.utils.export.cli_handler import CLIExportHandler
+        CLIExportHandler().handle_export("managed", ExportService().export_managed, kwargs)
 
     return export_managed

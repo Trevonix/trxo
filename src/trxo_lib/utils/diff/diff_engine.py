@@ -15,7 +15,7 @@ from deepdiff import DeepDiff
 
 from trxo_lib.operations.export.saml import SamlExporter
 from trxo_lib.operations.export.services import ServicesExporter
-from trxo_lib.utils.console import error, info
+from trxo.utils.console import error, info
 
 
 class ChangeType(Enum):

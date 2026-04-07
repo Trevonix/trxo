@@ -17,7 +17,7 @@ import typer
 from trxo_lib.auth.token_manager import TokenManager
 from trxo_lib.logging import get_logger, log_api_call
 from trxo_lib.utils.config_store import ConfigStore
-from trxo_lib.utils.console import error, success, warning
+from trxo.utils.console import error, success, warning
 from trxo_lib.utils.url import construct_api_url
 
 from trxo_lib.operations.auth_manager import AuthManager

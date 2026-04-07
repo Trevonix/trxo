@@ -8,7 +8,7 @@ from typing import Any, Callable, Dict, List
 
 import typer
 
-from trxo_lib.utils.console import error, info, success, warning
+from trxo.utils.console import error, info, success, warning
 from trxo_lib.utils.diff.diff_engine import DiffItem, DiffResult
 
 
