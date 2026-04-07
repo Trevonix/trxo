@@ -13,6 +13,7 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     CommitMessageOpt,
+    GlobalOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
     IdmUsernameOpt,
@@ -37,7 +38,9 @@ from trxo.utils.console import error
 from .base_exporter import BaseExporter
 
 
-def process_policies_response(exporter_instance: BaseExporter, realm: str):
+def process_policies_response(
+    exporter_instance: BaseExporter, realm: str, global_policy: bool = False
+):
     """
     Process policies response to fetch and merge policy sets.
 
@@ -53,24 +56,50 @@ def process_policies_response(exporter_instance: BaseExporter, realm: str):
         # Get authentication details from the exporter instance
         token, api_base_url = exporter_instance.get_current_auth()
 
-        url = exporter_instance._construct_api_url(
+        # 1. Fetch AM Policy Sets (Applications)
+        app_url = exporter_instance._construct_api_url(
             api_base_url,
             f"/am/json/realms/root/realms/{realm}/applications?_queryFilter=true",
         )
         headers = get_headers("policy_sets")
         headers = {**headers, **exporter_instance.build_auth_headers(token)}
 
+        am_results = []
         try:
-            response = exporter_instance.make_http_request(url, "GET", headers)
-            policy_sets_data = response.json()
-            policy_sets = policy_sets_data.get("result", [])
-
-            if isinstance(data, dict) and isinstance(data.get("result"), list):
-                # Prepend policy sets so they are processed first on import
-                data["result"] = policy_sets + data["result"]
-                data["resultCount"] = len(data["result"])
+            response = exporter_instance.make_http_request(app_url, "GET", headers)
+            policy_sets = response.json().get("result", [])
+            am_results.extend(policy_sets)
         except Exception as e:
             error(f"Failed to fetch policy sets: {str(e)}")
+
+        # 2. Add original AM Policies
+        if isinstance(data, dict) and isinstance(data.get("result"), list):
+            am_results.extend(data["result"])
+
+        # 3. Fetch IDM Policies if --global-policy is set
+        idm_policies = []
+        if global_policy:
+            idm_url = exporter_instance._construct_api_url(
+                api_base_url,
+                '/openidm/config?_queryFilter=_id+co+"policy"',
+            )
+            idm_headers = get_headers("default")
+            idm_headers = {
+                **idm_headers,
+                **exporter_instance.build_auth_headers(token),
+            }
+
+            try:
+                response = exporter_instance.make_http_request(
+                    idm_url, "GET", idm_headers
+                )
+                idm_policies = response.json().get("result", [])
+            except Exception as e:
+                error(f"Failed to fetch IDM policies: {str(e)}")
+
+        if isinstance(data, dict):
+            # Return flattened structure with 'am' and 'global'
+            return {"am": am_results, "global": idm_policies}
 
         return data
 
@@ -90,6 +119,7 @@ def create_policies_export_command():
 
     def export_policies(
         realm: RealmOpt = DEFAULT_REALM,
+        global_policy: GlobalOpt = False,
         view: ViewOpt = False,
         view_columns: ViewColumnsOpt = None,
         version: VersionOpt = None,
@@ -130,7 +160,9 @@ def create_policies_export_command():
             project_name=project_name,
             output_dir=output_dir,
             output_file=output_file,
-            response_filter=process_policies_response(exporter, realm),
+            response_filter=process_policies_response(
+                exporter, realm, global_policy=global_policy
+            ),
             auth_mode=auth_mode,
             onprem_username=onprem_username,
             onprem_password=onprem_password,

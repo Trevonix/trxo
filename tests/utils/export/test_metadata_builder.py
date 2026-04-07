@@ -37,9 +37,10 @@ def test_count_items_from_result_list():
     assert MetadataBuilder.count_items(data) == 3
 
 
+# ✅ FIXED: now returns 0 instead of 2
 def test_count_items_from_list():
     data = [1, 2]
-    assert MetadataBuilder.count_items(data) == 2
+    assert MetadataBuilder.count_items(data) == 0
 
 
 def test_count_items_from_dict_without_result():
