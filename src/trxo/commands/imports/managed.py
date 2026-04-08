@@ -104,8 +104,15 @@ class ManagedObjectsImporter(BaseImporter):
             response = self.make_http_request(url, "GET", headers)
             return response.json()
         except Exception as e:
+            # Robust 404 check for recovery
+            resp = getattr(e, "response", None)
+            is_404 = "404" in str(e) or (resp is not None and getattr(resp, "status_code", None) == 404)
+            if is_404:
+                info("Managed configuration not found on server (404); starting with empty configuration for recovery.")
+                return {"objects": []}
+            
             error(f"Failed to fetch current managed objects configuration: {e}")
-            return {}
+            return None
 
     def _find_object_by_name(self, objects_list: List[Dict], name: str) -> tuple:
         """Find object by name in the objects list. Returns (index, object) or (-1, None)"""
@@ -176,7 +183,7 @@ class ManagedObjectsImporter(BaseImporter):
         source_properties: Dict[str, Any],
         token: str,
         base_url: str,
-    ):
+    ) -> bool:
         """Delete properties that exist on server but not in
         source to ensure source and destination are identical"""
         info(f"[DEBUG] Checking for orphaned properties for '{object_name}'...")
@@ -190,7 +197,7 @@ class ManagedObjectsImporter(BaseImporter):
                 f"[DEBUG] No server properties found for '{object_name}',"
                 " skipping orphaned property check"
             )
-            return
+            return True
 
         # Find properties that exist on server but not in source
         source_prop_names = (
@@ -208,7 +215,7 @@ class ManagedObjectsImporter(BaseImporter):
         orphaned_props = server_prop_names - source_prop_names
 
         # Exclude system properties that should not be deleted
-        excluded_properties = {"_meta", "_notifications"}
+        excluded_properties = {"_id", "_meta", "_notifications"}
         orphaned_props = orphaned_props - excluded_properties
 
         if not orphaned_props:
@@ -216,7 +223,7 @@ class ManagedObjectsImporter(BaseImporter):
                 f"[DEBUG] No orphaned properties found for '{object_name}' "
                 "- source and server are in sync"
             )
-            return
+            return True
 
         info(
             f"[DEBUG] Found {len(orphaned_props)} orphaned property/"
@@ -226,6 +233,7 @@ class ManagedObjectsImporter(BaseImporter):
         headers = get_headers("managed")
         headers = {**headers, **self.build_auth_headers(token)}
 
+        any_failed = False
         for prop_name in orphaned_props:
             url = f"{base_url}/openidm/schema/managed/{object_name}/properties/{prop_name}"
             info(
@@ -242,6 +250,9 @@ class ManagedObjectsImporter(BaseImporter):
                 error(
                     f"✗ Failed to delete orphaned property '{prop_name}' for '{object_name}': {e}"
                 )
+                any_failed = True
+        
+        return not any_failed
 
     def _update_relationship_properties(
         self, object_name: str, object_data: Dict[str, Any], token: str, base_url: str
@@ -436,7 +447,7 @@ class ManagedObjectsImporter(BaseImporter):
 
             # Get current configuration once, keep a local copy updated as we go
             current_config = self._get_current_managed_config(token, base_url)
-            if not current_config:
+            if current_config is None:
                 error("Could not retrieve current managed objects configuration")
                 return False
 

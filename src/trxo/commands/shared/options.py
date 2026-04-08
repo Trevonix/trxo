@@ -105,7 +105,7 @@ RollbackOpt = Annotated[
     typer.Option(
         ...,
         "--rollback",
-        help="Automatically rollback imported items on first failure (requires git storage)",
+        help="Automatically rollback imported items on first failure",
     ),
 ]
 
