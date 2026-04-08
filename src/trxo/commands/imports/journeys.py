@@ -716,6 +716,10 @@ class JourneyImporter(BaseImporter):
             warning("No journey data to import")
             return True
 
+        # Ensure nested helpers (_post_saml_metadata/_import_circle_of_trust/etc.)
+        # can honor the active CLI mode.
+        self.continue_on_error = continue_on_error
+
         selected_tree_ids: Optional[List[str]] = None
         cherry_pick_scope: Optional[Dict[str, set]] = None
         if cherry_pick_ids:
@@ -1010,6 +1014,11 @@ class JourneyImporter(BaseImporter):
                 response = client.put(url, headers=headers, json=payload_data)
 
                 if response.status_code == 404:
+                    if not self.continue_on_error:
+                        error(
+                            f"Script '{script_name}' not found (404) in --stop-on-error mode"
+                        )
+                        return False
                     # Switch to create logic
                     create_url = self._construct_api_url(
                         base_url,
@@ -1121,6 +1130,12 @@ class JourneyImporter(BaseImporter):
 
                 # If it's a 409 or 500, we treat it as "already exists" and skip
                 if response.status_code in (409, 500):
+                    if not self.continue_on_error:
+                        error(
+                            f"Metadata import for '{entity_id}' returned "
+                            f"{response.status_code} in --stop-on-error mode"
+                        )
+                        return False
                     self.logger.debug(
                         f"Metadata for '{entity_id}' likely already exists "
                         f"(status {response.status_code}), skipping POST."
@@ -1208,6 +1223,11 @@ class JourneyImporter(BaseImporter):
                     response.status_code == 500
                     and "Unable to update entity provider" in response.text
                 ):
+                    if not self.continue_on_error:
+                        error(
+                            f"CoT '{cot_id}' returned known 500 in --stop-on-error mode"
+                        )
+                        return False
                     self.logger.debug(
                         f"Caught known CoT creation 500 caching bug on '{cot_id}'. "
                         "Waiting 1s and retrying..."

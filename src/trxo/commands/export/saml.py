@@ -210,6 +210,8 @@ def process_saml_response(exporter_instance: BaseExporter, realm: str):
 
                     except Exception as e:
                         error(f"Failed to fetch provider {provider_id}: {str(e)}")
+                        if not exporter_instance.continue_on_error:
+                            raise
                         continue
 
             else:
@@ -217,6 +219,8 @@ def process_saml_response(exporter_instance: BaseExporter, realm: str):
 
         except Exception as e:
             error(f"Failed to fetch SAML providers list: {str(e)}")
+            if not exporter_instance.continue_on_error:
+                raise
 
         # Step 4: Get SAML metadata for each provider individually
         if entity_ids_list:
@@ -249,6 +253,8 @@ def process_saml_response(exporter_instance: BaseExporter, realm: str):
                         f"Failed to fetch metadata for entity '{entity_id}': "
                         f"{str(e)}"
                     )
+                    if not exporter_instance.continue_on_error:
+                        raise
         else:
             info("No SAML providers found, skipping metadata export")
 
@@ -357,6 +363,8 @@ def fetch_scripts(
 
         except Exception as e:
             warning(f"Failed to fetch script {script_id}: {str(e)}")
+            if not exporter_instance.continue_on_error:
+                raise
 
 
 def create_saml_export_command():

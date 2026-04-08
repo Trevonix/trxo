@@ -142,6 +142,8 @@ class ServicesImporter(BaseImporter):
             except Exception as put_error:
                 # If realm scope and PUT failed (probably 404), try create
                 if self.scope == "realm":
+                    if not self.continue_on_error:
+                        raise put_error
                     try:
                         # For creation, we might need _type in the payload
                         # Some services support creation at the specific ID URL
@@ -226,6 +228,8 @@ class ServicesImporter(BaseImporter):
                                 f"Could not validate schema for descendant "
                                 f"{desc_id}: {e}"
                             )
+                            if not self.continue_on_error:
+                                raise
                         try:
                             self.make_http_request(
                                 desc_url, "PUT", headers, desc_payload
@@ -235,6 +239,8 @@ class ServicesImporter(BaseImporter):
                                 f"Failed to update descendant {desc_id} for "
                                 f"service {item_id}: {de}"
                             )
+                            if not self.continue_on_error:
+                                raise
                     else:
                         warning(
                             f"Skipping descendant without _type._id or _id in "

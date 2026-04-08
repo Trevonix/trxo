@@ -191,6 +191,7 @@ class SamlImporter(BaseImporter):
         # Expose counts for the CLI to decide exit code.
         self.successful_updates = 0
         self.failed_updates = 0
+        self.continue_on_error = continue_on_error
 
         success_count = 0
         error_count = 0
@@ -598,6 +599,11 @@ class SamlImporter(BaseImporter):
                     )
 
                     if response.status_code == 404:
+                        if not self.continue_on_error:
+                            error(
+                                f"SAML entity '{entity_name}' not found (404) in --stop-on-error mode"
+                            )
+                            return False
                         # Entity doesn't exist → Create
                         post_hosted_url = self._construct_api_url(
                             base_url,

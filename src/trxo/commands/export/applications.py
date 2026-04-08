@@ -97,6 +97,7 @@ def _export_applications_with_deps(
     idm_base_url: str | None,
     idm_username: str | None,
     idm_password: str | None,
+    continue_on_error: bool,
 ) -> None:
     """Export managed applications plus referenced OAuth2 clients/provider/scripts."""
     base = BaseExporter()
@@ -158,6 +159,7 @@ def _export_applications_with_deps(
             )
 
         oauth_helper = OAuthExporter(realm=realm)
+        oauth_helper.continue_on_error = continue_on_error
         client_ids = _collect_oidc_client_ids(applications_list)
         complete_clients: List[Dict[str, Any]] = []
         all_script_ids: set[str] = set()
@@ -289,6 +291,7 @@ def create_applications_export_command():
                     idm_base_url=idm_base_url,
                     idm_username=idm_username,
                     idm_password=idm_password,
+                    continue_on_error=continue_on_error,
                 )
                 return
 

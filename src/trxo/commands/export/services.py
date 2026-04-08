@@ -92,11 +92,15 @@ def services_response_filter(data, *, exporter, scope, realm, headers):
                 ]
 
             except Exception:
+                if not exporter.continue_on_error:
+                    raise
                 complete_service["nextDescendents"] = []
 
             complete_services.append(complete_service)
         except Exception as e:
             warning(f"Failed to fetch complete config for service '{service_id}': {e}")
+            if not exporter.continue_on_error:
+                raise
             complete_services.append(service_summary)
 
     return {**data, "result": complete_services}

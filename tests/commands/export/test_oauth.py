@@ -49,11 +49,21 @@ def test_fetch_oauth_client_data_success(mocker):
 
 def test_fetch_oauth_client_data_error_returns_empty(mocker):
     exporter = OAuthExporter()
+    exporter.continue_on_error = True
     mocker.patch.object(exporter, "make_http_request", side_effect=Exception("boom"))
 
     data = exporter.fetch_oauth_client_data("client1", "token", "https://base")
 
     assert data == {}
+
+
+def test_fetch_oauth_client_data_error_raises_in_stop_mode(mocker):
+    exporter = OAuthExporter()
+    exporter.continue_on_error = False
+    mocker.patch.object(exporter, "make_http_request", side_effect=Exception("boom"))
+
+    with pytest.raises(Exception, match="boom"):
+        exporter.fetch_oauth_client_data("client1", "token", "https://base")
 
 
 def test_fetch_script_data_decodes_base64(mocker):
@@ -74,6 +84,7 @@ def test_fetch_script_data_decodes_base64(mocker):
 
 def test_fetch_script_data_forbidden_returns_empty(mocker):
     exporter = OAuthExporter()
+    exporter.continue_on_error = True
     mocker.patch.object(
         exporter, "make_http_request", side_effect=Exception("403 Forbidden")
     )
@@ -81,6 +92,17 @@ def test_fetch_script_data_forbidden_returns_empty(mocker):
     data = exporter.fetch_script_data("script1", "token", "https://base")
 
     assert data == {}
+
+
+def test_fetch_script_data_forbidden_raises_in_stop_mode(mocker):
+    exporter = OAuthExporter()
+    exporter.continue_on_error = False
+    mocker.patch.object(
+        exporter, "make_http_request", side_effect=Exception("403 Forbidden")
+    )
+
+    with pytest.raises(Exception, match="403 Forbidden"):
+        exporter.fetch_script_data("script1", "token", "https://base")
 
 
 def test_export_oauth_happy_path(mocker):

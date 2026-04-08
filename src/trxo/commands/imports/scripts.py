@@ -156,6 +156,11 @@ class ScriptImporter(BaseImporter):
                 response = client.put(url, headers=headers, json=payload_data)
 
                 if response.status_code == 404:
+                    if not self.continue_on_error:
+                        error(
+                            f"Script '{item_name}' not found (404) in --stop-on-error mode"
+                        )
+                        return False
                     # Switch to create logic
                     collection_url = self._construct_api_url(
                         base_url,

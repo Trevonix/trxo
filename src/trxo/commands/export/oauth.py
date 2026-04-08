@@ -16,6 +16,7 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     CommitMessageOpt,
+    ContinueOnErrorOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
     IdmUsernameOpt,
@@ -100,12 +101,9 @@ class OAuthExporter(BaseExporter):
 
             return script_data
         except Exception as e:
-            # Handle 403 Forbidden gracefully (likely internal/protected scripts)
-            if "403" in str(e) or "Forbidden" in str(e):
-                # warning(f"Skipping script {script_id}: Access denied (likely internal)")
-                return {}
-
             error(f"Failed to fetch script {script_id}: {str(e)}")
+            if not self.continue_on_error:
+                raise
             return {}
 
     def fetch_oauth_client_data(
@@ -126,6 +124,8 @@ class OAuthExporter(BaseExporter):
             return data
         except Exception as e:
             error(f"Failed to fetch OAuth client {client_id}: {str(e)}")
+            if not self.continue_on_error:
+                raise
             return {}
 
     def _discover_provider_service_endpoints(
@@ -166,6 +166,8 @@ class OAuthExporter(BaseExporter):
         try:
             endpoints = self._discover_provider_service_endpoints(token, base_url)
         except Exception:
+            if not self.continue_on_error:
+                raise
             return {}
 
         if not endpoints:
@@ -186,6 +188,8 @@ class OAuthExporter(BaseExporter):
 
         if last_error:
             warning(f"Failed to fetch OAuth provider config: {last_error}")
+            if not self.continue_on_error:
+                raise Exception(last_error)
         return {}
 
 
@@ -215,9 +219,11 @@ def create_oauth_export_command():
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Export OAuth2 clients configuration with script dependencies"""
         oauth_exporter = OAuthExporter(realm=realm)
+        oauth_exporter.continue_on_error = continue_on_error
 
         try:
             # Initialize authentication
@@ -344,6 +350,8 @@ def create_oauth_export_command():
             success("OAuth2 clients exported successfully")
         except Exception as e:
             error(f"OAuth export failed: {str(e)}")
-            raise
+            if not continue_on_error:
+                raise typer.Exit(1)
+            return
 
     return export_oauth
