@@ -24,7 +24,12 @@ from trxo.utils.git import GitManager
 class RollbackManager:
     """Manage baseline snapshots and rollback operations."""
 
-    def __init__(self, command_name: str, realm: Optional[str] = None, project_name: Optional[str] = None):
+    def __init__(
+        self,
+        command_name: str,
+        realm: Optional[str] = None,
+        project_name: Optional[str] = None,
+    ):
         self.command_name = command_name
         self.project_name = project_name
 
@@ -176,7 +181,9 @@ class RollbackManager:
             ]:
 
                 if not isinstance(data, dict):
-                    error(f"Unexpected response for {self.command_name} baseline snapshot")
+                    error(
+                        f"Unexpected response for {self.command_name} baseline snapshot"
+                    )
                     return False
 
                 item_id = data.get("_id", "ui/themerealm")
@@ -184,7 +191,7 @@ class RollbackManager:
                     item_id = "authn_settings"
 
                 mapping = {item_id: data}
-                
+
                 # Also index individual objects within the managed config
                 if self.command_name in ["managed", "managed_objects"]:
                     objects = data.get("objects", [])
@@ -593,7 +600,7 @@ class RollbackManager:
         try:
             config_store = ConfigStore()
             project_dir = config_store.get_project_dir(self.project_name)
-            
+
             timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
             component = self.command_name
 
@@ -636,7 +643,7 @@ class RollbackManager:
 
             # Sort files by name since it includes timestamp
             files.sort(key=lambda p: p.name)
-            
+
             files_to_delete = files[:-max_files]
             for f in files_to_delete:
                 try:
@@ -683,8 +690,10 @@ class RollbackManager:
         # ------------------------------------------------------------
         atomic_commands = {"managed", "managed_objects", "authn", "themes", "mappings"}
         if self.command_name in atomic_commands:
-            info(f"Detected atomic component '{self.command_name}' - restoring full baseline document")
-            
+            info(
+                f"Detected atomic component '{self.command_name}' - restoring full baseline document"
+            )
+
             # The full document is indexed by the command name (or item_id used in snapshot)
             doc_id = self.command_name
             if self.command_name == "managed_objects":
@@ -693,47 +702,57 @@ class RollbackManager:
                 doc_id = "authn_settings"
             elif self.command_name == "mappings":
                 doc_id = "sync"
-            
+
             baseline_doc = self.baseline_snapshot.get(doc_id)
             if not baseline_doc:
                 # Fallback to searching for the document in baseline
                 for k, v in self.baseline_snapshot.items():
-                    if isinstance(v, dict) and (v.get("_id") == "managed" or v.get("_id") == "ui/themerealm"):
+                    if isinstance(v, dict) and (
+                        v.get("_id") == "managed" or v.get("_id") == "ui/themerealm"
+                    ):
                         baseline_doc = v
                         doc_id = k
                         break
-            
+
             if baseline_doc:
                 try:
                     url = self._build_api_url(doc_id, base_url)
                     headers = get_headers(self.command_name)
                     headers = {**headers, **self._build_auth_headers(token, url)}
-                    
+
                     # Structuring the payload for PUT
                     # For IDM config, we strip metadata like _rev
                     payload = {
-                        k: v for k, v in baseline_doc.items()
+                        k: v
+                        for k, v in baseline_doc.items()
                         if k not in {"_rev", "_type"}
                     }
-                    
+
                     with httpx.Client() as client:
                         resp = client.put(url, headers=headers, json=payload)
-                    
+
                     if resp.status_code in (200, 201, 204):
-                        info(f"Successfully restored full {self.command_name} configuration")
-                        report["rolled_back"].append({"action": f"Restored {self.command_name} document"})
+                        info(
+                            f"Successfully restored full {self.command_name} configuration"
+                        )
+                        report["rolled_back"].append(
+                            {"action": f"Restored {self.command_name} document"}
+                        )
                         return report
                     else:
-                        report["errors"].append({
-                            "id": doc_id,
-                            "error": f"Failed to restore full config: {resp.status_code} - {resp.text}"
-                        })
+                        report["errors"].append(
+                            {
+                                "id": doc_id,
+                                "error": f"Failed to restore full config: {resp.status_code} - {resp.text}",
+                            }
+                        )
                 except Exception as e:
                     report["errors"].append({"id": doc_id, "error": str(e)})
 
             # If document restoration failed or not found, fall back to default logic
-            warning(f"Full document restoration for {self.command_name} failed or baseline not found. Falling back to granular rollback.")
-
+            warning(
+                f"Full document restoration for {self.command_name} failed or baseline not found. Falling back to granular rollback."
+            )
 
         # ------------------------------------------------------------
         # CASE 1: No tracked items → restore full baseline
@@ -930,7 +949,9 @@ class RollbackManager:
                 # -------- DELETE --------
                 if action == "created":
                     if url in deleted_urls:
-                        info(f"Skipping redundant delete for {item_id} (URL already processed: {url})")
+                        info(
+                            f"Skipping redundant delete for {item_id} (URL already processed: {url})"
+                        )
                         continue
 
                     if self.command_name == "saml" and item_type != "script":
@@ -1110,7 +1131,13 @@ class RollbackManager:
 
             # Root-level IDM paths represent the full resource path
             # so we shouldn't append the item_id to them
-            if self.command_name in ["themes", "managed", "managed_objects", "authn", "mappings"]:
+            if self.command_name in [
+                "themes",
+                "managed",
+                "managed_objects",
+                "authn",
+                "mappings",
+            ]:
                 api_endpoint, _ = get_command_api_endpoint(
                     self.command_name, self.realm
                 )

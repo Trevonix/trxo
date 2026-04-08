@@ -632,10 +632,11 @@ class SamlImporter(BaseImporter):
 
         except Exception as e:
             error_msg = str(e)
-            
+
             # Check if this is a cross-entity validation failure caused by a corrupted server entity
             if "400" in error_msg and "invalid syntax" in error_msg:
                 import re
+
                 match = re.search(r'Entity config "([^"]+)"', error_msg)
                 if match:
                     blocking_id = match.group(1)
@@ -646,29 +647,36 @@ class SamlImporter(BaseImporter):
                         )
                         try:
                             import base64
+
                             padded = blocking_id + "=" * (-len(blocking_id) % 4)
                             decoded = base64.b64decode(padded).decode("utf-8")
                             minimal = {"_id": blocking_id, "entityId": decoded}
                             if location == "hosted":
                                 minimal["identityProvider"] = {}
                                 minimal["serviceProvider"] = {}
-                            
+
                             # We use httpx directly here to avoid make_http_request dumping
                             # an ERROR log to the console if the operation is quirky
                             fix_url = self._construct_api_url(
                                 base_url,
                                 f"/am/json/realms/root/realms/{self.realm}/realm-config/"
-                                f"saml2/{location}/{blocking_id}"
+                                f"saml2/{location}/{blocking_id}",
                             )
                             with httpx.Client(timeout=10.0) as client:
                                 client.put(fix_url, headers=headers, json=minimal)
-                            
-                            info(f"✓ Silent recovery of '{blocking_id}' complete. Retrying.")
+
+                            info(
+                                f"✓ Silent recovery of '{blocking_id}' complete. Retrying."
+                            )
                             # Retry the original insert payload now that the block is cleared
                             # Note: No base_url string modification is strictly needed, recurse cleanly
-                            return self._upsert_entity(entity_data, location, token, base_url)
+                            return self._upsert_entity(
+                                entity_data, location, token, base_url
+                            )
                         except Exception as fix_e:
-                            warning(f"Could not silently recover blocking entity: {str(fix_e)}")
+                            warning(
+                                f"Could not silently recover blocking entity: {str(fix_e)}"
+                            )
 
             error(f"Failed to import {location} entity '{entity_name}': {error_msg}")
             return False
@@ -879,15 +887,15 @@ def create_saml_import_command():
 def _remove_empty_values(data: Any) -> Any:
     """
     Recursively remove keys whose values are '[Empty]'.
-    
+
     PingAM uses '[Empty]' as a placeholder for unset script references.
     These values are invalid UUIDs and will cause 'invalid syntax' errors
     if sent during an import. Removing the key allows safe defaults.
     """
     if isinstance(data, dict):
         return {
-            k: _remove_empty_values(v) 
-            for k, v in data.items() 
+            k: _remove_empty_values(v)
+            for k, v in data.items()
             if not (isinstance(v, str) and v == "[Empty]")
         }
     elif isinstance(data, list):

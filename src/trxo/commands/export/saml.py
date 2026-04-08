@@ -269,7 +269,7 @@ def process_saml_response(exporter_instance: BaseExporter, realm: str):
 def _remove_empty_values(data: Any) -> Any:
     """
     Recursively remove keys whose values are '[Empty]'.
-    
+
     PingAM uses '[Empty]' as a placeholder for unset script references.
     These values are invalid UUIDs and will cause 'invalid syntax' errors
     if stored as-is and later re-imported. Removing the key entirely allows
@@ -278,8 +278,8 @@ def _remove_empty_values(data: Any) -> Any:
     if isinstance(data, dict):
         # Build dictionary, omitting keys with '[Empty]' string
         return {
-            k: _remove_empty_values(v) 
-            for k, v in data.items() 
+            k: _remove_empty_values(v)
+            for k, v in data.items()
             if not (isinstance(v, str) and v == "[Empty]")
         }
     elif isinstance(data, list):

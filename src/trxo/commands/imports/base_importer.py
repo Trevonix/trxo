@@ -489,7 +489,9 @@ class BaseImporter(BaseCommand):
 
             command_name = get_command_name_from_item_type(self.get_item_type())
             project_name = self.config_store.get_current_project()
-            rollback_manager = RollbackManager(command_name, realm, project_name=project_name)
+            rollback_manager = RollbackManager(
+                command_name, realm, project_name=project_name
+            )
 
             # Provide GitManager if in git mode so snapshot is persisted
             git_mgr = None

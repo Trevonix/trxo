@@ -141,10 +141,13 @@ class BaseExporter(BaseCommand):
             except Exception as e:
                 # Handle 404 for IDM config by returning empty result
                 if "404" in str(e) and "/openidm/config/" in api_endpoint:
-                    self.logger.warning(f"Configuration not found (404) at {api_endpoint}. Returning empty data for recovery.")
+                    self.logger.warning(
+                        f"Configuration not found (404) at {api_endpoint}. Returning empty data for recovery."
+                    )
                     raw_data = {"objects": []} if "managed" in command_name else {}
                     # Create a mock response object for later use
                     import httpx
+
                     response = httpx.Response(200, json=raw_data)
                 else:
                     raise e

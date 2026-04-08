@@ -106,11 +106,15 @@ class ManagedObjectsImporter(BaseImporter):
         except Exception as e:
             # Robust 404 check for recovery
             resp = getattr(e, "response", None)
-            is_404 = "404" in str(e) or (resp is not None and getattr(resp, "status_code", None) == 404)
+            is_404 = "404" in str(e) or (
+                resp is not None and getattr(resp, "status_code", None) == 404
+            )
             if is_404:
-                info("Managed configuration not found on server (404); starting with empty configuration for recovery.")
+                info(
+                    "Managed configuration not found on server (404); starting with empty configuration for recovery."
+                )
                 return {"objects": []}
-            
+
             error(f"Failed to fetch current managed objects configuration: {e}")
             return None
 
@@ -251,7 +255,7 @@ class ManagedObjectsImporter(BaseImporter):
                     f"✗ Failed to delete orphaned property '{prop_name}' for '{object_name}': {e}"
                 )
                 any_failed = True
-        
+
         return not any_failed
 
     def _update_relationship_properties(

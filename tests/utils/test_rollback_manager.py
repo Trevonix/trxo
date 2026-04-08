@@ -152,39 +152,42 @@ def test_build_api_url_fallback(mocker, manager):
 
 def test_persist_baseline_to_local(mocker, tmp_path):
     import json
+
     mgr = RollbackManager("scripts", realm="alpha", project_name="test_proj")
     mapping = {"1": {"_id": "1", "data": "test"}}
-    
+
     config_store_mock = MagicMock()
     config_store_mock.get_project_dir.return_value = tmp_path
-    
-    mocker.patch("trxo.utils.rollback_manager.ConfigStore", return_value=config_store_mock)
+
+    mocker.patch(
+        "trxo.utils.rollback_manager.ConfigStore", return_value=config_store_mock
+    )
     mock_rotate = mocker.patch.object(mgr, "_rotate_local_baselines")
-    
+
     mgr._persist_baseline_to_local(mapping)
-    
+
     target_dir = tmp_path / "rollbacks" / "scripts" / "alpha"
     assert target_dir.exists()
-    
+
     files = list(target_dir.glob("baseline_*.json"))
     assert len(files) == 1
-    
+
     data = json.loads(files[0].read_text())
     assert data["data"] == mapping
-    
+
     mock_rotate.assert_called_once_with(target_dir, 5)
 
 
 def test_rotate_local_baselines(mocker, tmp_path):
     mgr = RollbackManager("scripts", realm="alpha", project_name="test_proj")
-    
+
     # create some dummy baseline files in tmp_path
     (tmp_path / "baseline_1.json").write_text("1")
     (tmp_path / "baseline_2.json").write_text("2")
     (tmp_path / "baseline_3.json").write_text("3")
-    
+
     mgr._rotate_local_baselines(tmp_path, max_files=2)
-    
+
     files = list(tmp_path.glob("baseline_*.json"))
     assert len(files) == 2
     names = [f.name for f in files]
