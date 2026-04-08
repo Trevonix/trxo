@@ -1,6 +1,6 @@
 import pytest
 
-from trxo.constants import DEFAULT_PAGE_SIZE
+from trxo_lib.config.constants import DEFAULT_PAGE_SIZE
 from trxo_lib.exports.helpers.pagination_handler import PaginationHandler
 
 

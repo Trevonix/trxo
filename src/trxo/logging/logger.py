@@ -210,7 +210,7 @@ def log_transaction(
     extra = {"transaction_operation": operation}
 
     if details:
-        from trxo_lib.constants import SENSITIVE_KEYS
+        from trxo_lib.config.constants import SENSITIVE_KEYS
 
         from .utils import sanitize_data
 
@@ -248,7 +248,7 @@ def log_authentication_event(
     extra = {"auth_type": auth_type, "auth_success": success}
 
     if details:
-        from trxo_lib.constants import SENSITIVE_KEYS
+        from trxo_lib.config.constants import SENSITIVE_KEYS
 
         from .utils import sanitize_data
 

@@ -27,7 +27,7 @@ from trxo.commands.shared.options import (
     ViewColumnsOpt,
     ViewOpt,
 )
-from trxo_lib.constants import DEFAULT_REALM
+from trxo_lib.config.constants import DEFAULT_REALM
 from trxo_lib.exports.service import ExportService
 
 

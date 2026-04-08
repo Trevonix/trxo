@@ -8,7 +8,7 @@ Exports from /am/json/realms/root/realms/alpha/policies?_queryFilter=true endpoi
 from typing import Any
 
 from trxo_lib.config.api_headers import get_headers
-from trxo_lib.constants import DEFAULT_REALM
+from trxo_lib.config.constants import DEFAULT_REALM
 from trxo.utils.console import error
 
 from trxo_lib.exports.processor import BaseExporter

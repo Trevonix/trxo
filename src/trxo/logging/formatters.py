@@ -8,7 +8,7 @@ including API calls, authentication events, and general application logs.
 import logging
 from datetime import datetime
 
-from trxo_lib.constants import SENSITIVE_KEYS
+from trxo_lib.config.constants import SENSITIVE_KEYS
 
 from .utils import sanitize_data
 

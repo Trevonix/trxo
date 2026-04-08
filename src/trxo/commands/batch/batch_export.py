@@ -9,7 +9,7 @@ from typing import List
 
 import typer
 
-from trxo_lib.constants import DEFAULT_REALM
+from trxo_lib.config.constants import DEFAULT_REALM
 from trxo.utils.console import error, info, success, warning
 
 from ..export.manager import app as export_app

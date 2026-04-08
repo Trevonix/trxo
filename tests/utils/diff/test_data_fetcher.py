@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from trxo.constants import DEFAULT_REALM
+from trxo_lib.config.constants import DEFAULT_REALM
 from trxo_lib.state.diff.data_fetcher import DataFetcher, get_command_api_endpoint
 
 

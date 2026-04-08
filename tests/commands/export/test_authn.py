@@ -1,5 +1,5 @@
 from trxo.commands.export.authn import create_authn_export_command
-from trxo.constants import DEFAULT_REALM
+from trxo_lib.config.constants import DEFAULT_REALM
 
 
 def test_authn_export_calls_exporter(mocker):

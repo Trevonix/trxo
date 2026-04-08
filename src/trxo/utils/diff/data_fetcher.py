@@ -15,7 +15,7 @@ from trxo_lib.exports.domains.policies import process_policies_response
 from trxo_lib.exports.domains.saml import process_saml_response
 from trxo_lib.exports.domains.scripts import decode_script_response
 from trxo_lib.config.api_headers import get_headers
-from trxo_lib.constants import DEFAULT_REALM
+from trxo_lib.config.constants import DEFAULT_REALM
 from trxo.utils.console import error, info, warning
 
 

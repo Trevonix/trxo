@@ -9,7 +9,7 @@ import logging
 from typing import Any, Dict
 
 from trxo_lib.config.api_headers import get_headers
-from trxo_lib.constants import DEFAULT_REALM
+from trxo_lib.config.constants import DEFAULT_REALM
 from trxo_lib.exports.processor import BaseExporter
 
 logger = logging.getLogger(__name__)

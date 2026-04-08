@@ -4,7 +4,7 @@ import pytest
 
 from trxo_lib.exports.domains.oauth import OAuthExporter
 from trxo.commands.export.oauth import create_oauth_export_command
-from trxo.constants import DEFAULT_REALM, IGNORED_SCRIPT_IDS
+from trxo_lib.config.constants import DEFAULT_REALM, IGNORED_SCRIPT_IDS
 
 
 def test_extract_script_ids_nested(mocker):

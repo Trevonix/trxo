@@ -1,7 +1,7 @@
 import pytest
 
 from trxo.commands.export.applications import create_applications_export_command
-from trxo.constants import DEFAULT_REALM
+from trxo_lib.config.constants import DEFAULT_REALM
 
 
 @pytest.fixture

@@ -5,7 +5,7 @@ from trxo_lib.imports.processor import TrxoAbort
 
 from trxo.commands.imports.oauth import create_oauth_import_command
 from trxo_lib.imports.domains.oauth import OAuthImporter
-from trxo_lib.constants import DEFAULT_REALM
+from trxo_lib.config.constants import DEFAULT_REALM
 
 
 def test_parse_oauth_data_standard_format(mocker):

@@ -1,7 +1,7 @@
 import time
 
 from trxo_lib.auth.service_account import ServiceAccountAuth
-from trxo_lib.constants import DEFAULT_TOKEN_EXPIRES_IN, TOKEN_EXPIRY_BUFFER
+from trxo_lib.config.constants import DEFAULT_TOKEN_EXPIRES_IN, TOKEN_EXPIRY_BUFFER
 from trxo_lib.logging import get_logger
 from trxo_lib.config.config_store import ConfigStore
 from trxo.utils.console import error

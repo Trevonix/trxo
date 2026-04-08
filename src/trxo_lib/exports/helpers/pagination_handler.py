@@ -8,7 +8,7 @@ responses.
 from typing import Any, Dict
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
-from trxo_lib.constants import DEFAULT_PAGE_SIZE
+from trxo_lib.config.constants import DEFAULT_PAGE_SIZE
 
 
 class PaginationHandler:

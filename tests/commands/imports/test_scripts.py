@@ -5,7 +5,7 @@ from trxo_lib.imports.domains.scripts import (
     is_base64_encoded,
 )
 from trxo.commands.imports.scripts import create_script_import_command
-from trxo.constants import DEFAULT_REALM, IGNORED_SCRIPT_IDS, IGNORED_SCRIPT_NAMES
+from trxo_lib.config.constants import DEFAULT_REALM, IGNORED_SCRIPT_IDS, IGNORED_SCRIPT_NAMES
 
 
 def test_is_base64_encoded_true():

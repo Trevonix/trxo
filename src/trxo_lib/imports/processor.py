@@ -12,7 +12,7 @@ from abc import abstractmethod
 from typing import Any, Dict, List, Optional
 
 
-from trxo_lib.constants import DEFAULT_REALM
+from trxo_lib.config.constants import DEFAULT_REALM
 from trxo_lib.git import GitManager, setup_git_for_import
 from trxo_lib.state.hash import (
     HashManager,

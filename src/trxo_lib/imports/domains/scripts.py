@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional
 import httpx
 
 from trxo_lib.config.api_headers import get_headers
-from trxo_lib.constants import (
+from trxo_lib.config.constants import (
     DEFAULT_REALM,
     IGNORED_SCRIPT_IDS,
     IGNORED_SCRIPT_NAMES,

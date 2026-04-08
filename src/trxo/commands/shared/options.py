@@ -6,7 +6,7 @@ from typing import Annotated, Optional
 
 import typer
 
-from trxo_lib.constants import DEFAULT_REALM
+from trxo_lib.config.constants import DEFAULT_REALM
 
 # Core Options
 RealmOpt = Annotated[

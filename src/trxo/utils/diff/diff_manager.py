@@ -8,7 +8,7 @@ coordinating data fetching, comparison, and reporting.
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from trxo_lib.constants import DEFAULT_REALM
+from trxo_lib.config.constants import DEFAULT_REALM
 from trxo.utils.console import error, info
 from trxo_lib.state.diff.data_fetcher import DataFetcher, get_command_api_endpoint
 from trxo_lib.state.diff.diff_engine import DiffEngine, DiffResult

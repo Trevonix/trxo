@@ -2,7 +2,7 @@ import pytest
 
 from trxo_lib.exports.domains.journeys import JourneyExporter
 from trxo.commands.export.journeys import create_journeys_export_command
-from trxo.constants import DEFAULT_REALM
+from trxo_lib.config.constants import DEFAULT_REALM
 
 
 @pytest.fixture

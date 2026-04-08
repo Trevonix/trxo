@@ -7,7 +7,7 @@ from typing import Optional
 
 from git import Repo
 
-from trxo_lib.constants import DEFAULT_EXPORT_BRANCH
+from trxo_lib.config.constants import DEFAULT_EXPORT_BRANCH
 from trxo_lib.logging import get_logger
 from trxo.utils.console import error, info, warning
 from trxo_lib.git.branches import (

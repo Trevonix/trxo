@@ -28,7 +28,7 @@ from trxo.commands.shared.options import (
     SyncOpt,
     WithDepsOpt,
 )
-from trxo_lib.constants import DEFAULT_REALM
+from trxo_lib.config.constants import DEFAULT_REALM
 from trxo_lib.imports.service import ImportService
 
 

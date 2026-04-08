@@ -1,7 +1,9 @@
+import pytest
 from trxo.commands.export.scripts import create_scripts_export_command
 from trxo_lib.exports.domains.scripts import decode_script_response
 from trxo_lib.exports.service import ExportService
-from trxo_lib.constants import DEFAULT_REALM
+from trxo_lib.config.constants import DEFAULT_REALM
+from trxo_lib.exceptions import TrxoAbort
 
 
 def test_decode_script_response_decodes_base64(mocker):
@@ -41,11 +43,7 @@ def test_scripts_export_happy_path(mocker):
 def test_scripts_export_view_columns_without_view(mocker):
     export_scripts = create_scripts_export_command()
 
-    mock_service = mocker.patch.object(ExportService, "export_scripts")
+    mocker.patch.object(ExportService, "export_scripts")
 
-    export_scripts(realm=DEFAULT_REALM, view=False, view_columns="_id,name")
-
-    mock_service.assert_called_once()
-
-    _, kwargs = mock_service.call_args
-    assert kwargs["view_columns"] == "_id,name"
+    with pytest.raises(TrxoAbort):
+        export_scripts(realm=DEFAULT_REALM, view=False, view_columns="_id,name")

@@ -12,7 +12,7 @@ from typing import Dict, List, Optional
 
 import typer
 
-from trxo_lib.constants import DEFAULT_REALM
+from trxo_lib.config.constants import DEFAULT_REALM
 from trxo_lib.config.config_store import ConfigStore
 from trxo.utils.console import error, info, success, warning
 

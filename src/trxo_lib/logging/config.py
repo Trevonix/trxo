@@ -12,7 +12,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-from trxo_lib.constants import LOG_FILE_NAME, LOG_RETENTION_DAYS, SENSITIVE_KEYS
+from trxo_lib.config.constants import LOG_FILE_NAME, LOG_RETENTION_DAYS, SENSITIVE_KEYS
 
 
 class LogLevel(Enum):
