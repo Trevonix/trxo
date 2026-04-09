@@ -106,8 +106,12 @@ class StatusChecker:
         aic_url = self.config.get("base_url")
 
         self.am_url = am_url.strip("/") if isinstance(am_url, str) and am_url else None
-        self.idm_url = idm_url.strip("/") if isinstance(idm_url, str) and idm_url else None
-        self.aic_url = aic_url.strip("/") if isinstance(aic_url, str) and aic_url else None
+        self.idm_url = (
+            idm_url.strip("/") if isinstance(idm_url, str) and idm_url else None
+        )
+        self.aic_url = (
+            aic_url.strip("/") if isinstance(aic_url, str) and aic_url else None
+        )
 
         self.auth_mode = []
         if self.am_url:
@@ -179,14 +183,18 @@ class StatusChecker:
         password = self.config.get("onprem_password")
 
         if not username:
-            self.add_result("AM authentication successful", False, "Missing On-Prem AM username")
+            self.add_result(
+                "AM authentication successful", False, "Missing On-Prem AM username"
+            )
             return
 
         if not password and not self.no_prompt:
             password = typer.prompt("On-Prem AM password", hide_input=True)
 
         if not password:
-            self.add_result("AM authentication successful", False, "Missing On-Prem AM password")
+            self.add_result(
+                "AM authentication successful", False, "Missing On-Prem AM password"
+            )
             return
 
         try:
@@ -196,7 +204,11 @@ class StatusChecker:
             self.add_result(
                 "AM authentication successful",
                 bool(self.am_token),
-                "On-Prem AM credentials validated" if self.am_token else "No token returned",
+                (
+                    "On-Prem AM credentials validated"
+                    if self.am_token
+                    else "No token returned"
+                ),
             )
         except Exception as e:
             self.add_result("AM authentication successful", False, str(e))
@@ -220,7 +232,9 @@ class StatusChecker:
                 resp = client.get(endpoint, headers=headers)
                 resp.raise_for_status()
         except Exception:
-            self.add_result("AM token valid", False, f"Failed to validate against {self.am_url}")
+            self.add_result(
+                "AM token valid", False, f"Failed to validate against {self.am_url}"
+            )
 
     def perform_idm_checks(self) -> None:
         self.check_idm_url()
@@ -301,7 +315,9 @@ class StatusChecker:
             with httpx.Client(timeout=15.0) as client:
                 resp = client.get(endpoint, headers=headers)
                 resp.raise_for_status()
-            self.add_result("IDM access successful", True, "On-Prem IDM credentials validated")
+            self.add_result(
+                "IDM access successful", True, "On-Prem IDM credentials validated"
+            )
         except Exception as e:
             self.add_result("IDM access successful", False, str(e))
 
@@ -357,7 +373,9 @@ class StatusChecker:
                 resp = client.get(endpoint, headers=headers)
                 resp.raise_for_status()
         except Exception:
-            self.add_result("AIC token valid", False, f"Failed to validate against {self.aic_url}")
+            self.add_result(
+                "AIC token valid", False, f"Failed to validate against {self.aic_url}"
+            )
 
     def display(self) -> None:
         summary = (
@@ -373,9 +391,7 @@ class StatusChecker:
         table.columns[2].style = "white"
 
         for result in self.results:
-            status = (
-                "[green]✔ PASS[/green]" if result.success else "[red]✘ FAIL[/red]"
-            )
+            status = "[green]✔ PASS[/green]" if result.success else "[red]✘ FAIL[/red]"
             table.add_row(result.name, status, result.detail or "")
 
         console.print(table)
@@ -403,7 +419,9 @@ class StatusChecker:
         if "idm url" in normalized:
             return "IDM URL unreachable: Verify IDM base URL and server running"
         if "idm access" in normalized:
-            return "IDM access unsuccessful: Check credentials or run 'trxo config setup'"
+            return (
+                "IDM access unsuccessful: Check credentials or run 'trxo config setup'"
+            )
         if "aic url" in normalized:
             return "AIC URL unreachable: Verify AIC base URL and server running"
         if "aic authentication" in normalized:

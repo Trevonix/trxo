@@ -108,8 +108,19 @@ def test_fetch_script_data_forbidden_raises_in_stop_mode(mocker):
 def test_export_oauth_happy_path(mocker):
     export_oauth = create_oauth_export_command()
 
-    mock_exporter = mocker.Mock(spec=OAuthExporter)
+    mock_exporter = mocker.Mock()
+    mock_exporter.get_current_auth.return_value = ("test_token", "https://base.url")
+    mock_exporter.build_auth_headers.return_value = {"Authorization": "Bearer test"}
+    mock_exporter._construct_api_url.return_value = "https://base.url/test"
+    mock_exporter.make_http_request.return_value.json.return_value = {"result": []}
+    mock_exporter.extract_script_ids.return_value = set()
+    mock_exporter.fetch_oauth_client_data.return_value = None
+    mock_exporter._get_storage_mode.return_value = "git"
+    mock_exporter._handle_view_mode = mocker.Mock()
+    mock_exporter.save_response.return_value = None
+
     mocker.patch("trxo.commands.export.oauth.OAuthExporter", return_value=mock_exporter)
+    mocker.patch("trxo.commands.export.oauth.get_headers", return_value={})
 
     export_oauth(
         realm="gamma",

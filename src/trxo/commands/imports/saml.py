@@ -906,9 +906,7 @@ def create_saml_import_command():
                 # In continue mode, only fail the command if *everything* failed.
                 if not continue_on_error or importer.successful_updates == 0:
                     raise typer.Exit(1)
-                warning(
-                    "Continuing despite errors (--continue-on-error enabled)."
-                )
+                warning("Continuing despite errors (--continue-on-error enabled).")
                 return
 
         except Exception as e:
