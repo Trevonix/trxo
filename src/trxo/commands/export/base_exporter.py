@@ -61,6 +61,7 @@ class BaseExporter(BaseCommand):
         no_version: bool = False,
         branch: Optional[str] = None,
         commit_message: Optional[str] = None,
+        continue_on_error: bool = False,
         **kwargs,
     ) -> None:
         """Export data with authentication and save to file
@@ -93,6 +94,7 @@ class BaseExporter(BaseCommand):
         """
         self.logger.info(f"Starting export operation: {command_name}")
         try:
+            self.continue_on_error = continue_on_error
             # Determine product type from endpoint for auth context and headers
             product = "idm" if "/openidm/" in api_endpoint else "am"
             self.product = product
@@ -210,7 +212,9 @@ class BaseExporter(BaseCommand):
         except Exception as e:
             self.logger.error(f"Export failed for {command_name}: {str(e)}")
             error(f"Export failed: {str(e)}")
-            raise typer.Exit(1)
+            if not continue_on_error:
+                raise typer.Exit(1)
+            return
         finally:
             self.cleanup()
 

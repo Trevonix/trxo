@@ -15,6 +15,7 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     CommitMessageOpt,
+    ContinueOnErrorOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
     IdmUsernameOpt,
@@ -91,11 +92,15 @@ def services_response_filter(data, *, exporter, scope, realm, headers):
                 ]
 
             except Exception:
+                if not exporter.continue_on_error:
+                    raise
                 complete_service["nextDescendents"] = []
 
             complete_services.append(complete_service)
         except Exception as e:
             warning(f"Failed to fetch complete config for service '{service_id}': {e}")
+            if not exporter.continue_on_error:
+                raise
             complete_services.append(service_summary)
 
     return {**data, "result": complete_services}
@@ -197,6 +202,7 @@ def create_services_export_command():
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         exporter = ServicesExporter()
 
@@ -238,6 +244,7 @@ def create_services_export_command():
             no_version=no_version,
             branch=branch,
             commit_message=commit,
+                continue_on_error=continue_on_error,
         )
 
     return export_services

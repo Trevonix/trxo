@@ -60,6 +60,7 @@ class BaseImporter(BaseCommand):
         branch: Optional[str] = None,
         diff: bool = False,
         rollback: bool = False,
+        continue_on_error: bool = False,
         sync: bool = False,
         cherry_pick: Optional[str] = None,
         **kwargs,
@@ -153,6 +154,7 @@ class BaseImporter(BaseCommand):
                 api_base_url,
                 rollback_manager=rollback_manager,
                 rollback_on_failure=rollback,
+                continue_on_error=continue_on_error,
             )
 
             # Handle sync deletions if sync mode enabled
@@ -192,6 +194,7 @@ class BaseImporter(BaseCommand):
         base_url: str,
         rollback_manager: Optional[object] = None,
         rollback_on_failure: bool = False,
+        continue_on_error: bool = False,
     ) -> None:
         """Process all items and track success/failure"""
         item_type = self.get_item_type()
@@ -201,6 +204,7 @@ class BaseImporter(BaseCommand):
 
         self.successful_updates = 0
         self.failed_updates = 0
+        self.continue_on_error = continue_on_error
 
         for item in items:
             item_id = self._get_item_identifier(item)
@@ -230,11 +234,13 @@ class BaseImporter(BaseCommand):
                 else:
                     self.failed_updates += 1
 
-                    # On failure trigger rollback if requested
                     if rollback_on_failure and rollback_manager:
                         self._execute_rollback_and_exit(
                             rollback_manager, token, base_url, item_id
                         )
+                    # Stop on first failure in stop mode.
+                    if not continue_on_error:
+                        break
 
             except typer.Exit:
                 raise
@@ -251,6 +257,8 @@ class BaseImporter(BaseCommand):
                     self._print_rollback_report(report)
 
                     raise typer.Exit(1)
+                if not continue_on_error:
+                    break
 
     # ==================== Private Helper Methods ====================
 

@@ -51,6 +51,7 @@ def test_esv_variables_invalid_base64(mocker):
 
 def test_esv_secrets_create_on_404_success(mocker):
     imp = EsvSecretsImporter()
+    imp.continue_on_error = True
 
     get_resp = mocker.Mock()
     get_resp.status_code = 404
@@ -65,6 +66,26 @@ def test_esv_secrets_create_on_404_success(mocker):
     }
 
     assert imp.update_item(data, "t", "http://x") is True
+
+
+def test_esv_secrets_create_on_404_fails_in_stop_mode(mocker):
+    imp = EsvSecretsImporter()
+    imp.continue_on_error = False
+
+    get_resp = mocker.Mock()
+    get_resp.status_code = 404
+
+    imp.make_http_request = mocker.Mock(return_value=get_resp)
+    mocker.patch("trxo.commands.imports.esv.error")
+
+    data = {
+        "_id": "s1",
+        "valueBase64": "dGVzdA==",
+        "encoding": "generic",
+    }
+
+    assert imp.update_item(data, "t", "http://x") is False
+    assert imp.make_http_request.call_count == 1
 
 
 def test_esv_secrets_404_missing_value(mocker):

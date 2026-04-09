@@ -159,6 +159,84 @@ def test_process_items_failure_no_rollback(mocker):
     assert importer.failed_updates == 1
 
 
+def test_process_items_stop_on_first_false_return(mocker):
+    importer = DummyImporter()
+    mock_update = mocker.patch.object(
+        importer, "update_item", side_effect=[False, True]
+    )
+
+    importer.process_items(
+        [{"_id": "1"}, {"_id": "2"}], "t", "u", continue_on_error=False
+    )
+
+    assert importer.successful_updates == 0
+    assert importer.failed_updates == 1
+    assert mock_update.call_count == 1
+
+
+def test_process_items_continue_after_false_return(mocker):
+    importer = DummyImporter()
+    mock_update = mocker.patch.object(
+        importer, "update_item", side_effect=[False, True]
+    )
+
+    importer.process_items(
+        [{"_id": "1"}, {"_id": "2"}], "t", "u", continue_on_error=True
+    )
+
+    assert importer.successful_updates == 1
+    assert importer.failed_updates == 1
+    assert mock_update.call_count == 2
+
+
+def test_process_items_stop_on_first_exception(mocker):
+    importer = DummyImporter()
+    mock_update = mocker.patch.object(
+        importer, "update_item", side_effect=[RuntimeError("boom"), True]
+    )
+
+    importer.process_items(
+        [{"_id": "1"}, {"_id": "2"}], "t", "u", continue_on_error=False
+    )
+
+    assert importer.successful_updates == 0
+    assert importer.failed_updates == 1
+    assert mock_update.call_count == 1
+
+
+def test_process_items_continue_after_exception(mocker):
+    importer = DummyImporter()
+    mock_update = mocker.patch.object(
+        importer, "update_item", side_effect=[RuntimeError("boom"), True]
+    )
+
+    importer.process_items(
+        [{"_id": "1"}, {"_id": "2"}], "t", "u", continue_on_error=True
+    )
+
+    assert importer.successful_updates == 1
+    assert importer.failed_updates == 1
+    assert mock_update.call_count == 2
+
+
+def test_import_from_file_passes_continue_on_error(mocker, tmp_path):
+    importer = DummyImporter()
+    data_file = tmp_path / "data.json"
+    data_file.write_text(json.dumps([{"_id": "1"}]))
+
+    mocker.patch.object(importer, "initialize_auth", return_value=("t", "url"))
+    mocker.patch.object(importer, "_get_storage_mode", return_value="local")
+    mocker.patch.object(importer, "load_data_from_file", return_value=[{"_id": "1"}])
+    mocker.patch.object(importer, "validate_import_hash", return_value=True)
+    mocker.patch.object(importer, "process_items")
+    mocker.patch.object(importer, "print_summary")
+    mocker.patch.object(importer, "cleanup")
+
+    importer.import_from_file(file_path=str(data_file), continue_on_error=True)
+
+    assert importer.process_items.call_args.kwargs["continue_on_error"] is True
+
+
 def test_process_items_failure_with_rollback(mocker):
     importer = DummyImporter()
     rollback_mgr = mocker.Mock()

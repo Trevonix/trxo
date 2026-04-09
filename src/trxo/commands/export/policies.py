@@ -14,6 +14,7 @@ from trxo.commands.shared.options import (
     BranchOpt,
     CommitMessageOpt,
     GlobalOpt,
+    ContinueOnErrorOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
     IdmUsernameOpt,
@@ -140,6 +141,7 @@ def create_policies_export_command():
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Export policies configuration from specified realm"""
         exporter = PoliciesExporter(realm=realm)
@@ -175,6 +177,7 @@ def create_policies_export_command():
             no_version=no_version,
             branch=branch,
             commit_message=commit,
+            continue_on_error=continue_on_error,
         )
 
     return export_policies

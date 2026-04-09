@@ -17,6 +17,7 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     CherryPickOpt,
+    ContinueOnErrorOpt,
     DiffOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
@@ -247,6 +248,7 @@ class OAuthImporter(BaseImporter):
         base_url: str,
         rollback_manager: Optional[object] = None,
         rollback_on_failure: bool = False,
+        continue_on_error: bool = False,
     ) -> None:
 
         # Process scripts first (scripts intentionally not rolled back)
@@ -263,6 +265,7 @@ class OAuthImporter(BaseImporter):
                 base_url,
                 rollback_manager=rollback_manager,
                 rollback_on_failure=rollback_on_failure,
+                continue_on_error=continue_on_error,
             )
         if rollback_manager and isinstance(rollback_manager.baseline_snapshot, dict):
             if "data" in rollback_manager.baseline_snapshot:
@@ -281,6 +284,7 @@ class OAuthImporter(BaseImporter):
             base_url,
             rollback_manager=rollback_manager,
             rollback_on_failure=rollback_on_failure,
+            continue_on_error=continue_on_error,
         )
 
     def update_item(self, item_data: Dict[str, Any], token: str, base_url: str) -> bool:
@@ -385,7 +389,8 @@ class OAuthImporter(BaseImporter):
                 response = self.make_http_request(url, "PUT", headers, payload)
                 if hasattr(response, "status_code") and response.status_code >= 400:
                     raise Exception(
-                        "Failed to process OAuth2 Provider: " f"{response.status_code}"
+                        "Failed to process OAuth2 Provider: "
+                        f"{response.status_code}"
                     )
                 info("Successfully processed OAuth2 Provider configuration")
                 return True
@@ -430,6 +435,7 @@ def create_oauth_import_command():
         file: InputFileOpt = None,
         force_import: ForceImportOpt = False,
         rollback: RollbackOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
         branch: BranchOpt = None,
         jwk_path: JwkPathOpt = None,
         sa_id: SaIdOpt = None,
@@ -466,6 +472,7 @@ def create_oauth_import_command():
             branch=branch,
             diff=diff,
             rollback=rollback,
+            continue_on_error=continue_on_error,
             sync=sync,
             cherry_pick=cherry_pick,
         )

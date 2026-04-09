@@ -16,6 +16,7 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     CherryPickOpt,
+    ContinueOnErrorOpt,
     DiffOpt,
     ForceImportOpt,
     GlobalOpt,
@@ -272,6 +273,7 @@ def create_policies_import_command():
         sync: SyncOpt = False,
         rollback: RollbackOpt = False,
         cherry_pick: CherryPickOpt = None,
+        continue_on_error: ContinueOnErrorOpt = False,
         branch: BranchOpt = None,
         realm: RealmOpt = DEFAULT_REALM,
         src_realm: SrcRealmOpt = None,
@@ -304,6 +306,7 @@ def create_policies_import_command():
             rollback=rollback,
             cherry_pick=cherry_pick,
             global_policy=global_policy,
+            continue_on_error=continue_on_error,
         )
 
     return import_policies

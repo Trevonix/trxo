@@ -16,6 +16,7 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     CommitMessageOpt,
+    ContinueOnErrorOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
     IdmUsernameOpt,
@@ -210,22 +211,17 @@ def process_saml_response(exporter_instance: BaseExporter, realm: str):
 
                     except Exception as e:
                         error(f"Failed to fetch provider {provider_id}: {str(e)}")
+                        if not exporter_instance.continue_on_error:
+                            raise
                         continue
 
             else:
                 warning("No SAML providers found in the response")
 
         except Exception as e:
-            error_msg = str(e)
-            if "500" in error_msg:
-                error(
-                    f"✖ Failed to fetch SAML providers list: {error_msg}\n"
-                    "This often indicates a corrupted SAML entity configuration on the server "
-                    "(e.g., invalid script references or syntax errors in an existing entity).\n"
-                    "Consider checking the server logs or manually fixing invalid entities."
-                )
-            else:
-                error(f"✖ Failed to fetch SAML providers list: {error_msg}")
+            error(f"Failed to fetch SAML providers list: {str(e)}")
+            if not exporter_instance.continue_on_error:
+                raise
 
         # Step 4: Get SAML metadata for each provider individually
         if entity_ids_list:
@@ -258,6 +254,8 @@ def process_saml_response(exporter_instance: BaseExporter, realm: str):
                         f"Failed to fetch metadata for entity '{entity_id}': "
                         f"{str(e)}"
                     )
+                    if not exporter_instance.continue_on_error:
+                        raise
         else:
             info("No SAML providers found, skipping metadata export")
 
@@ -387,6 +385,8 @@ def fetch_scripts(
 
         except Exception as e:
             warning(f"Failed to fetch script {script_id}: {str(e)}")
+            if not exporter_instance.continue_on_error:
+                raise
 
 
 def create_saml_export_command():
@@ -414,6 +414,7 @@ def create_saml_export_command():
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """
         Export SAML configuration with complete data including hosted/remote
@@ -453,6 +454,7 @@ def create_saml_export_command():
             branch=branch,
             commit_message=commit,
             response_filter=process_saml_response(exporter, realm),
+            continue_on_error=continue_on_error,
         )
 
     return export_saml

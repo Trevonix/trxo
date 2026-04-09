@@ -120,6 +120,7 @@ def test_upsert_remote_entity_failure(mocker):
 
 def test_upsert_hosted_create_on_404(mocker):
     s = SamlImporter()
+    s.continue_on_error = True
 
     resp = mocker.Mock()
     resp.status_code = 404
@@ -134,6 +135,26 @@ def test_upsert_hosted_create_on_404(mocker):
 
     data = {"_id": "h1", "entityId": "e1"}
     assert s._upsert_entity(data, "hosted", "t", "http://x") is True
+
+
+def test_upsert_hosted_404_fails_in_stop_mode(mocker):
+    s = SamlImporter()
+    s.continue_on_error = False
+
+    resp = mocker.Mock()
+    resp.status_code = 404
+
+    client_ctx = mocker.MagicMock()
+    client_ctx.__enter__.return_value = client_ctx
+    client_ctx.put.return_value = resp
+
+    mocker.patch.object(httpx, "Client", return_value=client_ctx)
+    s.make_http_request = mocker.Mock()
+    mocker.patch("trxo.commands.imports.saml.error")
+
+    data = {"_id": "h1", "entityId": "e1"}
+    assert s._upsert_entity(data, "hosted", "t", "http://x") is False
+    s.make_http_request.assert_not_called()
 
 
 def test_upsert_hosted_update_success(mocker):

@@ -104,6 +104,34 @@ def test_export_data_non_200_response(exporter):
     )
 
 
+def test_export_data_exception_raises_exit_by_default(exporter):
+    exporter.make_http_request.side_effect = RuntimeError("boom")
+
+    with pytest.raises(typer.Exit) as exc:
+        exporter.export_data(
+            command_name="test",
+            api_endpoint="/endpoint",
+            headers={},
+            view=False,
+        )
+
+    assert exc.value.exit_code == 1
+
+
+def test_export_data_exception_swallowed_when_continue_on_error(exporter):
+    exporter.make_http_request.side_effect = RuntimeError("boom")
+
+    exporter.export_data(
+        command_name="test",
+        api_endpoint="/endpoint",
+        headers={},
+        view=False,
+        continue_on_error=True,
+    )
+
+    exporter.cleanup.assert_called()
+
+
 def test_handle_pagination_success(exporter, mocker):
     mocker.patch(
         "trxo.commands.export.base_exporter.PaginationHandler.is_paginated",

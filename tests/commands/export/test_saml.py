@@ -23,6 +23,7 @@ class DummyResponse:
 @pytest.fixture
 def mock_exporter(mocker):
     exporter = mocker.Mock()
+    exporter.continue_on_error = False
     exporter.build_auth_headers.return_value = {"Authorization": "Bearer token"}
     exporter._construct_api_url.side_effect = lambda base, ep: f"{base}{ep}"
     exporter.get_current_auth.return_value = ("token", "https://api.example.com")
@@ -164,6 +165,7 @@ def test_process_saml_response_no_providers(mock_exporter, mocker):
 
 
 def test_process_saml_response_provider_fetch_error(mock_exporter, mocker):
+    mock_exporter.continue_on_error = True
     mock_exporter.make_http_request.side_effect = Exception("boom")
 
     err_spy = mocker.patch("trxo.commands.export.saml.error")
@@ -173,6 +175,15 @@ def test_process_saml_response_provider_fetch_error(mock_exporter, mocker):
 
     assert result == {"hosted": [], "remote": [], "metadata": [], "scripts": []}
     err_spy.assert_called_once()
+
+
+def test_process_saml_response_provider_fetch_error_stop_mode_raises(mock_exporter):
+    mock_exporter.continue_on_error = False
+    mock_exporter.make_http_request.side_effect = Exception("boom")
+
+    filter_fn = process_saml_response(mock_exporter, "alpha")
+    with pytest.raises(Exception, match="boom"):
+        filter_fn({})
 
 
 def test_create_saml_export_command_wires_response_filter(mocker):

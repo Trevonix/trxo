@@ -121,6 +121,27 @@ WithDepsOpt = Annotated[
     ),
 ]
 
+ContinueOnErrorOpt = Annotated[
+    bool,
+    typer.Option(
+        ...,
+        "--continue-on-error/--stop-on-error",
+        help="Stop on the first error (default) or continue processing after failures",
+    ),
+]
+
+WithDepsOpt = Annotated[
+    bool,
+    typer.Option(
+        ...,
+        "--with-deps",
+        help=(
+            "Include AM OAuth2 clients (ssoEntities.oidcId) and their script dependencies "
+            "in export/import (applications only)"
+        ),
+    ),
+]
+
 SyncOpt = Annotated[
     bool,
     typer.Option(

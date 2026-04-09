@@ -16,6 +16,7 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     CherryPickOpt,
+    ContinueOnErrorOpt,
     DiffOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
@@ -447,6 +448,100 @@ class MappingsImporter(BaseImporter):
             sync=sync,
             **kwargs,
         )
+        if storage_mode == "git" or file_path is None:
+            # Use parent class Git mode logic
+            super().import_from_file(
+                file_path=file_path,
+                realm="root",
+                src_realm=None,
+                jwk_path=jwk_path,
+                sa_id=sa_id,
+                base_url=base_url,
+                project_name=project_name,
+                auth_mode=auth_mode,
+                onprem_username=onprem_username,
+                onprem_password=onprem_password,
+                onprem_realm=onprem_realm,
+                idm_base_url=idm_base_url,
+                idm_username=idm_username,
+                idm_password=idm_password,
+                am_base_url=am_base_url,
+                force_import=force_import,
+                branch=branch,
+                diff=diff,
+                cherry_pick=cherry_pick,
+                **kwargs,
+            )
+            return
+
+        # Local mode - use custom logic for flexible format support
+        try:
+            continue_on_error = bool(kwargs.get("continue_on_error", False))
+            self.continue_on_error = continue_on_error
+
+            # Initialize authentication
+            token, api_base_url = self.initialize_auth(
+                jwk_path=jwk_path,
+                sa_id=sa_id,
+                base_url=base_url,
+                project_name=project_name,
+                auth_mode=auth_mode,
+                onprem_username=onprem_username,
+                onprem_password=onprem_password,
+                onprem_realm=onprem_realm,
+                idm_base_url=idm_base_url,
+                idm_username=idm_username,
+                idm_password=idm_password,
+                am_base_url=am_base_url,
+            )
+
+            # Load and parse file with flexible format support
+            data = self._load_mappings_file(file_path)
+            # Handle different input formats
+            mappings_to_process = self._normalize_mappings(data)
+
+            if not mappings_to_process:
+                error("No sync mappings found in file")
+                return
+
+            info_msg = "from normalized input"
+
+            if cherry_pick:
+                mappings_to_process = self.cherry_pick_filter.apply_filter(
+                    mappings_to_process, cherry_pick
+                )
+                if not mappings_to_process:
+                    return
+
+            if info_msg == "single sync mapping":
+                info("Processing single sync mapping")
+            else:
+                info(f"Processing {len(mappings_to_process)} sync mappings {info_msg}")
+
+            # Process each mapping
+            success_count = 0
+            failed_count = 0
+            for mapping in mappings_to_process:
+                if self.update_item(mapping, token, api_base_url):
+                    success_count += 1
+                else:
+                    failed_count += 1
+                    if not continue_on_error:
+                        break
+
+            info(
+                f"Successfully processed {success_count}/{len(mappings_to_process)} sync mappings"
+            )
+
+            self.successful_updates = success_count
+            self.failed_updates = failed_count
+            if failed_count > 0 and (
+                (not continue_on_error) or self.successful_updates == 0
+            ):
+                raise typer.Exit(1)
+
+        except Exception as e:
+            error(f"Import failed: {str(e)}")
 
 
 def create_mappings_import_command():
@@ -472,6 +567,7 @@ def create_mappings_import_command():
         branch: BranchOpt = None,
         sync: SyncOpt = False,
         rollback: RollbackOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Import sync mappings from JSON file (local mode) or Git repository (Git mode).
 
@@ -498,6 +594,7 @@ def create_mappings_import_command():
             cherry_pick=cherry_pick,
             rollback=rollback,
             sync=sync,
+            continue_on_error=continue_on_error,
         )
 
     return import_mappings
