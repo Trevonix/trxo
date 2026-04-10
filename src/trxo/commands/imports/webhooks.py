@@ -34,6 +34,7 @@ from trxo.commands.shared.options import (
     SaIdOpt,
     SrcRealmOpt,
     SyncOpt,
+    ContinueOnErrorOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.constants import DEFAULT_REALM
@@ -136,6 +137,7 @@ def create_webhooks_import_command():
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
         rollback: RollbackOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Import webhooks from JSON file to specified realm"""
         importer = WebhooksImporter(realm=realm)
@@ -159,6 +161,7 @@ def create_webhooks_import_command():
             branch=branch,
             diff=diff,
             rollback=rollback,
+            continue_on_error=continue_on_error,
             sync=sync,
         )
 

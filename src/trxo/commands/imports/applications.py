@@ -36,6 +36,7 @@ from trxo.commands.shared.options import (
     SrcRealmOpt,
     SyncOpt,
     WithDepsOpt,
+    ContinueOnErrorOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.constants import DEFAULT_REALM
@@ -211,6 +212,7 @@ class ApplicationsImporter(BaseImporter):
         base_url: str,
         rollback_manager: Optional[object] = None,
         rollback_on_failure: bool = False,
+        continue_on_error: bool = False,
     ) -> None:
         extra_ok = 0
         extra_fail = 0
@@ -228,6 +230,7 @@ class ApplicationsImporter(BaseImporter):
                 base_url,
                 rollback_manager=rollback_manager,
                 rollback_on_failure=rollback_on_failure,
+                continue_on_error=continue_on_error,
             )
             extra_ok += script_imp.successful_updates
             extra_fail += script_imp.failed_updates
@@ -254,7 +257,8 @@ class ApplicationsImporter(BaseImporter):
                         self._execute_rollback_and_exit(
                             rollback_manager, token, base_url, pid
                         )
-                    raise typer.Exit(1)
+                    if not continue_on_error:
+                        raise typer.Exit(1)
 
         if self.include_am_dependencies and self._pending_clients:
             info(
@@ -278,7 +282,8 @@ class ApplicationsImporter(BaseImporter):
                         self._execute_rollback_and_exit(
                             rollback_manager, token, base_url, cid
                         )
-                    raise typer.Exit(1)
+                    if not continue_on_error:
+                        raise typer.Exit(1)
 
         super().process_items(
             items,
@@ -286,6 +291,7 @@ class ApplicationsImporter(BaseImporter):
             base_url,
             rollback_manager=rollback_manager,
             rollback_on_failure=rollback_on_failure,
+            continue_on_error=continue_on_error,
         )
         self.successful_updates += extra_ok
         self.failed_updates += extra_fail
@@ -353,6 +359,7 @@ def create_applications_import_command():
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
         with_deps: WithDepsOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Import applications from file or Git repository."""
         importer = ApplicationsImporter(realm=realm)
@@ -377,6 +384,7 @@ def create_applications_import_command():
             branch=branch,
             diff=diff,
             rollback=rollback,
+            continue_on_error=continue_on_error,
             cherry_pick=cherry_pick,
             sync=sync,
         )

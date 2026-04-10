@@ -98,6 +98,29 @@ def test_process_items_calls_script_importer_first(mocker):
     assert importer.script_importer is not None
 
 
+def test_process_items_forwards_continue_on_error_to_script_importer(mocker):
+    importer = OAuthImporter(realm=DEFAULT_REALM)
+    importer._pending_scripts = [{"_id": "s1"}]
+
+    script_process = mocker.patch.object(
+        importer.script_importer, "process_items", return_value=None
+    )
+    mocker.patch(
+        "trxo.commands.imports.oauth.BaseImporter.process_items",
+        return_value=None,
+    )
+
+    importer.process_items(
+        items=[{"_id": "c1"}],
+        token="token",
+        base_url="https://base",
+        continue_on_error=True,
+    )
+
+    script_process.assert_called_once()
+    assert script_process.call_args.kwargs.get("continue_on_error") is True
+
+
 def test_update_item_happy_path(mocker):
     importer = OAuthImporter(realm=DEFAULT_REALM)
 

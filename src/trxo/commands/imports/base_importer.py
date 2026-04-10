@@ -60,6 +60,7 @@ class BaseImporter(BaseCommand):
         branch: Optional[str] = None,
         diff: bool = False,
         rollback: bool = False,
+        continue_on_error: bool = False,
         sync: bool = False,
         cherry_pick: Optional[str] = None,
         **kwargs,
@@ -153,6 +154,7 @@ class BaseImporter(BaseCommand):
                 api_base_url,
                 rollback_manager=rollback_manager,
                 rollback_on_failure=rollback,
+                continue_on_error=continue_on_error,
             )
 
             # Handle sync deletions if sync mode enabled
@@ -192,6 +194,7 @@ class BaseImporter(BaseCommand):
         base_url: str,
         rollback_manager: Optional[object] = None,
         rollback_on_failure: bool = False,
+        continue_on_error: bool = False,
     ) -> None:
         """Process all items and track success/failure"""
         item_type = self.get_item_type()
@@ -235,6 +238,11 @@ class BaseImporter(BaseCommand):
                         self._execute_rollback_and_exit(
                             rollback_manager, token, base_url, item_id
                         )
+                    if not continue_on_error:
+                        error(
+                            f"Stopping import due to failed item: {item_id or '<unknown>'}"
+                        )
+                        raise typer.Exit(1)
 
             except typer.Exit:
                 raise
@@ -250,6 +258,11 @@ class BaseImporter(BaseCommand):
                     report = rollback_manager.execute_rollback(token, base_url)
                     self._print_rollback_report(report)
 
+                    raise typer.Exit(1)
+                if not continue_on_error:
+                    error(
+                        f"Stopping import due to error on item: {item_id or '<unknown>'}"
+                    )
                     raise typer.Exit(1)
 
     # ==================== Private Helper Methods ====================

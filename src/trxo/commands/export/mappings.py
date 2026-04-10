@@ -25,6 +25,7 @@ from trxo.commands.shared.options import (
     OutputFileOpt,
     ProjectNameOpt,
     SaIdOpt,
+    ContinueOnErrorOpt,
     VersionOpt,
     ViewColumnsOpt,
     ViewOpt,
@@ -58,6 +59,7 @@ def create_mappings_export_command():
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Export sync mappings configuration"""
         exporter = BaseExporter()
@@ -84,6 +86,7 @@ def create_mappings_export_command():
             idm_username=idm_username,
             idm_password=idm_password,
             am_base_url=am_base_url,
+            continue_on_error=continue_on_error,
             version=version,
             no_version=no_version,
             branch=branch,

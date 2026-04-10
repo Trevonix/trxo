@@ -35,6 +35,7 @@ from trxo.commands.shared.options import (
     SaIdOpt,
     SrcRealmOpt,
     SyncOpt,
+    ContinueOnErrorOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.constants import DEFAULT_REALM
@@ -170,6 +171,7 @@ class SamlImporter(BaseImporter):
         token: str,
         base_url: str,
         cherry_pick_ids: Optional[str] = None,
+        continue_on_error: bool = False,
     ) -> bool:
         """
         Import SAML data including scripts, metadata, and entities.
@@ -203,7 +205,11 @@ class SamlImporter(BaseImporter):
                 scripts_data, token, base_url, selected_entity_ids, data
             )
             if not script_success:
-                warning("Some scripts failed to import, but continuing...")
+                if continue_on_error:
+                    warning("Some scripts failed to import, but continuing...")
+                else:
+                    error("Script import failed; stopping due to --stop-on-error")
+                    return False
 
         # Step 2: Import remote metadata (only for remote entities)
         metadata_data = data.get("metadata", [])
@@ -218,7 +224,11 @@ class SamlImporter(BaseImporter):
                 metadata_data, remote_entities, token, base_url, selected_entity_ids
             )
             if not metadata_success:
-                warning("Some metadata imports failed, but continuing...")
+                if continue_on_error:
+                    warning("Some metadata imports failed, but continuing...")
+                else:
+                    error("Metadata import failed; stopping due to --stop-on-error")
+                    return False
 
         # Step 3: Upsert hosted entities
         hosted_entities = data.get("hosted", [])
@@ -235,6 +245,9 @@ class SamlImporter(BaseImporter):
                     if hasattr(self, "rollback_manager") and self.rollback_manager:
                         error("Failure detected. Stopping import for rollback.")
                         return False
+                    if not continue_on_error:
+                        error("Entity import failed; stopping due to --stop-on-error")
+                        return False
 
         # Step 4: Upsert remote entities
         if remote_entities:
@@ -247,6 +260,9 @@ class SamlImporter(BaseImporter):
                     success_count += 1
                 else:
                     error_count += 1
+                    if not continue_on_error:
+                        error("Entity import failed; stopping due to --stop-on-error")
+                        return False
 
         # Print summary
         total = success_count + error_count
@@ -693,6 +709,7 @@ def create_saml_import_command():
         branch: BranchOpt = None,
         cherry_pick: CherryPickOpt = None,
         rollback: RollbackOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
         realm: RealmOpt = DEFAULT_REALM,
         src_realm: SrcRealmOpt = None,
         am_base_url: AmBaseUrlOpt = None,
@@ -789,6 +806,7 @@ def create_saml_import_command():
                 token=token,
                 base_url=api_base_url,
                 cherry_pick_ids=cherry_pick,
+                continue_on_error=continue_on_error,
             )
 
             if success:

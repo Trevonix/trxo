@@ -149,14 +149,25 @@ def test_process_items_success(mocker):
     assert importer.failed_updates == 0
 
 
-def test_process_items_failure_no_rollback(mocker):
+def test_process_items_failure_continue_on_error(mocker):
     importer = DummyImporter()
 
     mocker.patch.object(importer, "update_item", return_value=False)
 
-    importer.process_items([{"_id": "1"}], "t", "u")
+    importer.process_items(
+        [{"_id": "1"}], "t", "u", continue_on_error=True
+    )
 
     assert importer.failed_updates == 1
+
+
+def test_process_items_failure_stop_on_error_default(mocker):
+    importer = DummyImporter()
+
+    mocker.patch.object(importer, "update_item", return_value=False)
+
+    with pytest.raises(typer.Exit):
+        importer.process_items([{"_id": "1"}], "t", "u")
 
 
 def test_process_items_failure_with_rollback(mocker):
@@ -177,6 +188,59 @@ def test_process_items_failure_with_rollback(mocker):
             rollback_manager=rollback_mgr,
             rollback_on_failure=True,
         )
+
+
+def test_process_items_rollback_runs_before_continue_on_error_flag(mocker):
+    """Rollback path must run even when continue_on_error=True."""
+    importer = DummyImporter()
+    rollback_mgr = mocker.Mock()
+    rollback_mgr.baseline_snapshot = {}
+
+    mocker.patch.object(importer, "update_item", return_value=False)
+    rollback_mock = mocker.patch.object(
+        importer, "_execute_rollback_and_exit", side_effect=typer.Exit(1)
+    )
+
+    with pytest.raises(typer.Exit):
+        importer.process_items(
+            [{"_id": "1"}],
+            "t",
+            "u",
+            rollback_manager=rollback_mgr,
+            rollback_on_failure=True,
+            continue_on_error=True,
+        )
+
+    rollback_mock.assert_called_once()
+
+
+def test_process_items_exception_stop_on_error_default(mocker):
+    importer = DummyImporter()
+
+    mocker.patch.object(importer, "update_item", side_effect=RuntimeError("boom"))
+
+    with pytest.raises(typer.Exit):
+        importer.process_items([{"_id": "1"}], "t", "u")
+
+    assert importer.failed_updates == 1
+
+
+def test_process_items_exception_continue_on_error_second_item_succeeds(mocker):
+    importer = DummyImporter()
+
+    def _update(item, token, base_url):
+        if item.get("_id") == "1":
+            raise RuntimeError("boom")
+        return True
+
+    mocker.patch.object(importer, "update_item", side_effect=_update)
+
+    importer.process_items(
+        [{"_id": "1"}, {"_id": "2"}], "t", "u", continue_on_error=True
+    )
+
+    assert importer.failed_updates == 1
+    assert importer.successful_updates == 1
 
 
 def test_handle_sync_deletions_passthrough(mocker):

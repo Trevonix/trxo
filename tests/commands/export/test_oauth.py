@@ -47,13 +47,22 @@ def test_fetch_oauth_client_data_success(mocker):
     assert "_rev" not in data
 
 
-def test_fetch_oauth_client_data_error_returns_empty(mocker):
+def test_fetch_oauth_client_data_error_returns_empty_when_continue_on_error(mocker):
     exporter = OAuthExporter()
+    exporter.continue_on_error = True
     mocker.patch.object(exporter, "make_http_request", side_effect=Exception("boom"))
 
     data = exporter.fetch_oauth_client_data("client1", "token", "https://base")
 
     assert data == {}
+
+
+def test_fetch_oauth_client_data_error_raises_when_stop_on_error(mocker):
+    exporter = OAuthExporter()
+    mocker.patch.object(exporter, "make_http_request", side_effect=Exception("boom"))
+
+    with pytest.raises(Exception, match="boom"):
+        exporter.fetch_oauth_client_data("client1", "token", "https://base")
 
 
 def test_fetch_script_data_decodes_base64(mocker):
@@ -76,6 +85,32 @@ def test_fetch_script_data_forbidden_returns_empty(mocker):
     exporter = OAuthExporter()
     mocker.patch.object(
         exporter, "make_http_request", side_effect=Exception("403 Forbidden")
+    )
+
+    data = exporter.fetch_script_data("script1", "token", "https://base")
+
+    assert data == {}
+
+
+def test_fetch_script_data_not_found_raises_when_stop_on_error(mocker):
+    exporter = OAuthExporter()
+    mocker.patch.object(
+        exporter,
+        "make_http_request",
+        side_effect=Exception("404 - Script with UUID x could not be found"),
+    )
+
+    with pytest.raises(Exception, match="404"):
+        exporter.fetch_script_data("script1", "token", "https://base")
+
+
+def test_fetch_script_data_not_found_returns_empty_when_continue_on_error(mocker):
+    exporter = OAuthExporter()
+    exporter.continue_on_error = True
+    mocker.patch.object(
+        exporter,
+        "make_http_request",
+        side_effect=Exception("404 - Script with UUID x could not be found"),
     )
 
     data = exporter.fetch_script_data("script1", "token", "https://base")

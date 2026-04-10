@@ -7,6 +7,7 @@ from trxo.commands.imports.applications import (
     ApplicationsImporter,
     create_applications_import_command,
 )
+from trxo.commands.imports.base_importer import BaseImporter
 
 
 def test_applications_importer_required_fields():
@@ -136,6 +137,77 @@ def test_import_applications_custom_args(mocker):
     assert kwargs["onprem_password"] == "op"
     assert kwargs["onprem_realm"] == "or"
     assert kwargs["am_base_url"] == "am"
+
+
+def test_import_applications_passes_continue_on_error(mocker):
+    importer = mocker.Mock()
+    mocker.patch(
+        "trxo.commands.imports.applications.ApplicationsImporter",
+        return_value=importer,
+    )
+
+    import_applications = create_applications_import_command()
+    import_applications(continue_on_error=True)
+
+    kwargs = importer.import_from_file.call_args.kwargs
+    assert kwargs.get("continue_on_error") is True
+
+
+def test_applications_process_items_provider_failure_stops_by_default(mocker):
+    importer = ApplicationsImporter(realm="alpha")
+    importer.include_am_dependencies = True
+    importer._pending_providers = [{"_id": "prov1"}]
+    importer._pending_scripts = []
+    importer._pending_clients = []
+    importer.auth_mode = "service-account"
+
+    mock_oauth_inst = mocker.Mock()
+    mock_oauth_inst.update_provider = mocker.Mock(side_effect=RuntimeError("fail"))
+    mocker.patch(
+        "trxo.commands.imports.applications.OAuthImporter",
+        return_value=mock_oauth_inst,
+    )
+    mocker.patch("trxo.commands.imports.applications.info")
+    mocker.patch.object(BaseImporter, "process_items", return_value=None)
+
+    with pytest.raises(typer.Exit):
+        importer.process_items(
+            [{"_id": "app1"}],
+            "token",
+            "https://idm",
+            continue_on_error=False,
+        )
+
+    BaseImporter.process_items.assert_not_called()
+
+
+def test_applications_process_items_provider_failure_continues_when_enabled(mocker):
+    importer = ApplicationsImporter(realm="alpha")
+    importer.include_am_dependencies = True
+    importer._pending_providers = [{"_id": "prov1"}]
+    importer._pending_scripts = []
+    importer._pending_clients = []
+    importer.auth_mode = "service-account"
+
+    mock_oauth_inst = mocker.Mock()
+    mock_oauth_inst.update_provider = mocker.Mock(side_effect=RuntimeError("fail"))
+    mocker.patch(
+        "trxo.commands.imports.applications.OAuthImporter",
+        return_value=mock_oauth_inst,
+    )
+    mocker.patch("trxo.commands.imports.applications.info")
+    base_process = mocker.patch.object(BaseImporter, "process_items", return_value=None)
+
+    importer.process_items(
+        [{"_id": "app1"}],
+        "token",
+        "https://idm",
+        continue_on_error=True,
+    )
+
+    base_process.assert_called_once()
+    call_kw = base_process.call_args.kwargs
+    assert call_kw.get("continue_on_error") is True
 
 
 def test_applications_importer_load_data_with_deps(tmp_path):
