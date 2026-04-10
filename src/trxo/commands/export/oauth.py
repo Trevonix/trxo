@@ -27,6 +27,7 @@ from trxo.commands.shared.options import (
     ProjectNameOpt,
     RealmOpt,
     SaIdOpt,
+    ContinueOnErrorOpt,
     VersionOpt,
     ViewColumnsOpt,
     ViewOpt,
@@ -161,7 +162,9 @@ class OAuthExporter(BaseExporter):
                 return {}
 
             error(f"Failed to fetch script {script_id}: {str(e)}")
-            return {}
+            if getattr(self, "continue_on_error", False):
+                return {}
+            raise
 
     def fetch_oauth_client_data(
         self, client_id: str, token: str, base_url: str
@@ -181,7 +184,9 @@ class OAuthExporter(BaseExporter):
             return data
         except Exception as e:
             error(f"Failed to fetch OAuth client {client_id}: {str(e)}")
-            return {}
+            if getattr(self, "continue_on_error", False):
+                return {}
+            raise
 
     def _discover_provider_service_endpoints(
         self, token: str, base_url: str
@@ -240,7 +245,11 @@ class OAuthExporter(BaseExporter):
                 continue
 
         if last_error:
-            warning(f"Failed to fetch OAuth provider config: {last_error}")
+            if getattr(self, "continue_on_error", False):
+                warning(f"Failed to fetch OAuth provider config: {last_error}")
+            else:
+                error(f"Failed to fetch OAuth provider config: {last_error}")
+                raise RuntimeError(last_error) from None
         return {}
 
 
@@ -269,6 +278,7 @@ def create_oauth_export_command():
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Export OAuth2 clients configuration with script dependencies"""
         exporter = OAuthExporter(realm=realm)
@@ -302,6 +312,7 @@ def create_oauth_export_command():
             no_version=no_version,
             branch=branch,
             commit_message=commit,
+            continue_on_error=continue_on_error,
             response_filter=process_oauth_response(exporter, realm),
         )
 

@@ -37,6 +37,7 @@ from trxo.commands.shared.options import (
     SaIdOpt,
     SrcRealmOpt,
     SyncOpt,
+    ContinueOnErrorOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.constants import DEFAULT_REALM
@@ -393,6 +394,7 @@ def create_themes_import_command():
         diff: DiffOpt = False,
         branch: BranchOpt = None,
         rollback: RollbackOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
         sync: SyncOpt = False,
     ):
         """Import themes from JSON file or Git repository."""
@@ -417,6 +419,7 @@ def create_themes_import_command():
             branch=branch,
             diff=diff,
             rollback=rollback,
+            continue_on_error=continue_on_error,
             cherry_pick=cherry_pick,
             sync=sync,
         )

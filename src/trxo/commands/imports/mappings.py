@@ -30,6 +30,7 @@ from trxo.commands.shared.options import (
     RollbackOpt,
     SaIdOpt,
     SyncOpt,
+    ContinueOnErrorOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.utils.console import error, info, warning
@@ -414,6 +415,7 @@ class MappingsImporter(BaseImporter):
         diff: bool = False,
         cherry_pick: str = None,
         sync: bool = False,
+        continue_on_error: bool = False,
         **kwargs,
     ) -> None:
         """Delegate to BaseImporter so sync/diff/rollback machinery runs correctly."""
@@ -445,6 +447,7 @@ class MappingsImporter(BaseImporter):
             diff=diff,
             cherry_pick=cherry_pick,
             sync=sync,
+            continue_on_error=continue_on_error,
             **kwargs,
         )
 
@@ -472,6 +475,7 @@ def create_mappings_import_command():
         branch: BranchOpt = None,
         sync: SyncOpt = False,
         rollback: RollbackOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Import sync mappings from JSON file (local mode) or Git repository (Git mode).
 
@@ -498,6 +502,7 @@ def create_mappings_import_command():
             cherry_pick=cherry_pick,
             rollback=rollback,
             sync=sync,
+            continue_on_error=continue_on_error,
         )
 
     return import_mappings

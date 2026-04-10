@@ -32,6 +32,7 @@ from trxo.commands.shared.options import (
     RollbackOpt,
     SaIdOpt,
     SyncOpt,
+    ContinueOnErrorOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.utils.console import error, info
@@ -113,6 +114,7 @@ def create_privileges_import_command():
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
         rollback: RollbackOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
         sync: SyncOpt = False,
     ):
         """Import Privileges from JSON file (local mode) or Git repository (Git mode)"""
@@ -136,6 +138,7 @@ def create_privileges_import_command():
             branch=branch,
             diff=diff,
             rollback=rollback,
+            continue_on_error=continue_on_error,
             cherry_pick=cherry_pick,
             sync=sync,
         )

@@ -46,6 +46,7 @@ from trxo.commands.shared.options import (
     RollbackOpt,
     SaIdOpt,
     SrcRealmOpt,
+    ContinueOnErrorOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.constants import DEFAULT_REALM
@@ -162,6 +163,7 @@ class JourneyImporter(BaseImporter):
         branch=None,
         diff=False,
         rollback=False,
+        continue_on_error=False,
         sync=False,
         cherry_pick=None,
     ):
@@ -237,6 +239,7 @@ class JourneyImporter(BaseImporter):
                     branch=branch,
                     diff=diff,
                     rollback=rollback,
+                    continue_on_error=continue_on_error,
                     sync=sync,
                     cherry_pick=cherry_pick,
                 )
@@ -345,6 +348,7 @@ class JourneyImporter(BaseImporter):
                 branch=branch,
                 diff=diff,
                 rollback=rollback,
+                continue_on_error=continue_on_error,
                 sync=sync,
                 cherry_pick=cherry_pick,
             )
@@ -1387,6 +1391,7 @@ def create_journey_import_command():
         cherry_pick: CherryPickOpt = None,
         force_import: ForceImportOpt = False,
         rollback: RollbackOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
         diff: DiffOpt = False,
         branch: BranchOpt = None,
         jwk_path: JwkPathOpt = None,
@@ -1425,6 +1430,7 @@ def create_journey_import_command():
             cherry_pick=cherry_pick,
             diff=diff,
             rollback=rollback,
+            continue_on_error=continue_on_error,
         )
 
     return import_journeys

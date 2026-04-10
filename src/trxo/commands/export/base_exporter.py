@@ -34,6 +34,7 @@ class BaseExporter(BaseCommand):
         self.git_handler = GitExportHandler(self.config_store)
         self._current_token = None
         self._current_api_base_url = None
+        self.continue_on_error: bool = False
 
     def export_data(
         self,
@@ -61,6 +62,7 @@ class BaseExporter(BaseCommand):
         no_version: bool = False,
         branch: Optional[str] = None,
         commit_message: Optional[str] = None,
+        continue_on_error: bool = False,
         **kwargs,
     ) -> None:
         """Export data with authentication and save to file
@@ -90,8 +92,10 @@ class BaseExporter(BaseCommand):
             no_version: Skip versioning
             branch: Git branch to use (Git mode)
             commit_message: Custom commit message (Git mode)
+            continue_on_error: Continue on response-filter errors
         """
         self.logger.info(f"Starting export operation: {command_name}")
+        self.continue_on_error = continue_on_error
         try:
             # Determine product type from endpoint for auth context and headers
             product = "idm" if "/openidm/" in api_endpoint else "am"

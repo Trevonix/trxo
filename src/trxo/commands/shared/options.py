@@ -109,6 +109,15 @@ RollbackOpt = Annotated[
     ),
 ]
 
+ContinueOnErrorOpt = Annotated[
+    bool,
+    typer.Option(
+        ...,
+        "--continue-on-error/--stop-on-error",
+        help="Stop on first error by default; use --continue-on-error to process all items",
+    ),
+]
+
 WithDepsOpt = Annotated[
     bool,
     typer.Option(

@@ -29,6 +29,7 @@ from trxo.commands.shared.options import (
     OnPremUsernameOpt,
     ProjectNameOpt,
     SaIdOpt,
+    ContinueOnErrorOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.utils.console import error, info
@@ -114,6 +115,7 @@ def create_realms_import_command():
         force_import: ForceImportOpt = False,
         diff: DiffOpt = False,
         branch: BranchOpt = None,
+        continue_on_error: ContinueOnErrorOpt = False,
         # diff: bool = typer.Option(False, "--diff", help="Show differences before import"),
     ):
         """Import realms from JSON file. Updates when _id present; otherwise creates."""
@@ -135,6 +137,7 @@ def create_realms_import_command():
             force_import=force_import,
             branch=branch,
             diff=diff,
+            continue_on_error=continue_on_error,
         )
 
     return import_realms

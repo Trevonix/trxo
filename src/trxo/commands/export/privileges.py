@@ -28,6 +28,7 @@ from trxo.commands.shared.options import (
     ProjectNameOpt,
     RealmOpt,
     SaIdOpt,
+    ContinueOnErrorOpt,
     VersionOpt,
     ViewColumnsOpt,
     ViewOpt,
@@ -62,6 +63,7 @@ def create_privileges_export_command():
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Export privileges configuration
 
@@ -116,6 +118,7 @@ def create_privileges_export_command():
             no_version=no_version,
             branch=branch,
             commit_message=commit,
+            continue_on_error=continue_on_error,
         )
 
     return export_privileges

@@ -33,6 +33,7 @@ from trxo.commands.shared.options import (
     SaIdOpt,
     SrcRealmOpt,
     SyncOpt,
+    ContinueOnErrorOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.constants import (
@@ -219,6 +220,7 @@ class ScriptImporter(BaseImporter):
         branch: Optional[str] = None,
         diff: bool = False,
         rollback: bool = False,
+        continue_on_error: bool = False,
         sync: bool = False,
         cherry_pick: Optional[str] = None,
     ) -> None:
@@ -243,6 +245,7 @@ class ScriptImporter(BaseImporter):
             branch=branch,
             diff=diff,
             rollback=rollback,
+            continue_on_error=continue_on_error,
             sync=sync,
             cherry_pick=cherry_pick,
         )
@@ -260,6 +263,7 @@ def create_script_import_command():
         file: InputFileOpt = None,
         force_import: ForceImportOpt = False,
         rollback: RollbackOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
         branch: BranchOpt = None,
         jwk_path: JwkPathOpt = None,
         sa_id: SaIdOpt = None,
@@ -296,6 +300,7 @@ def create_script_import_command():
             branch=branch,
             diff=diff,
             rollback=rollback,
+            continue_on_error=continue_on_error,
             sync=sync,
             cherry_pick=cherry_pick,
         )

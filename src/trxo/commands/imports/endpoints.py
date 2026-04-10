@@ -32,6 +32,7 @@ from trxo.commands.shared.options import (
     RollbackOpt,
     SaIdOpt,
     SyncOpt,
+    ContinueOnErrorOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.utils.console import error, info
@@ -114,6 +115,7 @@ def create_endpoints_import_command():
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
         rollback: RollbackOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
         sync: SyncOpt = False,
     ):
         """Import custom endpoints from JSON file (local mode) or Git repository (Git mode)"""
@@ -138,6 +140,7 @@ def create_endpoints_import_command():
             diff=diff,
             cherry_pick=cherry_pick,
             rollback=rollback,
+            continue_on_error=continue_on_error,
             sync=sync,
         )
 
