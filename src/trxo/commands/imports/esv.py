@@ -18,6 +18,7 @@ from trxo.commands.shared.options import (
     BranchOpt,
     CherryPickOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
@@ -234,6 +235,7 @@ def create_esv_commands():
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
+        dry_run: DryRunOpt = False,
     ):
         """Import Environment Variables configuration from JSON file"""
         importer = EsvVariablesImporter()
@@ -258,6 +260,7 @@ def create_esv_commands():
             rollback=rollback,
             continue_on_error=continue_on_error,
             cherry_pick=cherry_pick,
+            dry_run=dry_run,
         )
 
     def import_esv_secrets(
@@ -280,6 +283,7 @@ def create_esv_commands():
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
+        dry_run: DryRunOpt = False,
     ):
         """Import Environment Secrets configuration from JSON file"""
         importer = EsvSecretsImporter()
@@ -304,6 +308,7 @@ def create_esv_commands():
             rollback=rollback,
             continue_on_error=continue_on_error,
             cherry_pick=cherry_pick,
+            dry_run=dry_run,
         )
 
     return import_esv_variables, import_esv_secrets

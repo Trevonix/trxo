@@ -100,6 +100,19 @@ DiffOpt = Annotated[
     ),
 ]
 
+DryRunOpt = Annotated[
+    bool,
+    typer.Option(
+        ...,
+        "--dry-run",
+        help=(
+            "Validate input and print a medium summary of what a real import "
+            "would do; no import API calls. Ignored when --diff is set (diff uses "
+            "the API to compare)."
+        ),
+    ),
+]
+
 RollbackOpt = Annotated[
     bool,
     typer.Option(

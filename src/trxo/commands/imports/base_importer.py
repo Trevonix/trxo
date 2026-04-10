@@ -63,34 +63,33 @@ class BaseImporter(BaseCommand):
         continue_on_error: bool = False,
         sync: bool = False,
         cherry_pick: Optional[str] = None,
+        dry_run: bool = False,
         **kwargs,
     ) -> None:
         """Main import workflow with Git and local storage support."""
         item_type = self.get_item_type()
         self.logger.info(f"Starting import operation: {item_type}")
         try:
-            # Initialize authentication
-            token, api_base_url = self.initialize_auth(
-                jwk_path=jwk_path,
-                sa_id=sa_id,
-                base_url=base_url,
-                project_name=project_name,
-                auth_mode=auth_mode,
-                onprem_username=onprem_username,
-                onprem_password=onprem_password,
-                onprem_realm=onprem_realm,
-                idm_base_url=idm_base_url,
-                idm_username=idm_username,
-                idm_password=idm_password,
-                am_base_url=am_base_url,
-            )
-            self.logger.debug(
-                f"Authentication initialized for {item_type} import, "
-                f"auth_mode: {self.auth_mode}"
-            )
-
-            # Handle diff mode - show differences and exit
+            # Handle diff mode - show differences and exit (requires auth)
             if diff:
+                token, api_base_url = self.initialize_auth(
+                    jwk_path=jwk_path,
+                    sa_id=sa_id,
+                    base_url=base_url,
+                    project_name=project_name,
+                    auth_mode=auth_mode,
+                    onprem_username=onprem_username,
+                    onprem_password=onprem_password,
+                    onprem_realm=onprem_realm,
+                    idm_base_url=idm_base_url,
+                    idm_username=idm_username,
+                    idm_password=idm_password,
+                    am_base_url=am_base_url,
+                )
+                self.logger.debug(
+                    f"Authentication initialized for {item_type} import, "
+                    f"auth_mode: {self.auth_mode}"
+                )
                 self._perform_diff_analysis(
                     file_path=file_path,
                     realm=realm,
@@ -111,7 +110,7 @@ class BaseImporter(BaseCommand):
                 )
                 return
 
-            # Determine storage mode and load data
+            # Determine storage mode and load data (no PingOne auth for dry run)
             storage_mode = self._get_storage_mode()
             item_type = self.get_item_type()
 
@@ -138,7 +137,39 @@ class BaseImporter(BaseCommand):
                 if not items_to_process:
                     return
 
+            if dry_run:
+                self._print_dry_run_plan(
+                    items_to_process,
+                    storage_mode=storage_mode,
+                    file_path=file_path,
+                    cherry_pick=cherry_pick,
+                    sync=sync,
+                    rollback=rollback,
+                    continue_on_error=continue_on_error,
+                    realm=realm,
+                )
+                return
+
             success(f"Loaded {len(items_to_process)} {item_type} for import")
+
+            token, api_base_url = self.initialize_auth(
+                jwk_path=jwk_path,
+                sa_id=sa_id,
+                base_url=base_url,
+                project_name=project_name,
+                auth_mode=auth_mode,
+                onprem_username=onprem_username,
+                onprem_password=onprem_password,
+                onprem_realm=onprem_realm,
+                idm_base_url=idm_base_url,
+                idm_username=idm_username,
+                idm_password=idm_password,
+                am_base_url=am_base_url,
+            )
+            self.logger.debug(
+                f"Authentication initialized for {item_type} import, "
+                f"auth_mode: {self.auth_mode}"
+            )
 
             # If rollback requested, create a baseline snapshot first
             rollback_manager = self._setup_rollback_manager(
@@ -264,6 +295,80 @@ class BaseImporter(BaseCommand):
                         f"Stopping import due to error on item: {item_id or '<unknown>'}"
                     )
                     raise typer.Exit(1)
+
+    def _print_dry_run_plan(
+        self,
+        items: List[Dict[str, Any]],
+        *,
+        storage_mode: str,
+        file_path: Optional[str],
+        cherry_pick: Optional[str],
+        sync: bool,
+        rollback: bool,
+        continue_on_error: bool,
+        realm: Optional[str],
+    ) -> None:
+        """Medium-detail dry run: explain what a real import would do."""
+        item_type = self.get_item_type()
+        n = sum(1 for i in items if isinstance(i, dict))
+
+        info("Dry run — no API calls. A real run would:")
+        if storage_mode == "git":
+            info(
+                "  • Use export data already loaded from Git for this component "
+                "(branch/realm per project settings)."
+            )
+        else:
+            src = file_path or "(unspecified file)"
+            info(
+                f"  • Read items from the local JSON file (your --file path): {src}"
+            )
+
+        if realm is not None:
+            info(f"  • Target realm context: {realm}")
+
+        info("  • Authenticate (service account / configured auth mode).")
+        info(
+            f"  • Send API requests to create or update {n} {item_type} item(s) "
+            "(upsert each record)."
+        )
+
+        if cherry_pick:
+            info(f"  • Honor --cherry-pick (only these IDs): {cherry_pick}")
+
+        if rollback:
+            info(
+                "  • With --rollback: save a baseline snapshot first, then roll "
+                "back if an item fails (where supported)."
+            )
+        if sync:
+            info(
+                "  • With --sync: remove server-side items that are not in this "
+                "export."
+            )
+        if continue_on_error:
+            info("  • With --continue-on-error: keep going after individual failures.")
+        else:
+            info(
+                "  • Stop on the first failed item (unless --continue-on-error)."
+            )
+
+        ids: List[str] = []
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            ident = self._get_item_identifier(item)
+            if ident is not None:
+                ids.append(str(ident))
+        if ids:
+            cap = 8
+            head = ids[:cap]
+            preview = ", ".join(head)
+            rest = len(ids) - cap
+            if rest > 0:
+                info(f"  • IDs in scope (sample): {preview} … (+{rest} more)")
+            else:
+                info(f"  • IDs in scope: {preview}")
 
     # ==================== Private Helper Methods ====================
 

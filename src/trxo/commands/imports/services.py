@@ -21,6 +21,7 @@ from trxo.commands.shared.options import (
     BranchOpt,
     CherryPickOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
@@ -293,6 +294,7 @@ def create_services_import_command():
         ),
         realm: RealmOpt = DEFAULT_REALM,
         src_realm: SrcRealmOpt = None,
+        dry_run: DryRunOpt = False,
     ):
         """Import services from JSON file or Git repository."""
 
@@ -330,6 +332,7 @@ def create_services_import_command():
             continue_on_error=continue_on_error,
             cherry_pick=cherry_pick,
             sync=sync,
+            dry_run=dry_run,
         )
 
     return import_services

@@ -114,6 +114,25 @@ def test_import_from_file_diff_mode(mocker):
     importer._perform_diff_analysis.assert_called_once()
 
 
+def test_import_from_file_dry_run_skips_auth_and_process_items(mocker, tmp_path):
+    """Dry run loads and reports items without PingOne auth or process_items."""
+    importer = DummyImporter()
+    data_file = tmp_path / "data.json"
+    data_file.write_text(json.dumps([{"_id": "dry-1"}]))
+
+    mocker.patch.object(importer, "_get_storage_mode", return_value="local")
+    mocker.patch.object(importer, "load_data_from_file", return_value=[{"_id": "dry-1"}])
+    mocker.patch.object(importer, "validate_import_hash", return_value=True)
+    init_auth = mocker.patch.object(importer, "initialize_auth")
+    proc = mocker.patch.object(importer, "process_items")
+    mocker.patch.object(importer, "cleanup")
+
+    importer.import_from_file(file_path=str(data_file), dry_run=True)
+
+    init_auth.assert_not_called()
+    proc.assert_not_called()
+
+
 def test_apply_cherry_pick_invalid(mocker):
     importer = DummyImporter()
 

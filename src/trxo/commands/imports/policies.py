@@ -17,6 +17,7 @@ from trxo.commands.shared.options import (
     BranchOpt,
     CherryPickOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     GlobalOpt,
     IdmBaseUrlOpt,
@@ -277,6 +278,7 @@ def create_policies_import_command():
         branch: BranchOpt = None,
         realm: RealmOpt = DEFAULT_REALM,
         src_realm: SrcRealmOpt = None,
+        dry_run: DryRunOpt = False,
     ):
         """
         Import policies from JSON file (local mode) or
@@ -307,6 +309,7 @@ def create_policies_import_command():
             continue_on_error=continue_on_error,
             cherry_pick=cherry_pick,
             global_policy=global_policy,
+            dry_run=dry_run,
         )
 
     return import_policies

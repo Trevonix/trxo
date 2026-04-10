@@ -16,6 +16,7 @@ from trxo.commands.shared.options import (
     BranchOpt,
     CherryPickOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
@@ -181,6 +182,7 @@ def create_agents_import_command():
         branch: BranchOpt = None,
         rollback: RollbackOpt = False,
         continue_on_error: ContinueOnErrorOpt = False,
+        dry_run: DryRunOpt = False,
     ):
         importer = AgentsImporter("IdentityGatewayAgent", realm=realm)
         importer.import_from_file(
@@ -206,6 +208,7 @@ def create_agents_import_command():
             rollback=rollback,
             continue_on_error=continue_on_error,
             sync=sync,
+            dry_run=dry_run,
         )
 
     def import_java_agents(
@@ -231,6 +234,7 @@ def create_agents_import_command():
         branch: BranchOpt = None,
         rollback: RollbackOpt = False,
         continue_on_error: ContinueOnErrorOpt = False,
+        dry_run: DryRunOpt = False,
     ):
         importer = AgentsImporter("J2EEAgent", realm=realm)
         importer.import_from_file(
@@ -256,6 +260,7 @@ def create_agents_import_command():
             rollback=rollback,
             continue_on_error=continue_on_error,
             sync=sync,
+            dry_run=dry_run,
         )
 
     def import_web_agents(
@@ -281,6 +286,7 @@ def create_agents_import_command():
         branch: BranchOpt = None,
         rollback: RollbackOpt = False,
         continue_on_error: ContinueOnErrorOpt = False,
+        dry_run: DryRunOpt = False,
     ):
         importer = AgentsImporter("WebAgent", realm=realm)
         importer.import_from_file(
@@ -306,6 +312,7 @@ def create_agents_import_command():
             rollback=rollback,
             continue_on_error=continue_on_error,
             sync=sync,
+            dry_run=dry_run,
         )
 
     return (
