@@ -1,10 +1,9 @@
-import json
-
 import httpx
 import pytest
 import typer
+from trxo_lib.exceptions import TrxoAbort
 
-from trxo.commands.shared.base_command import BaseCommand
+from trxo_lib.core.base_command import BaseCommand
 
 
 class DummyCommand(BaseCommand):
@@ -116,7 +115,7 @@ def test_make_http_request_success(mocker):
             __enter__=lambda s: mock_client, __exit__=lambda *a: None
         ),
     )
-    mocker.patch("trxo.commands.shared.base_command.log_api_call")
+    mocker.patch("trxo_lib.core.base_command.log_api_call")
 
     response = cmd.make_http_request("http://x")
 
@@ -148,7 +147,7 @@ def test_make_http_request_http_error(mocker):
             __enter__=lambda s: mock_client, __exit__=lambda *a: None
         ),
     )
-    mocker.patch("trxo.commands.shared.base_command.log_api_call")
+    mocker.patch("trxo_lib.core.base_command.log_api_call")
 
     with pytest.raises(Exception):
         cmd.make_http_request("http://x")

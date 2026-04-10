@@ -6,7 +6,6 @@ import and export command modules.
 """
 
 from trxo_lib.core.auth_manager import AuthManager
-from .base_command import BaseCommand
-from .cli_options import CommonOptions
+from trxo_lib.core.base_command import BaseCommand
 
-__all__ = ["BaseCommand", "AuthManager", "CommonOptions"]
+__all__ = ["BaseCommand", "AuthManager"]

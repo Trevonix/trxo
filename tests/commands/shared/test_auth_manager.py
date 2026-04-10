@@ -1,7 +1,8 @@
 import pytest
 import typer
+from trxo_lib.exceptions import TrxoConfigError, TrxoAuthError
 
-from trxo.commands.shared.auth_manager import AuthManager
+from trxo_lib.core.auth_manager import AuthManager
 
 
 def test_validate_project_no_project_and_no_args_raises(mocker):
@@ -11,7 +12,7 @@ def test_validate_project_no_project_and_no_args_raises(mocker):
 
     manager = AuthManager(config_store, token_manager)
 
-    with pytest.raises(typer.Exit):
+    with pytest.raises(TrxoConfigError):
         manager.validate_project()
 
 
@@ -145,7 +146,7 @@ def test_get_token_failure_raises_exit(mocker):
 
     manager = AuthManager(config_store, token_manager)
 
-    with pytest.raises(typer.Exit):
+    with pytest.raises(TrxoAuthError):
         manager.get_token("proj")
 
 
@@ -162,9 +163,7 @@ def test_get_onprem_session_success(mocker):
     mock_client = mocker.Mock()
     mock_client.authenticate.return_value = {"tokenId": "sso"}
 
-    mocker.patch(
-        "trxo.commands.shared.auth_manager.OnPremAuth", return_value=mock_client
-    )
+    mocker.patch("trxo_lib.core.auth_manager.OnPremAuth", return_value=mock_client)
 
     manager = AuthManager(config_store, token_manager)
     result = manager.get_onprem_session("proj", password="p")
@@ -181,13 +180,11 @@ def test_get_onprem_session_failure_raises_exit(mocker):
     mock_client = mocker.Mock()
     mock_client.authenticate.side_effect = Exception("fail")
 
-    mocker.patch(
-        "trxo.commands.shared.auth_manager.OnPremAuth", return_value=mock_client
-    )
+    mocker.patch("trxo_lib.core.auth_manager.OnPremAuth", return_value=mock_client)
 
     manager = AuthManager(config_store, token_manager)
 
-    with pytest.raises(typer.Exit):
+    with pytest.raises(TrxoAuthError):
         manager.get_onprem_session("proj", username="u", password="p")
 
 
@@ -208,7 +205,7 @@ def test_get_base_url_missing_raises_exit(mocker):
 
     manager = AuthManager(config_store, token_manager)
 
-    with pytest.raises(typer.Exit):
+    with pytest.raises(TrxoConfigError):
         manager.get_base_url("proj")
 
 
@@ -296,7 +293,7 @@ def test_get_idm_credentials_missing_products_raises(mocker):
 
     manager = AuthManager(config_store, token_manager)
 
-    with pytest.raises(typer.Exit):
+    with pytest.raises(TrxoAuthError):
         manager.get_idm_credentials("proj", idm_password="pw")
 
 
@@ -328,5 +325,5 @@ def test_get_idm_base_url_missing_raises(mocker):
 
     manager = AuthManager(config_store, token_manager)
 
-    with pytest.raises(typer.Exit):
+    with pytest.raises(TrxoConfigError):
         manager.get_idm_base_url("proj")

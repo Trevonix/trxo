@@ -6,8 +6,8 @@ Provides focused utility modules for export operations.
 
 from .file_saver import FileSaver
 from .git_export_handler import GitExportHandler
-from .metadata_builder import MetadataBuilder
-from .pagination_handler import PaginationHandler
+from trxo_lib.exports.helpers.metadata_builder import MetadataBuilder
+from trxo_lib.exports.helpers.pagination_handler import PaginationHandler
 from .view_renderer import ViewRenderer
 
 __all__ = [
