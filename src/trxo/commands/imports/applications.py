@@ -20,6 +20,7 @@ from trxo.commands.shared.options import (
     BranchOpt,
     CherryPickOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
@@ -360,6 +361,7 @@ def create_applications_import_command():
         idm_password: IdmPasswordOpt = None,
         with_deps: WithDepsOpt = False,
         continue_on_error: ContinueOnErrorOpt = False,
+        dry_run: DryRunOpt = False,
     ):
         """Import applications from file or Git repository."""
         importer = ApplicationsImporter(realm=realm)
@@ -387,6 +389,7 @@ def create_applications_import_command():
             continue_on_error=continue_on_error,
             cherry_pick=cherry_pick,
             sync=sync,
+            dry_run=dry_run,
         )
 
     return import_applications

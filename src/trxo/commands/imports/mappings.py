@@ -17,6 +17,7 @@ from trxo.commands.shared.options import (
     BranchOpt,
     CherryPickOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
@@ -416,6 +417,7 @@ class MappingsImporter(BaseImporter):
         cherry_pick: str = None,
         sync: bool = False,
         continue_on_error: bool = False,
+        dry_run: bool = False,
         **kwargs,
     ) -> None:
         """Delegate to BaseImporter so sync/diff/rollback machinery runs correctly."""
@@ -448,6 +450,7 @@ class MappingsImporter(BaseImporter):
             cherry_pick=cherry_pick,
             sync=sync,
             continue_on_error=continue_on_error,
+            dry_run=dry_run,
             **kwargs,
         )
 
@@ -476,6 +479,7 @@ def create_mappings_import_command():
         sync: SyncOpt = False,
         rollback: RollbackOpt = False,
         continue_on_error: ContinueOnErrorOpt = False,
+        dry_run: DryRunOpt = False,
     ):
         """Import sync mappings from JSON file (local mode) or Git repository (Git mode).
 
@@ -503,6 +507,7 @@ def create_mappings_import_command():
             rollback=rollback,
             sync=sync,
             continue_on_error=continue_on_error,
+            dry_run=dry_run,
         )
 
     return import_mappings

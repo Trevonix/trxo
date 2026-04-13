@@ -18,6 +18,7 @@ from trxo.commands.shared.options import (
     BranchOpt,
     CherryPickOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
@@ -448,6 +449,7 @@ def create_oauth_import_command():
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
+        dry_run: DryRunOpt = False,
     ):
         """Import OAuth2 Clients with script dependencies."""
         importer = OAuthImporter(realm=realm)
@@ -474,6 +476,7 @@ def create_oauth_import_command():
             continue_on_error=continue_on_error,
             sync=sync,
             cherry_pick=cherry_pick,
+            dry_run=dry_run,
         )
 
     return import_oauth

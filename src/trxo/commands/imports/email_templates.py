@@ -17,6 +17,7 @@ from trxo.commands.shared.options import (
     BranchOpt,
     CherryPickOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
@@ -119,6 +120,7 @@ def create_email_templates_import_command():
         idm_password: IdmPasswordOpt = None,
         rollback: RollbackOpt = False,
         continue_on_error: ContinueOnErrorOpt = False,
+        dry_run: DryRunOpt = False,
     ):
         """Import Email Templates from JSON file (local mode) or Git repository (Git mode)"""
 
@@ -146,6 +148,7 @@ def create_email_templates_import_command():
             continue_on_error=continue_on_error,
             cherry_pick=cherry_pick,
             sync=sync,
+            dry_run=dry_run,
         )
 
     return import_email_templates

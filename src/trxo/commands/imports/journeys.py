@@ -32,6 +32,7 @@ from trxo.commands.shared.options import (
     BranchOpt,
     CherryPickOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
@@ -142,6 +143,89 @@ class JourneyImporter(BaseImporter):
 
         return []
 
+    def _print_enriched_journey_dry_run(
+        self,
+        payload: Dict[str, Any],
+        *,
+        cherry_pick: Optional[str],
+        sync: bool,
+        rollback: bool,
+        continue_on_error: bool,
+        realm: Optional[str],
+        storage_mode: str,
+        source_label: Optional[str] = None,
+    ) -> None:
+        """Medium-detail dry run for enriched journey bundles."""
+        info("Dry run — no API calls. A real run would:")
+        if storage_mode == "git":
+            info(
+                "  • Load the enriched journey export from Git (already read "
+                "for validation)."
+            )
+        else:
+            label = source_label or "the JSON file above"
+            info(f"  • Load the enriched journey export from {label}.")
+
+        if realm is not None:
+            info(f"  • Target realm: {realm}")
+
+        info(
+            "  • Authenticate, then import dependencies in dependency order "
+            "(e.g. scripts, email templates, nodes, themes, SAML entities as "
+            "present), then journey trees."
+        )
+
+        trees = payload.get("trees") or {}
+        tree_ids = list(trees.keys()) if isinstance(trees, dict) else []
+        if cherry_pick:
+            pick = {x.strip() for x in cherry_pick.split(",") if x.strip()}
+            tree_ids = [t for t in tree_ids if t in pick]
+
+        info(f"  • Import {len(tree_ids)} journey tree(s) from this bundle.")
+        if tree_ids:
+            cap = 6
+            head = tree_ids[:cap]
+            preview = ", ".join(head)
+            rest = len(tree_ids) - cap
+            if rest > 0:
+                info(f"    Tree IDs (sample): {preview} … (+{rest} more)")
+            else:
+                info(f"    Tree IDs: {preview}")
+
+        section_bits = []
+        for key in (
+            "scripts",
+            "emailTemplates",
+            "nodes",
+            "themes",
+            "saml2Entities",
+        ):
+            section = payload.get(key)
+            if not section:
+                continue
+            c = len(section) if isinstance(section, (list, dict)) else 0
+            if c:
+                section_bits.append(f"{key}={c}")
+        if section_bits:
+            info(f"  • Non-empty dependency sections: {', '.join(section_bits)}")
+
+        if cherry_pick:
+            info(f"  • Honor --cherry-pick for trees: {cherry_pick}")
+        if rollback:
+            info(
+                "  • With --rollback: baselines for journeys and dependencies; "
+                "revert on failure where configured."
+            )
+        if sync:
+            info(
+                "  • With --sync: reconcile deletions so the server matches the "
+                "export."
+            )
+        if continue_on_error:
+            info("  • With --continue-on-error: continue after failed items.")
+        else:
+            info("  • Stop on first failure unless --continue-on-error.")
+
     def import_from_file(
         self,
         file_path=None,
@@ -166,6 +250,7 @@ class JourneyImporter(BaseImporter):
         continue_on_error=False,
         sync=False,
         cherry_pick=None,
+        dry_run: bool = False,
     ):
         """
         Override: detect enriched vs legacy format and branch accordingly.
@@ -242,10 +327,29 @@ class JourneyImporter(BaseImporter):
                     continue_on_error=continue_on_error,
                     sync=sync,
                     cherry_pick=cherry_pick,
+                    dry_run=dry_run,
                 )
 
             # ── Enriched git file → same path as local enriched ───────────
             info("Detected enriched journey export (with dependency graph)")
+
+            if dry_run and not diff:
+                try:
+                    self._print_enriched_journey_dry_run(
+                        payload,
+                        cherry_pick=cherry_pick,
+                        sync=sync,
+                        rollback=rollback,
+                        continue_on_error=continue_on_error,
+                        realm=realm,
+                        storage_mode="git",
+                        source_label=str(
+                            git_file_path.relative_to(repo_path)
+                        ),
+                    )
+                finally:
+                    self.cleanup()
+                return
 
             token, api_base_url = self.initialize_auth(
                 jwk_path=jwk_path,
@@ -351,33 +455,32 @@ class JourneyImporter(BaseImporter):
                 continue_on_error=continue_on_error,
                 sync=sync,
                 cherry_pick=cherry_pick,
+                dry_run=dry_run,
             )
 
         # ── Enriched format ───────────────────────────────────────────────
         info("Detected enriched journey export (with dependency graph)")
-
-        token, api_base_url = self.initialize_auth(
-            jwk_path=jwk_path,
-            sa_id=sa_id,
-            base_url=base_url,
-            project_name=project_name,
-            auth_mode=auth_mode,
-            onprem_username=onprem_username,
-            onprem_password=onprem_password,
-            onprem_realm=onprem_realm,
-            idm_base_url=idm_base_url,
-            idm_username=idm_username,
-            idm_password=idm_password,
-            am_base_url=am_base_url,
-        )
 
         try:
             if not self.validate_import_hash(raw_file, force_import):
                 error("Import validation failed: hash mismatch with exported data")
                 raise typer.Exit(1)
 
-            # ── Diff mode: show changes without importing ─────────────────
             if diff:
+                token, api_base_url = self.initialize_auth(
+                    jwk_path=jwk_path,
+                    sa_id=sa_id,
+                    base_url=base_url,
+                    project_name=project_name,
+                    auth_mode=auth_mode,
+                    onprem_username=onprem_username,
+                    onprem_password=onprem_password,
+                    onprem_realm=onprem_realm,
+                    idm_base_url=idm_base_url,
+                    idm_username=idm_username,
+                    idm_password=idm_password,
+                    am_base_url=am_base_url,
+                )
                 self._perform_enriched_journey_diff(
                     payload=payload,
                     realm=realm,
@@ -396,6 +499,34 @@ class JourneyImporter(BaseImporter):
                     file_path=file_path,
                 )
                 return
+
+            if dry_run:
+                self._print_enriched_journey_dry_run(
+                    payload,
+                    cherry_pick=cherry_pick,
+                    sync=sync,
+                    rollback=rollback,
+                    continue_on_error=continue_on_error,
+                    realm=realm,
+                    storage_mode="local",
+                    source_label=file_path,
+                )
+                return
+
+            token, api_base_url = self.initialize_auth(
+                jwk_path=jwk_path,
+                sa_id=sa_id,
+                base_url=base_url,
+                project_name=project_name,
+                auth_mode=auth_mode,
+                onprem_username=onprem_username,
+                onprem_password=onprem_password,
+                onprem_realm=onprem_realm,
+                idm_base_url=idm_base_url,
+                idm_username=idm_username,
+                idm_password=idm_password,
+                am_base_url=am_base_url,
+            )
 
             ok = self.import_journey_data(
                 data=payload,
@@ -1406,6 +1537,7 @@ def create_journey_import_command():
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
+        dry_run: DryRunOpt = False,
     ):
         """Import journeys from a JSON file (enriched or legacy format) or Git repository."""
         importer = JourneyImporter(realm=realm)
@@ -1431,6 +1563,7 @@ def create_journey_import_command():
             diff=diff,
             rollback=rollback,
             continue_on_error=continue_on_error,
+            dry_run=dry_run,
         )
 
     return import_journeys

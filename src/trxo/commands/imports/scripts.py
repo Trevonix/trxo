@@ -18,6 +18,7 @@ from trxo.commands.shared.options import (
     BranchOpt,
     CherryPickOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
@@ -223,6 +224,7 @@ class ScriptImporter(BaseImporter):
         continue_on_error: bool = False,
         sync: bool = False,
         cherry_pick: Optional[str] = None,
+        dry_run: bool = False,
     ) -> None:
         """Override to ensure automated sync (force=True)"""
         super().import_from_file(
@@ -248,6 +250,7 @@ class ScriptImporter(BaseImporter):
             continue_on_error=continue_on_error,
             sync=sync,
             cherry_pick=cherry_pick,
+            dry_run=dry_run,
         )
 
 
@@ -277,6 +280,7 @@ def create_script_import_command():
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
+        dry_run: DryRunOpt = False,
     ):
         """Import scripts from JSON file (local mode) or Git repository (Git mode)"""
         importer = ScriptImporter(realm=realm)
@@ -303,6 +307,7 @@ def create_script_import_command():
             continue_on_error=continue_on_error,
             sync=sync,
             cherry_pick=cherry_pick,
+            dry_run=dry_run,
         )
 
     return import_scripts
