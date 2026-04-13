@@ -7,6 +7,7 @@ import httpx
 import jwt
 from jwcrypto import jwk
 
+from trxo_lib.exceptions import TrxoAuthError
 from trxo_lib.logging import get_logger
 
 
@@ -79,4 +80,4 @@ class ServiceAccountAuth:
                 f"Failed to get access token for service account {self.sa_id}: {str(e)}"
             )
             self.logger.error(error_msg)
-            raise Exception(error_msg)
+            raise TrxoAuthError(error_msg) from e

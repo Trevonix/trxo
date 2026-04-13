@@ -262,9 +262,11 @@ class AuthManager:
         """Get authentication token for the project (service-account mode)"""
         try:
             return self.token_manager.get_token(project_name)
+        except (TrxoAuthError, TrxoConfigError, TrxoAbort):
+            raise
         except Exception as e:
             self.logger.error(f"Failed to get token: {str(e)}")
-            raise TrxoAuthError(f"Failed to get token: {str(e)}")
+            raise TrxoAuthError(f"Failed to get token: {str(e)}") from e
 
     def get_onprem_session(
         self,

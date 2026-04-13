@@ -9,6 +9,7 @@ from typing import Dict
 
 import httpx
 
+from trxo_lib.exceptions import TrxoAuthError
 from trxo_lib.logging import get_logger
 
 
@@ -45,7 +46,7 @@ class OnPremAuth:
                         "No tokenId returned from AM authenticate "
                         f"endpoint for user {username}"
                     )
-                    raise ValueError(
+                    raise TrxoAuthError(
                         "No tokenId returned from AM authenticate endpoint"
                     )
 
@@ -58,8 +59,10 @@ class OnPremAuth:
                     "successUrl": data.get("successUrl", ""),
                     "realm": data.get("realm", "/"),
                 }
+        except TrxoAuthError:
+            raise
         except Exception as e:
             self.logger.error(
                 f"OnPrem authentication failed for user {username}: {str(e)}"
             )
-            raise Exception(f"OnPrem authentication failed: {e}")
+            raise TrxoAuthError(f"OnPrem authentication failed: {e}") from e

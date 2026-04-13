@@ -7,7 +7,7 @@ side effects such as logging, progressing bars, printing tabular views,
 and saving to files or git.
 """
 
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict
 
 from trxo.utils.console import error, info, success, warning
 from trxo.utils.export.file_saver import FileSaver
@@ -17,7 +17,7 @@ from trxo.utils.export.view_renderer import ViewRenderer
 
 from trxo_lib.config.config_store import ConfigStore
 from trxo_lib.state.hash import HashManager
-from trxo_lib.exceptions import TrxoAbort
+from trxo_lib.exceptions import TrxoAbort, TrxoError
 
 
 class CLIExportHandler:
@@ -74,9 +74,12 @@ class CLIExportHandler:
         try:
             # 1. Execute the SDK standard export logic
             export_result = service_function(**kwargs)
+        except TrxoError as e:
+            error(str(e))
+            raise TrxoAbort(code=1) from e
         except Exception as e:
             error(f"Export failed for {command_name}: {str(e)}")
-            raise TrxoAbort(code=1)
+            raise TrxoAbort(code=1) from e
 
         # Handle when the service intercepts the workflow (e.g. applications with dependencies) and handles output itself
         if export_result is None:

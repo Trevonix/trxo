@@ -4,7 +4,7 @@ from trxo_lib.auth.service_account import ServiceAccountAuth
 from trxo_lib.config.constants import DEFAULT_TOKEN_EXPIRES_IN, TOKEN_EXPIRY_BUFFER
 from trxo_lib.logging import get_logger
 from trxo_lib.config.config_store import ConfigStore
-from trxo.utils.console import error
+from trxo_lib.exceptions import TrxoAuthError, TrxoConfigError
 
 
 class TokenManager:
@@ -35,8 +35,7 @@ class TokenManager:
         config = self.config_store.get_project_config(project_name)
         if not config:
             self.logger.error(f"No configuration found for project '{project_name}'")
-            error(f"No configuration found for project '{project_name}'")
-            raise ValueError(f"Project '{project_name}' not configured")
+            raise TrxoConfigError(f"Project '{project_name}' not configured")
 
         has_core = all(key in config for key in ["sa_id", "token_url"])
         has_jwk = ("jwk" in config) or ("jwk_path" in config)
@@ -44,11 +43,10 @@ class TokenManager:
             self.logger.error(
                 f"Missing authentication configuration for project {project_name}"
             )
-            error(
+            raise TrxoConfigError(
                 "Missing authentication configuration. "
                 "Run 'trxo config setup' first."
             )
-            raise ValueError("Missing authentication configuration")
 
         try:
             # Prefer JWK from keyring; if absent, fall back to file path content
@@ -100,9 +98,10 @@ class TokenManager:
 
             return token_data["access_token"]
 
+        except (TrxoAuthError, TrxoConfigError):
+            raise
         except Exception as e:
             self.logger.error(
                 f"Failed to get access token for project {project_name}: {str(e)}"
             )
-            error(f"Failed to get access token: {str(e)}")
-            raise
+            raise TrxoAuthError(f"Failed to get access token: {str(e)}") from e
