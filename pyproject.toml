@@ -31,7 +31,7 @@ dependencies = [
     "rich>=13.0.0",
     "httpx>=0.23.0",
     "pyjwt==2.12.0",
-    "jwcrypto==1.5.6",
+    "jwcrypto==1.5.7",
     "tqdm==4.67.1",
     "py-file-versioning>=0.10.0",
     "keyring>=25.6.0",
