@@ -14,6 +14,7 @@ from trxo.commands.shared.options import (
     AuthModeOpt,
     BaseUrlOpt,
     BranchOpt,
+    ContinueOnErrorOpt,
     DiffOpt,
     DryRunOpt,
     ForceImportOpt,
@@ -30,7 +31,6 @@ from trxo.commands.shared.options import (
     RollbackOpt,
     SaIdOpt,
     SrcRealmOpt,
-    ContinueOnErrorOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.constants import DEFAULT_REALM

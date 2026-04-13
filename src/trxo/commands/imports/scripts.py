@@ -17,6 +17,7 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     CherryPickOpt,
+    ContinueOnErrorOpt,
     DiffOpt,
     DryRunOpt,
     ForceImportOpt,
@@ -34,7 +35,6 @@ from trxo.commands.shared.options import (
     SaIdOpt,
     SrcRealmOpt,
     SyncOpt,
-    ContinueOnErrorOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.constants import (
@@ -157,6 +157,11 @@ class ScriptImporter(BaseImporter):
                 response = client.put(url, headers=headers, json=payload_data)
 
                 if response.status_code == 404:
+                    if not self.continue_on_error:
+                        error(
+                            f"Script '{item_name}' not found (404) in --stop-on-error mode"
+                        )
+                        return False
                     # Switch to create logic
                     collection_url = self._construct_api_url(
                         base_url,

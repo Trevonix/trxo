@@ -24,6 +24,7 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     CommitMessageOpt,
+    ContinueOnErrorOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
     IdmUsernameOpt,
@@ -37,7 +38,6 @@ from trxo.commands.shared.options import (
     ProjectNameOpt,
     RealmOpt,
     SaIdOpt,
-    ContinueOnErrorOpt,
     VersionOpt,
     ViewColumnsOpt,
     ViewOpt,
@@ -489,6 +489,8 @@ def _fetch_all_nodes(
         return node_map
     except Exception as exc:
         warning(f"Could not bulk-fetch nodes: {exc}")
+        if not exporter.continue_on_error:
+            raise
         return {}
 
 
@@ -509,6 +511,8 @@ def _fetch_single_tree(
         return resp.json()
     except Exception as exc:
         warning(f"Could not fetch journey '{tree_id}': {exc}")
+        if not exporter.continue_on_error:
+            raise
         return None
 
 
@@ -538,6 +542,8 @@ def _fetch_script(
         return script_data
     except Exception as exc:
         warning(f"Could not fetch script '{script_id}': {exc}")
+        if not exporter.continue_on_error:
+            raise
         return None
 
 
@@ -553,6 +559,8 @@ def _fetch_email_template(
         return resp.json()
     except Exception as exc:
         warning(f"Could not fetch email template '{name}': {exc}")
+        if not exporter.continue_on_error:
+            raise
         return None
 
 
@@ -581,6 +589,8 @@ def _fetch_saml_provider_list(
         return result
     except Exception as exc:
         warning(f"Could not fetch SAML provider list: {exc}")
+        if not exporter.continue_on_error:
+            raise
         return {}
 
 
@@ -605,6 +615,8 @@ def _fetch_circles_of_trust(
         return cot_map
     except Exception as exc:
         warning(f"Could not fetch circles of trust: {exc}")
+        if not exporter.continue_on_error:
+            raise
         return {}
 
 
@@ -635,9 +647,13 @@ def _fetch_social_providers(
                 exporter.logger.debug(f"Collected social provider: {name}")
             except Exception as exc:
                 warning(f"Could not fetch social provider '{name}': {exc}")
+                if not exporter.continue_on_error:
+                    raise
         return providers
     except Exception as exc:
         warning(f"Could not list social identity providers: {exc}")
+        if not exporter.continue_on_error:
+            raise
         return {}
 
 
@@ -659,6 +675,8 @@ def _fetch_themes(
         return realm_data
     except Exception as exc:
         warning(f"Could not fetch themes: {exc}")
+        if not exporter.continue_on_error:
+            raise
         return []
 
 
@@ -699,6 +717,8 @@ def _fetch_saml_entity(
         detail = detail_resp.json()
     except Exception as exc:
         warning(f"Could not fetch SAML provider detail for '{entity_id}': {exc}")
+        if not exporter.continue_on_error:
+            raise
         return
 
     entity_entry: Dict[str, Any] = {location: detail}
@@ -722,6 +742,8 @@ def _fetch_saml_entity(
         exporter.logger.debug(
             f"Metadata fetch failed for SAML entity '{entity_id}': {exc}"
         )
+        if not exporter.continue_on_error:
+            raise
 
     export["saml2Entities"][entity_id] = entity_entry
 
@@ -825,6 +847,7 @@ def create_journeys_export_command():
         no_version: NoVersionOpt = False,
         branch: BranchOpt = None,
         commit: CommitMessageOpt = None,
+        continue_on_error: ContinueOnErrorOpt = False,
         jwk_path: JwkPathOpt = None,
         sa_id: SaIdOpt = None,
         base_url: BaseUrlOpt = None,
@@ -839,7 +862,6 @@ def create_journeys_export_command():
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
-        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Export journeys with their full dependency graph (nodes, scripts, themes, etc.)"""
         exporter = JourneyExporter()

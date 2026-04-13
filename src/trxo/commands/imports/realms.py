@@ -17,6 +17,7 @@ from trxo.commands.shared.options import (
     AuthModeOpt,
     BaseUrlOpt,
     BranchOpt,
+    ContinueOnErrorOpt,
     DiffOpt,
     DryRunOpt,
     ForceImportOpt,
@@ -30,7 +31,6 @@ from trxo.commands.shared.options import (
     OnPremUsernameOpt,
     ProjectNameOpt,
     SaIdOpt,
-    ContinueOnErrorOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.utils.console import error, info
@@ -115,6 +115,7 @@ def create_realms_import_command():
         idm_password: IdmPasswordOpt = None,
         force_import: ForceImportOpt = False,
         diff: DiffOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
         branch: BranchOpt = None,
         continue_on_error: ContinueOnErrorOpt = False,
         dry_run: DryRunOpt = False,

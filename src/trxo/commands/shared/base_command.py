@@ -32,6 +32,9 @@ class BaseCommand(ABC):
         self.auth_manager = AuthManager(self.config_store, self.token_manager)
         self.successful_updates = 0
         self.failed_updates = 0
+        # Controls whether an import/export should continue after failures.
+        # CLI wires this via --continue-on-error/--stop-on-error.
+        self.continue_on_error: bool = False
         self.auth_mode: str = "service-account"
         self.product: str = "am"  # Default product (overridden by subclasses)
 
@@ -344,7 +347,9 @@ class BaseCommand(ABC):
 
         if self.failed_updates > 0:
             error(f"Failed to process {self.failed_updates} {item_type}")
-            raise typer.Exit(1)
+            # In continue mode we only fail the command when *everything* failed.
+            if not self.continue_on_error or self.successful_updates == 0:
+                raise typer.Exit(1)
 
         if self.successful_updates == 0:
             warning(f"No {item_type} were processed")

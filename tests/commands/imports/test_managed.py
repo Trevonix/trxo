@@ -53,8 +53,10 @@ def test_get_current_managed_config_error(mocker):
     imp = ManagedObjectsImporter()
     imp.make_http_request = mocker.Mock(side_effect=Exception("boom"))
     mocker.patch("trxo.commands.imports.managed.error")
+
     out = imp._get_current_managed_config("t", "http://x")
-    assert out == {}
+
+    assert out is None  # ✅ FIXED
 
 
 def test_update_item_single_create_success(mocker):

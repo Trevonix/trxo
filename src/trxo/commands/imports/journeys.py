@@ -31,6 +31,7 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     CherryPickOpt,
+    ContinueOnErrorOpt,
     DiffOpt,
     DryRunOpt,
     ForceImportOpt,
@@ -47,7 +48,6 @@ from trxo.commands.shared.options import (
     RollbackOpt,
     SaIdOpt,
     SrcRealmOpt,
-    ContinueOnErrorOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.constants import DEFAULT_REALM
@@ -343,9 +343,7 @@ class JourneyImporter(BaseImporter):
                         continue_on_error=continue_on_error,
                         realm=realm,
                         storage_mode="git",
-                        source_label=str(
-                            git_file_path.relative_to(repo_path)
-                        ),
+                        source_label=str(git_file_path.relative_to(repo_path)),
                     )
                 finally:
                     self.cleanup()
@@ -394,6 +392,7 @@ class JourneyImporter(BaseImporter):
                     token=token,
                     base_url=api_base_url,
                     cherry_pick_ids=cherry_pick,
+                    continue_on_error=continue_on_error,
                     rollback_managers=self._setup_enriched_rollback_managers(
                         rollback=rollback,
                         branch=branch,
@@ -404,6 +403,11 @@ class JourneyImporter(BaseImporter):
                 if not ok:
                     if rollback:
                         self._execute_enriched_rollback(token, api_base_url)
+                    if continue_on_error and self.successful_updates > 0:
+                        warning(
+                            "Some journey dependencies failed, but continuing (--continue-on-error)."
+                        )
+                        return
                     raise typer.Exit(1)
             finally:
                 self.cleanup()
@@ -533,6 +537,7 @@ class JourneyImporter(BaseImporter):
                 token=token,
                 base_url=api_base_url,
                 cherry_pick_ids=cherry_pick,
+                continue_on_error=continue_on_error,
                 rollback_managers=self._setup_enriched_rollback_managers(
                     rollback=rollback,
                     branch=branch,
@@ -543,6 +548,11 @@ class JourneyImporter(BaseImporter):
             if not ok:
                 if rollback:
                     self._execute_enriched_rollback(token, api_base_url)
+                if continue_on_error and self.successful_updates > 0:
+                    warning(
+                        "Some journey dependencies failed, but continuing (--continue-on-error)."
+                    )
+                    return
                 raise typer.Exit(1)
         finally:
             self.cleanup()
@@ -806,6 +816,7 @@ class JourneyImporter(BaseImporter):
         base_url: str,
         cherry_pick_ids: Optional[str] = None,
         rollback_managers: Optional[Dict[str, Any]] = None,
+        continue_on_error: bool = False,
     ) -> bool:
         """
         Import an enriched journey export in dependency order:
@@ -834,6 +845,10 @@ class JourneyImporter(BaseImporter):
             warning("No journey data to import")
             return True
 
+        # Ensure nested helpers (_post_saml_metadata/_import_circle_of_trust/etc.)
+        # can honor the active CLI mode.
+        self.continue_on_error = continue_on_error
+
         selected_tree_ids: Optional[List[str]] = None
         cherry_pick_scope: Optional[Dict[str, set]] = None
         if cherry_pick_ids:
@@ -855,7 +870,10 @@ class JourneyImporter(BaseImporter):
             )
 
         error_count = 0
-        fail_fast = bool(rollback_managers)
+        # Stop on first error in stop mode; continue in continue mode unless
+        # rollback managers are present (rollback needs fail-fast semantics).
+        fail_fast = bool(rollback_managers) or (not continue_on_error)
+        had_success = False
 
         # -- 1. Scripts -------------------------------------------------------
         scripts: Dict[str, Any] = data.get("scripts", {})
@@ -874,6 +892,7 @@ class JourneyImporter(BaseImporter):
                     if fail_fast:
                         return False
                 else:
+                    had_success = True
                     self._track_enriched_rollback("scripts", script_id)
 
         # -- 2. Email templates -----------------------------------------------
@@ -893,6 +912,7 @@ class JourneyImporter(BaseImporter):
                     if fail_fast:
                         return False
                 else:
+                    had_success = True
                     self._track_enriched_rollback("emailTemplates", name)
 
         # -- 3. SAML2 entities ------------------------------------------------
@@ -916,6 +936,7 @@ class JourneyImporter(BaseImporter):
                         if fail_fast:
                             return False
                     else:
+                        had_success = True
                         # Determine location and AM _id for rollback URL
                         saml_loc = "hosted" if "hosted" in entity_entry else "remote"
                         # Extract the AM _id from entity config
@@ -944,6 +965,8 @@ class JourneyImporter(BaseImporter):
                     error_count += 1
                     if fail_fast:
                         return False
+                else:
+                    had_success = True
 
         # -- 5. Inner nodes ---------------------------------------------------
         inner_nodes: Dict[str, Any] = data.get("innerNodes", {})
@@ -962,6 +985,7 @@ class JourneyImporter(BaseImporter):
                     if fail_fast:
                         return False
                 else:
+                    had_success = True
                     n_type = (node_cfg.get("_type") or {}).get("_id")
                     self._track_enriched_rollback("nodes", node_id, node_type=n_type)
 
@@ -982,6 +1006,7 @@ class JourneyImporter(BaseImporter):
                     if fail_fast:
                         return False
                 else:
+                    had_success = True
                     n_type = (node_cfg.get("_type") or {}).get("_id")
                     self._track_enriched_rollback("nodes", node_id, node_type=n_type)
 
@@ -999,6 +1024,7 @@ class JourneyImporter(BaseImporter):
                     if fail_fast:
                         return False
                 else:
+                    had_success = True
                     self._track_enriched_rollback("themes", "ui/themerealm")
 
         # -- 8. Journeys (trees) ----------------------------------------------
@@ -1014,6 +1040,7 @@ class JourneyImporter(BaseImporter):
                     if fail_fast:
                         return False
                 else:
+                    had_success = True
                     self._track_enriched_rollback("trees", tree_id)
         else:
             warning("No journeys found in export data")
@@ -1033,6 +1060,10 @@ class JourneyImporter(BaseImporter):
         else:
             warning(f"Journey import completed with {error_count} error(s)")
 
+        # Let the caller decide exit code: in continue-on-error mode we
+        # only fail when *everything* failed.
+        self.successful_updates = 1 if had_success else 0
+        self.failed_updates = error_count
         return error_count == 0
 
     # ── update_item (single journey PUT — used by both paths) ───────────
@@ -1112,6 +1143,11 @@ class JourneyImporter(BaseImporter):
                 response = client.put(url, headers=headers, json=payload_data)
 
                 if response.status_code == 404:
+                    if not self.continue_on_error:
+                        error(
+                            f"Script '{script_name}' not found (404) in --stop-on-error mode"
+                        )
+                        return False
                     # Switch to create logic
                     create_url = self._construct_api_url(
                         base_url,
@@ -1223,6 +1259,12 @@ class JourneyImporter(BaseImporter):
 
                 # If it's a 409 or 500, we treat it as "already exists" and skip
                 if response.status_code in (409, 500):
+                    if not self.continue_on_error:
+                        error(
+                            f"Metadata import for '{entity_id}' returned "
+                            f"{response.status_code} in --stop-on-error mode"
+                        )
+                        return False
                     self.logger.debug(
                         f"Metadata for '{entity_id}' likely already exists "
                         f"(status {response.status_code}), skipping POST."
@@ -1310,6 +1352,11 @@ class JourneyImporter(BaseImporter):
                     response.status_code == 500
                     and "Unable to update entity provider" in response.text
                 ):
+                    if not self.continue_on_error:
+                        error(
+                            f"CoT '{cot_id}' returned known 500 in --stop-on-error mode"
+                        )
+                        return False
                     self.logger.debug(
                         f"Caught known CoT creation 500 caching bug on '{cot_id}'. "
                         "Waiting 1s and retrying..."

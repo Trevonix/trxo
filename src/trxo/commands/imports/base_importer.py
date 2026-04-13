@@ -235,6 +235,7 @@ class BaseImporter(BaseCommand):
 
         self.successful_updates = 0
         self.failed_updates = 0
+        self.continue_on_error = continue_on_error
 
         for item in items:
             item_id = self._get_item_identifier(item)
@@ -264,7 +265,6 @@ class BaseImporter(BaseCommand):
                 else:
                     self.failed_updates += 1
 
-                    # On failure trigger rollback if requested
                     if rollback_on_failure and rollback_manager:
                         self._execute_rollback_and_exit(
                             rollback_manager, token, base_url, item_id
@@ -320,9 +320,7 @@ class BaseImporter(BaseCommand):
             )
         else:
             src = file_path or "(unspecified file)"
-            info(
-                f"  • Read items from the local JSON file (your --file path): {src}"
-            )
+            info(f"  • Read items from the local JSON file (your --file path): {src}")
 
         if realm is not None:
             info(f"  • Target realm context: {realm}")
@@ -349,9 +347,7 @@ class BaseImporter(BaseCommand):
         if continue_on_error:
             info("  • With --continue-on-error: keep going after individual failures.")
         else:
-            info(
-                "  • Stop on the first failed item (unless --continue-on-error)."
-            )
+            info("  • Stop on the first failed item (unless --continue-on-error).")
 
         ids: List[str] = []
         for item in items:
@@ -606,7 +602,10 @@ class BaseImporter(BaseCommand):
             from trxo.utils.rollback_manager import RollbackManager
 
             command_name = get_command_name_from_item_type(self.get_item_type())
-            rollback_manager = RollbackManager(command_name, realm)
+            project_name = self.config_store.get_current_project()
+            rollback_manager = RollbackManager(
+                command_name, realm, project_name=project_name
+            )
 
             # Provide GitManager if in git mode so snapshot is persisted
             git_mgr = None
