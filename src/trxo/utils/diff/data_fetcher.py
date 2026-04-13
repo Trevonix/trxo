@@ -141,6 +141,7 @@ class DataFetcher:
         am_base_url: Optional[str] = None,
         response_filter: Optional[callable] = None,
         branch: Optional[str] = None,
+        global_policy: bool = False,
     ) -> Optional[Dict[str, Any]]:
         """
         Fetch current server data using export functionality
@@ -226,7 +227,7 @@ class DataFetcher:
                 exporter = PoliciesExporter(realm=realm or DEFAULT_REALM)
                 self.exporter = exporter
                 response_filter = process_policies_response(
-                    self.exporter, realm or DEFAULT_REALM
+                    self.exporter, realm or DEFAULT_REALM, global_policy=global_policy
                 )
             elif command_name == "oauth":
                 exporter = OAuthExporter(realm=realm or DEFAULT_REALM)
@@ -268,6 +269,7 @@ class DataFetcher:
                     response_filter=response_filter,
                     branch=branch,
                     version=None,
+                    global_policy=global_policy,
                 )
 
                 if isinstance(captured_data, dict) and "data" in captured_data:
@@ -291,6 +293,7 @@ class DataFetcher:
         branch: Optional[str] = None,
         project_name: Optional[str] = None,
         realm: Optional[str] = None,
+        global_policy: bool = False,
     ) -> Optional[Dict[str, Any]]:
         """
         Fetch data from local file or Git repository
@@ -315,7 +318,9 @@ class DataFetcher:
             if storage_mode == "git":
                 return self._fetch_from_git(command_name, branch, project_name, realm)
             else:
-                return self._fetch_from_local_file(file_path, command_name)
+                return self._fetch_from_local_file(
+                    file_path, command_name, global_policy=global_policy
+                )
 
         except Exception as e:
             error(f"Failed to fetch data from file/git: {str(e)}")
@@ -339,7 +344,7 @@ class DataFetcher:
             return "local"
 
     def _fetch_from_local_file(
-        self, file_path: str, command_name: str = ""
+        self, file_path: str, command_name: str = "", global_policy: bool = False
     ) -> Optional[Dict[str, Any]]:
         """Fetch data from local JSON file"""
         try:
@@ -363,6 +368,18 @@ class DataFetcher:
 
                     if isinstance(inner.get("result"), list):
                         return {"result": inner["result"]}
+
+                    # Handle structured policies format
+                    if command_name == "policies" and isinstance(
+                        inner.get("result"), dict
+                    ):
+                        result = inner["result"]
+                        items = []
+                        items.extend(result.get("am", []))
+                        if global_policy:
+                            items.extend(result.get("global", []))
+                        return {"result": items}
+
                 return data
 
         except Exception as e:

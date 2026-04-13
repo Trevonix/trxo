@@ -17,7 +17,9 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     CherryPickOpt,
+    ContinueOnErrorOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
@@ -155,6 +157,11 @@ class ScriptImporter(BaseImporter):
                 response = client.put(url, headers=headers, json=payload_data)
 
                 if response.status_code == 404:
+                    if not self.continue_on_error:
+                        error(
+                            f"Script '{item_name}' not found (404) in --stop-on-error mode"
+                        )
+                        return False
                     # Switch to create logic
                     collection_url = self._construct_api_url(
                         base_url,
@@ -219,8 +226,10 @@ class ScriptImporter(BaseImporter):
         branch: Optional[str] = None,
         diff: bool = False,
         rollback: bool = False,
+        continue_on_error: bool = False,
         sync: bool = False,
         cherry_pick: Optional[str] = None,
+        dry_run: bool = False,
     ) -> None:
         """Override to ensure automated sync (force=True)"""
         super().import_from_file(
@@ -243,8 +252,10 @@ class ScriptImporter(BaseImporter):
             branch=branch,
             diff=diff,
             rollback=rollback,
+            continue_on_error=continue_on_error,
             sync=sync,
             cherry_pick=cherry_pick,
+            dry_run=dry_run,
         )
 
 
@@ -260,6 +271,7 @@ def create_script_import_command():
         file: InputFileOpt = None,
         force_import: ForceImportOpt = False,
         rollback: RollbackOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
         branch: BranchOpt = None,
         jwk_path: JwkPathOpt = None,
         sa_id: SaIdOpt = None,
@@ -273,6 +285,7 @@ def create_script_import_command():
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
+        dry_run: DryRunOpt = False,
     ):
         """Import scripts from JSON file (local mode) or Git repository (Git mode)"""
         importer = ScriptImporter(realm=realm)
@@ -296,8 +309,10 @@ def create_script_import_command():
             branch=branch,
             diff=diff,
             rollback=rollback,
+            continue_on_error=continue_on_error,
             sync=sync,
             cherry_pick=cherry_pick,
+            dry_run=dry_run,
         )
 
     return import_scripts

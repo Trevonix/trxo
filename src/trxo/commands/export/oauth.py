@@ -8,12 +8,15 @@ PingOne Advanced Identity Cloud OAuth2 clients with script dependencies.
 import base64
 from typing import Any, Dict, Set
 
+import typer
+
 from trxo.commands.shared.options import (
     AmBaseUrlOpt,
     AuthModeOpt,
     BaseUrlOpt,
     BranchOpt,
     CommitMessageOpt,
+    ContinueOnErrorOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
     IdmUsernameOpt,
@@ -155,13 +158,10 @@ class OAuthExporter(BaseExporter):
 
             return script_data
         except Exception as e:
-            # Handle 403 Forbidden gracefully (likely internal/protected scripts)
-            if "403" in str(e) or "Forbidden" in str(e):
-                # warning(f"Skipping script {script_id}: Access denied (likely internal)")
-                return {}
-
             error(f"Failed to fetch script {script_id}: {str(e)}")
-            return {}
+            if getattr(self, "continue_on_error", False):
+                return {}
+            raise
 
     def fetch_oauth_client_data(
         self, client_id: str, token: str, base_url: str
@@ -181,7 +181,9 @@ class OAuthExporter(BaseExporter):
             return data
         except Exception as e:
             error(f"Failed to fetch OAuth client {client_id}: {str(e)}")
-            return {}
+            if getattr(self, "continue_on_error", False):
+                return {}
+            raise
 
     def _discover_provider_service_endpoints(
         self, token: str, base_url: str
@@ -221,6 +223,8 @@ class OAuthExporter(BaseExporter):
         try:
             endpoints = self._discover_provider_service_endpoints(token, base_url)
         except Exception:
+            if not self.continue_on_error:
+                raise
             return {}
 
         if not endpoints:
@@ -240,7 +244,11 @@ class OAuthExporter(BaseExporter):
                 continue
 
         if last_error:
-            warning(f"Failed to fetch OAuth provider config: {last_error}")
+            if getattr(self, "continue_on_error", False):
+                warning(f"Failed to fetch OAuth provider config: {last_error}")
+            else:
+                error(f"Failed to fetch OAuth provider config: {last_error}")
+                raise RuntimeError(last_error) from None
         return {}
 
 
@@ -269,9 +277,12 @@ def create_oauth_export_command():
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Export OAuth2 clients configuration with script dependencies"""
+
         exporter = OAuthExporter(realm=realm)
+        exporter.continue_on_error = continue_on_error
 
         headers = get_headers("oauth")
 
@@ -302,7 +313,102 @@ def create_oauth_export_command():
             no_version=no_version,
             branch=branch,
             commit_message=commit,
+            continue_on_error=continue_on_error,
             response_filter=process_oauth_response(exporter, realm),
         )
+
+        # ✅ FIXED BLOCK STARTS HERE
+        token, api_base_url = exporter.get_current_auth()
+
+        try:
+            list_url = exporter._construct_api_url(
+                api_base_url,
+                f"/am/json/realms/root/realms/{realm}/realm-config/agents/OAuth2Client?_queryFilter=true",
+            )
+
+            headers = {**get_headers("oauth"), **exporter.build_auth_headers(token)}
+
+            response = exporter.make_http_request(list_url, "GET", headers)
+            list_data = response.json()
+
+            if not isinstance(list_data, dict) or "result" not in list_data:
+                error("Invalid response format from OAuth clients list")
+                return
+
+            oauth_clients = list_data["result"]
+
+            info("Fetching OAuth2 clients data...\n")
+
+            complete_clients = []
+            all_script_ids = set()
+
+            for client in oauth_clients:
+                client_id = client.get("_id")
+                if not client_id:
+                    warning("Skipping client without _id")
+                    continue
+
+                complete_client = exporter.fetch_oauth_client_data(
+                    client_id, token, api_base_url
+                )
+
+                if complete_client:
+                    complete_clients.append(complete_client)
+                    script_ids = exporter.extract_script_ids(complete_client)
+                    all_script_ids.update(script_ids)
+
+            scripts_data = []
+            for script_id in all_script_ids:
+                if script_id in IGNORED_SCRIPT_IDS:
+                    continue
+
+                script_data = exporter.fetch_script_data(script_id, token, api_base_url)
+                if script_data:
+                    scripts_data.append(script_data)
+
+            from datetime import datetime, timezone
+
+            combined_data = {"clients": complete_clients, "scripts": scripts_data}
+
+            export_data = {
+                "metadata": {
+                    "export_type": "oauth",
+                    "realm": realm,
+                    "timestamp": datetime.now(timezone.utc).strftime(
+                        "%Y-%m-%dT%H:%M:%SZ"
+                    ),
+                    "version": None,
+                    "total_items": len(complete_clients),
+                },
+                "data": combined_data,
+            }
+
+            if view:
+                exporter._handle_view_mode(export_data, "oauth", view_columns)
+                return
+
+            file_path = exporter.save_response(
+                data=export_data,
+                command_name="oauth",
+                output_dir=output_dir,
+                output_file=output_file,
+                version=version,
+                no_version=no_version,
+                branch=branch,
+                commit_message=commit,
+            )
+
+            if exporter._get_storage_mode() == "local" and file_path:
+                hash_value = exporter.hash_manager.create_hash(combined_data, "oauth")
+                exporter.hash_manager.save_export_hash("oauth", hash_value, file_path)
+
+            print()
+            info("OAuth2 clients exported successfully")
+
+        except Exception as e:
+            error(f"OAuth export failed: {str(e)}")
+            if not continue_on_error:
+                raise typer.Exit(1)
+            return
 
     return export_oauth

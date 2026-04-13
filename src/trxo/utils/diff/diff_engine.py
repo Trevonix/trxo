@@ -104,6 +104,7 @@ class DiffEngine:
         new_data: Dict[str, Any],
         command_name: str,
         realm: Optional[str] = None,
+        global_policy: bool = False,
     ) -> DiffResult:
         """
         Compare current server data with new data to be imported
@@ -136,8 +137,12 @@ class DiffEngine:
             # Auto-fetch current data if not provided
 
             # Extract data arrays from the response structure
-            current_items = self._extract_items(current_data, command_name)
-            new_items = self._extract_items(new_data, command_name)
+            current_items = self._extract_items(
+                current_data, command_name, global_policy=global_policy
+            )
+            new_items = self._extract_items(
+                new_data, command_name, global_policy=global_policy
+            )
 
             # Create ID-based mappings
             current_map = self._create_id_map(current_items)
@@ -227,36 +232,67 @@ class DiffEngine:
             raise
 
     def _extract_items(
-        self, data: Dict[str, Any], command_name: Optional[str] = None
+        self,
+        data: Any,
+        command_name: Optional[str] = None,
+        global_policy: bool = False,
     ) -> List[Dict[str, Any]]:
         """Extract items array from response data"""
         if not data:
             return []
 
-        # Unwrap top-level "data"
+        # Handle list-wrapped data (e.g. from FileLoader in Git mode)
+        if isinstance(data, list):
+            # Special case for bucketed policies format wrapped in a list by FileLoader (v2 format)
+            if (
+                len(data) == 1
+                and isinstance(data[0], dict)
+                and ("am" in data[0] or "global" in data[0])
+            ):
+                ds = data[0]
+                items = []
+                items.extend(ds.get("am", []))
+                if global_policy:
+                    items.extend(ds.get("global", []))
+                return items
+            return data
+
+        # Unwrap top-level "data" wrapper if present
         if isinstance(data, dict) and "data" in data:
             data = data["data"]
 
-            # SAML: only diff hosted + remote (ignore metadata, scripts)
-            if (
-                isinstance(data, dict)
-                and isinstance(data.get("hosted"), list)
-                and isinstance(data.get("remote"), list)
-            ):
-                return data.get("hosted", []) + data.get("remote", [])
+        if not isinstance(data, dict):
+            return data if isinstance(data, list) else []
 
-            # OAuth: data.data is a dict of clients (keyed by id)
-            if command_name == "oauth" and isinstance(data, dict) and "data" in data:
-                clients_dict = data.get("data", {})
-                if isinstance(clients_dict, dict) and len(clients_dict) > 0:
-                    return list(clients_dict.values())
+        # SAML: only diff hosted + remote (ignore metadata, scripts)
+        if isinstance(data.get("hosted"), list) and isinstance(
+            data.get("remote"), list
+        ):
+            return data.get("hosted", []) + data.get("remote", [])
 
-        #  Handle result wrapper
-        if isinstance(data, dict):
-            if isinstance(data.get("result"), list):
-                return data["result"]
+        # OAuth: data.data is a dict of clients (keyed by id)
+        if command_name == "oauth" and "data" in data:
+            clients_dict = data.get("data", {})
+            if isinstance(clients_dict, dict) and len(clients_dict) > 0:
+                return list(clients_dict.values())
+
+        # Handle structured policies format (direct dict or inside 'result')
+        policies_data = data.get("result", data)
+        if isinstance(policies_data, dict) and (
+            "am" in policies_data or "global" in policies_data
+        ):
+            items = []
+            items.extend(policies_data.get("am", []))
+            if global_policy:
+                items.extend(policies_data.get("global", []))
+            return items
+
+        # Handle standard result wrapper
+        if isinstance(data.get("result"), list):
+            return data["result"]
 
             # Try command name or common variations as keys
+
             keys_to_try = [command_name] if command_name else []
             keys_to_try.append("objects")  # Used by managed objects
             if command_name and "_" in command_name:

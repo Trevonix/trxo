@@ -55,21 +55,23 @@ class FileLoader:
             if "data" not in data:
                 raise ValueError("Invalid JSON structure: Missing 'data' field")
 
-            # Support both collection (data.result = [...]) and single-object (data = {...}) shapes
-            if "result" in data["data"]:
-                items = data["data"]["result"]
-                if not isinstance(items, list):
-                    raise ValueError(
-                        "Invalid JSON structure: 'data.result' should be an array"
-                    )
-            else:
-                # No 'result' array; accept a single object and wrap it
-                if isinstance(data["data"], dict):
-                    items = [data["data"]]
+            # Support collection, flattened, and single-object shapes
+            data_section = data["data"]
+            if isinstance(data_section, dict):
+                if "result" in data_section:
+                    items = data_section["result"]
+                    if not isinstance(items, list):
+                        raise ValueError(
+                            "Invalid JSON structure: 'data.result' should be an array"
+                        )
+                elif "am" in data_section or "global" in data_section:
+                    # Return the dict itself; importer will handle bucket extraction
+                    return [data_section]
                 else:
-                    raise ValueError(
-                        "Invalid JSON structure: 'data' must be an object or contain 'result' array"
-                    )
+                    # Single object
+                    items = [data_section]
+            else:
+                raise ValueError("Invalid JSON structure: 'data' must be an object")
 
             return items
 
@@ -96,21 +98,26 @@ class FileLoader:
             # Handle Git export format with metadata structure
             if isinstance(data, dict):
                 if "data" in data:
-                    # Git export format: {"metadata": {...}, "data": {"result": [...]}}
                     data_section = data["data"]
-                    if isinstance(data_section, dict) and "result" in data_section:
-                        # Extract the result array
-                        result = data_section["result"]
-                        return result if isinstance(result, list) else [result]
+                    if isinstance(data_section, dict):
+                        if "result" in data_section:
+                            result = data_section["result"]
+                            return result if isinstance(result, list) else [result]
+                        elif "am" in data_section or "global" in data_section:
+                            # Return the dict itself; importer will handle bucket extraction
+                            return [data_section]
+                        else:
+                            # Single item in data section
+                            return [data_section]
                     elif isinstance(data_section, list):
                         # Direct list in data section
                         return data_section
                     else:
-                        # Single item in data section
                         return [data_section]
                 else:
                     # Direct data format (backward compatibility)
                     return [data]
+
             elif isinstance(data, list):
                 # Direct list format
                 return data

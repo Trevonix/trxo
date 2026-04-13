@@ -18,6 +18,7 @@ from .auth_handler import (
     setup_service_account_auth,
 )
 from .settings import display_config, get_credential_value
+from .status import StatusChecker
 
 app = typer.Typer(help="Manage project configuration")
 config_store = ConfigStore()
@@ -216,6 +217,59 @@ def show():
 
     config = config_store.get_project_config(current_project)
     display_config(current_project, config)
+
+
+@app.command("status")
+def status(
+    am_username: Optional[str] = typer.Option(
+        None, "--am-username", help="On-Prem AM username for status checks"
+    ),
+    am_password: Optional[str] = typer.Option(
+        None,
+        "--am-password",
+        help="On-Prem AM password for status checks",
+        hide_input=True,
+    ),
+    idm_username: Optional[str] = typer.Option(
+        None, "--idm-username", help="On-Prem IDM username for status checks"
+    ),
+    idm_password: Optional[str] = typer.Option(
+        None,
+        "--idm-password",
+        help="On-Prem IDM password for status checks",
+        hide_input=True,
+    ),
+    no_prompt: bool = typer.Option(
+        False,
+        "--no-prompt",
+        help="Do not prompt for missing passwords during status checks",
+    ),
+) -> None:
+    """Display current project status and connectivity diagnostics"""
+    current_project = config_store.get_current_project()
+
+    if not current_project:
+        error("No active project")
+        raise typer.Exit(1)
+
+    config = config_store.get_project_config(current_project) or {}
+
+    if am_username:
+        config["onprem_username"] = am_username
+    if am_password:
+        config["onprem_password"] = am_password
+    if idm_username:
+        config["idm_username"] = idm_username
+    if idm_password:
+        config["idm_password"] = idm_password
+
+    checker = StatusChecker(
+        project_name=current_project,
+        config=config,
+        no_prompt=no_prompt,
+    )
+    checker.run()
+    checker.display()
 
 
 @app.command("set-log-level")

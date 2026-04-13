@@ -21,7 +21,9 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     CherryPickOpt,
+    ContinueOnErrorOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
@@ -393,7 +395,9 @@ def create_themes_import_command():
         diff: DiffOpt = False,
         branch: BranchOpt = None,
         rollback: RollbackOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
         sync: SyncOpt = False,
+        dry_run: DryRunOpt = False,
     ):
         """Import themes from JSON file or Git repository."""
         importer = ThemesImporter()
@@ -417,8 +421,10 @@ def create_themes_import_command():
             branch=branch,
             diff=diff,
             rollback=rollback,
+            continue_on_error=continue_on_error,
             cherry_pick=cherry_pick,
             sync=sync,
+            dry_run=dry_run,
         )
 
     return import_themes

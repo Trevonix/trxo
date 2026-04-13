@@ -16,8 +16,11 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     CherryPickOpt,
+    ContinueOnErrorOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
+    GlobalOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
     IdmUsernameOpt,
@@ -43,9 +46,10 @@ from .base_importer import BaseImporter
 class PoliciesImporter(BaseImporter):
     """Importer for PingOne Advanced Identity Cloud policies"""
 
-    def __init__(self, realm: str = DEFAULT_REALM):
+    def __init__(self, realm: str = DEFAULT_REALM, global_policy: bool = False):
         super().__init__()
         self.realm = realm
+        self.global_policy = global_policy
 
     def get_required_fields(self) -> List[str]:
         return ["_id"]
@@ -56,9 +60,86 @@ class PoliciesImporter(BaseImporter):
     def get_item_id(self, item: Dict[str, Any]) -> Optional[str]:
         return item.get("_id")
 
+    def load_data_from_items(
+        self, all_items: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """
+        Extract items from the structured format buckets.
+
+        Args:
+            all_items: List of raw items or bucket dictionaries
+
+        Returns:
+            Flattened and filtered list of items
+        """
+        final_items = []
+        for item in all_items:
+            # If it's a bucket dictionary from our new format
+            if isinstance(item, dict) and ("am" in item or "global" in item):
+                am_items = item.get("am", [])
+                for am_item in am_items:
+                    if isinstance(am_item, dict):
+                        am_item["_is_global"] = False
+                final_items.extend(am_items)
+
+                # Only include global policies if flag is set
+                if self.global_policy:
+                    global_items = item.get("global", [])
+                    for g_item in global_items:
+                        if isinstance(g_item, dict):
+                            g_item["_is_global"] = True
+                    final_items.extend(global_items)
+                else:
+                    info(
+                        "Skipping global policies (use --global-policy to include them)"
+                    )
+
+            # Backward compatibility for flat lists or single items
+            elif isinstance(item, dict):
+                final_items.append(item)
+            elif isinstance(item, list):
+                final_items.extend(item)
+
+        return final_items
+
+    def load_data_from_file(self, file_path: str) -> List[Dict[str, Any]]:
+        """
+        Load policies from file, handling both legacy flat format
+        and new structured (am/global) format.
+        """
+        import os
+
+        if not os.path.isabs(file_path):
+            file_path = os.path.abspath(file_path)
+
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception as e:
+            error(f"Failed to load file {file_path}: {str(e)}")
+            return []
+
+        # Extract the content under 'data' -> 'result'
+        if not isinstance(data, dict) or "data" not in data:
+            return []
+
+        inner_data = data["data"]
+        # Extraction: handling both legacy (with 'result') and new flattened format
+        result = inner_data.get("result", inner_data)
+
+        # Wrap in a list for load_data_from_items
+        raw_items = result if isinstance(result, list) else [result]
+        return self.load_data_from_items(raw_items)
+
     def get_api_endpoint(
-        self, item_id: str, base_url: str, is_policy_set: bool = False
+        self,
+        item_id: str,
+        base_url: str,
+        is_policy_set: bool = False,
+        is_idm_policy: bool = False,
     ) -> str:
+        if is_idm_policy:
+            return self._construct_api_url(base_url, f"/openidm/config/{item_id}")
         if is_policy_set:
             return self._construct_api_url(
                 base_url,
@@ -70,36 +151,82 @@ class PoliciesImporter(BaseImporter):
         )
 
     def update_item(self, item_data: Dict[str, Any], token: str, base_url: str) -> bool:
-        """Upsert policy or policy set using PUT"""
+        """Upsert policy, policy set, or IDM policy using PUT"""
         item_id = item_data.get("_id")
         if not item_id:
             error("Item missing '_id'; required for upsert")
             return False
 
-        # Policy Sets don't have "applicationName" indicating an owner
-        is_policy_set = "applicationName" not in item_data
+        # Detect item type
+        # Use explicitly tagged bucket info if available (v2 format)
+        # Otherwise fallback to ID-based detection (v1 format)
+        is_idm_policy = item_data.get("_is_global")
+        if is_idm_policy is None:
+            is_idm_policy = item_id.startswith("policy/") or item_id.startswith(
+                "fieldPolicy/"
+            )
 
-        # Keep complete data as payload (no field removal as per requirement)
-        payload = json.dumps(item_data)
+        # Remove the tag before sending to API
+        payload_dict = item_data.copy()
+        payload_dict.pop("_is_global", None)
 
-        url = self.get_api_endpoint(item_id, base_url, is_policy_set)
-        headers = get_headers("policy_sets" if is_policy_set else "policies")
+        is_policy_set = not is_idm_policy and "applicationName" not in payload_dict
+
+        # Keep complete data as payload
+        if is_idm_policy:
+            payload_dict.pop("_rev", None)
+            payload_dict.pop("_type", None)
+
+        payload = json.dumps(payload_dict)
+
+        url = self.get_api_endpoint(
+            item_id, base_url, is_policy_set, is_idm_policy=is_idm_policy
+        )
+
+        if is_idm_policy:
+            headers = get_headers("default")
+        else:
+            headers = get_headers("policy_sets" if is_policy_set else "policies")
+
         headers = {**headers, **self.build_auth_headers(token)}
 
         try:
             self.make_http_request(url, "PUT", headers, payload)
-            item_type = "policy set" if is_policy_set else "policy"
-            info(f"Upserted {item_type} ({self.realm}): {item_id}")
+            if is_idm_policy:
+                info(f"Upserted Global policy (root): {item_id}")
+            else:
+
+                item_type = "policy set" if is_policy_set else "policy"
+                info(f"Upserted {item_type} ({self.realm}): {item_id}")
             return True
         except Exception as e:
-            item_type = "policy set" if is_policy_set else "policy"
-            error(
-                f"Failed to upsert {item_type} '{item_id}' in realm '{self.realm}': {e}"
-            )
+            if is_idm_policy:
+                error(f"Failed to upsert IDM policy '{item_id}': {e}")
+            else:
+                item_type = "policy set" if is_policy_set else "policy"
+                error(
+                    f"Failed to upsert {item_type} '{item_id}' in realm '{self.realm}': {e}"
+                )
             return False
 
     def delete_item(self, item_id: str, token: str, base_url: str) -> bool:
-        """Delete a single policy or policy set via API"""
+        """Delete a single policy, policy set, or IDM policy via API"""
+        is_idm_policy = item_id.startswith("policy/") or item_id.startswith(
+            "fieldPolicy/"
+        )
+
+        if is_idm_policy:
+            url = self.get_api_endpoint(item_id, base_url, is_idm_policy=True)
+            headers = get_headers("default")
+            headers = {**headers, **self.build_auth_headers(token)}
+            try:
+                self.make_http_request(url, "DELETE", headers)
+                info(f"Successfully deleted Global policy (root): {item_id}")
+                return True
+            except Exception as e:
+                error(f"Failed to delete Global policy '{item_id}': {e}")
+                return False
+
         # Try as policy first
         url = self.get_api_endpoint(item_id, base_url, is_policy_set=False)
         headers = get_headers("policies")
@@ -142,19 +269,22 @@ def create_policies_import_command():
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
         force_import: ForceImportOpt = False,
+        global_policy: GlobalOpt = False,
         diff: DiffOpt = False,
         sync: SyncOpt = False,
         rollback: RollbackOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
         cherry_pick: CherryPickOpt = None,
         branch: BranchOpt = None,
         realm: RealmOpt = DEFAULT_REALM,
         src_realm: SrcRealmOpt = None,
+        dry_run: DryRunOpt = False,
     ):
         """
         Import policies from JSON file (local mode) or
         Git repository (Git mode)
         """
-        importer = PoliciesImporter(realm=realm)
+        importer = PoliciesImporter(realm=realm, global_policy=global_policy)
         importer.import_from_file(
             file_path=file,
             realm=realm,
@@ -176,7 +306,10 @@ def create_policies_import_command():
             diff=diff,
             sync=sync,
             rollback=rollback,
+            continue_on_error=continue_on_error,
             cherry_pick=cherry_pick,
+            global_policy=global_policy,
+            dry_run=dry_run,
         )
 
     return import_policies

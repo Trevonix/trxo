@@ -15,6 +15,7 @@ def create_mock_response(json_data=None):
 @pytest.fixture
 def mock_exporter(mocker):
     exporter = mocker.Mock()
+    exporter.continue_on_error = False
     exporter.build_auth_headers.return_value = {"Authorization": "Bearer token"}
     exporter._construct_api_url.side_effect = lambda base, ep: f"{base}{ep}"
     exporter.get_current_auth.return_value = ("token", "https://api.example.com")
@@ -127,6 +128,7 @@ def test_services_response_filter_success_with_descendants(mock_exporter):
 
 
 def test_services_response_filter_nextdescendents_failure(mock_exporter):
+    mock_exporter.continue_on_error = True
     mock_exporter.make_http_request.side_effect = [
         create_mock_response({"_id": "ServiceA"}),
         Exception("boom"),
@@ -144,6 +146,7 @@ def test_services_response_filter_nextdescendents_failure(mock_exporter):
 
 
 def test_services_response_filter_detail_fetch_failure(mock_exporter, mocker):
+    mock_exporter.continue_on_error = True
     mock_exporter.make_http_request.side_effect = Exception("boom")
     warn_spy = mocker.patch("trxo.commands.export.services.warning")
 
@@ -157,3 +160,36 @@ def test_services_response_filter_detail_fetch_failure(mock_exporter, mocker):
 
     assert out["result"][0] == {"_id": "ServiceA"}
     warn_spy.assert_called_once()
+
+
+def test_services_response_filter_nextdescendents_failure_stop_mode_raises(
+    mock_exporter,
+):
+    mock_exporter.continue_on_error = False
+    mock_exporter.make_http_request.side_effect = [
+        create_mock_response({"_id": "ServiceA"}),
+        Exception("boom"),
+    ]
+
+    export_services = create_services_export_command()
+    export_services(scope="realm", realm="alpha")
+
+    response_filter = mock_exporter.export_data.call_args.kwargs["response_filter"]
+    raw = {"result": [{"_id": "ServiceA"}]}
+
+    with pytest.raises(Exception, match="boom"):
+        response_filter(raw)
+
+
+def test_services_response_filter_detail_fetch_failure_stop_mode_raises(mock_exporter):
+    mock_exporter.continue_on_error = False
+    mock_exporter.make_http_request.side_effect = Exception("boom")
+
+    export_services = create_services_export_command()
+    export_services(scope="realm", realm="alpha")
+
+    response_filter = mock_exporter.export_data.call_args.kwargs["response_filter"]
+    raw = {"result": [{"_id": "ServiceA"}]}
+
+    with pytest.raises(Exception, match="boom"):
+        response_filter(raw)

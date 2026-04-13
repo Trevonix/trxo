@@ -18,7 +18,9 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     CherryPickOpt,
+    ContinueOnErrorOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
@@ -113,7 +115,9 @@ def create_privileges_import_command():
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
         rollback: RollbackOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
         sync: SyncOpt = False,
+        dry_run: DryRunOpt = False,
     ):
         """Import Privileges from JSON file (local mode) or Git repository (Git mode)"""
         importer = PrivilegesImporter()
@@ -136,8 +140,10 @@ def create_privileges_import_command():
             branch=branch,
             diff=diff,
             rollback=rollback,
+            continue_on_error=continue_on_error,
             cherry_pick=cherry_pick,
             sync=sync,
+            dry_run=dry_run,
         )
 
     return import_privileges

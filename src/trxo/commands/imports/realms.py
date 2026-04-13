@@ -17,7 +17,9 @@ from trxo.commands.shared.options import (
     AuthModeOpt,
     BaseUrlOpt,
     BranchOpt,
+    ContinueOnErrorOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
@@ -113,7 +115,10 @@ def create_realms_import_command():
         idm_password: IdmPasswordOpt = None,
         force_import: ForceImportOpt = False,
         diff: DiffOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
         branch: BranchOpt = None,
+        continue_on_error: ContinueOnErrorOpt = False,
+        dry_run: DryRunOpt = False,
         # diff: bool = typer.Option(False, "--diff", help="Show differences before import"),
     ):
         """Import realms from JSON file. Updates when _id present; otherwise creates."""
@@ -135,6 +140,8 @@ def create_realms_import_command():
             force_import=force_import,
             branch=branch,
             diff=diff,
+            continue_on_error=continue_on_error,
+            dry_run=dry_run,
         )
 
     return import_realms

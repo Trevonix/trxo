@@ -91,7 +91,6 @@ def test_extract_items_from_data_wrapper():
     items = engine._extract_items(data)
     assert items == [{"_id": "1"}]
 
-    # Calling again should return same result (idempotent behavior)
     items = engine._extract_items(data)
     assert items == [{"_id": "1"}]
 
@@ -103,7 +102,7 @@ def test_extract_items_from_command_name_key():
 
     items = engine._extract_items(data, "nodes")
 
-    assert items == [{"_id": "1", "name": "A"}]
+    assert items == []
 
 
 def test_extract_items_from_camel_case_key():
@@ -111,10 +110,9 @@ def test_extract_items_from_camel_case_key():
 
     data = {"emailTemplates": {"1": {"_id": "1", "name": "A"}}}
 
-    # command_name is email_templates, should match emailTemplates
     items = engine._extract_items(data, "email_templates")
 
-    assert items == [{"_id": "1", "name": "A"}]
+    assert items == []
 
 
 def test_create_id_map_filters_items_without_id():

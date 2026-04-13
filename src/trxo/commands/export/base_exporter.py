@@ -34,6 +34,7 @@ class BaseExporter(BaseCommand):
         self.git_handler = GitExportHandler(self.config_store)
         self._current_token = None
         self._current_api_base_url = None
+        self.continue_on_error: bool = False
 
     def export_data(
         self,
@@ -61,6 +62,7 @@ class BaseExporter(BaseCommand):
         no_version: bool = False,
         branch: Optional[str] = None,
         commit_message: Optional[str] = None,
+        continue_on_error: bool = False,
         **kwargs,
     ) -> None:
         """Export data with authentication and save to file
@@ -90,9 +92,12 @@ class BaseExporter(BaseCommand):
             no_version: Skip versioning
             branch: Git branch to use (Git mode)
             commit_message: Custom commit message (Git mode)
+            continue_on_error: Continue on response-filter errors
         """
         self.logger.info(f"Starting export operation: {command_name}")
+        self.continue_on_error = continue_on_error
         try:
+            self.continue_on_error = continue_on_error
             # Determine product type from endpoint for auth context and headers
             product = "idm" if "/openidm/" in api_endpoint else "am"
             self.product = product
@@ -135,8 +140,22 @@ class BaseExporter(BaseCommand):
 
             # Make API call
             url = self._construct_api_url(api_base_url, api_endpoint)
-            response = self.make_http_request(url, "GET", headers)
-            raw_data = response.json()
+            try:
+                response = self.make_http_request(url, "GET", headers)
+                raw_data = response.json()
+            except Exception as e:
+                # Handle 404 for IDM config by returning empty result
+                if "404" in str(e) and "/openidm/config/" in api_endpoint:
+                    self.logger.warning(
+                        f"Configuration not found (404) at {api_endpoint}. Returning empty data for recovery."
+                    )
+                    raw_data = {"objects": []} if "managed" in command_name else {}
+                    # Create a mock response object for later use
+                    import httpx
+
+                    response = httpx.Response(200, json=raw_data)
+                else:
+                    raise e
 
             # Handle pagination automatically
             aggregated_data = self._handle_pagination(
@@ -196,7 +215,9 @@ class BaseExporter(BaseCommand):
         except Exception as e:
             self.logger.error(f"Export failed for {command_name}: {str(e)}")
             error(f"Export failed: {str(e)}")
-            raise typer.Exit(1)
+            if not continue_on_error:
+                raise typer.Exit(1)
+            return
         finally:
             self.cleanup()
 

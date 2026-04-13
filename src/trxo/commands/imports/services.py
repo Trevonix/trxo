@@ -20,7 +20,9 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     CherryPickOpt,
+    ContinueOnErrorOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
@@ -141,6 +143,8 @@ class ServicesImporter(BaseImporter):
             except Exception as put_error:
                 # If realm scope and PUT failed (probably 404), try create
                 if self.scope == "realm":
+                    if not self.continue_on_error:
+                        raise put_error
                     try:
                         # For creation, we might need _type in the payload
                         # Some services support creation at the specific ID URL
@@ -225,6 +229,8 @@ class ServicesImporter(BaseImporter):
                                 f"Could not validate schema for descendant "
                                 f"{desc_id}: {e}"
                             )
+                            if not self.continue_on_error:
+                                raise
                         try:
                             self.make_http_request(
                                 desc_url, "PUT", headers, desc_payload
@@ -234,6 +240,8 @@ class ServicesImporter(BaseImporter):
                                 f"Failed to update descendant {desc_id} for "
                                 f"service {item_id}: {de}"
                             )
+                            if not self.continue_on_error:
+                                raise
                     else:
                         warning(
                             f"Skipping descendant without _type._id or _id in "
@@ -283,6 +291,7 @@ def create_services_import_command():
         diff: DiffOpt = False,
         branch: BranchOpt = None,
         rollback: RollbackOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
         cherry_pick: CherryPickOpt = None,
         scope: str = typer.Option(
             "realm",
@@ -291,6 +300,7 @@ def create_services_import_command():
         ),
         realm: RealmOpt = DEFAULT_REALM,
         src_realm: SrcRealmOpt = None,
+        dry_run: DryRunOpt = False,
     ):
         """Import services from JSON file or Git repository."""
 
@@ -325,8 +335,10 @@ def create_services_import_command():
             branch=branch,
             diff=diff,
             rollback=rollback,
+            continue_on_error=continue_on_error,
             cherry_pick=cherry_pick,
             sync=sync,
+            dry_run=dry_run,
         )
 
     return import_services

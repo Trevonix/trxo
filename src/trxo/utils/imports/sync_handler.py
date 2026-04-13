@@ -36,6 +36,7 @@ class SyncHandler:
         am_base_url: Optional[str] = None,
         branch: Optional[str] = None,
         force: bool = False,
+        global_policy: bool = False,
     ) -> Optional[Dict[str, Any]]:
         """
         Handle deletion of orphaned items in sync mode.
@@ -87,6 +88,7 @@ class SyncHandler:
             am_base_url=am_base_url,
             branch=branch,
             generate_html=False,  # Don't generate HTML for sync operations
+            global_policy=global_policy,
         )
 
         if not diff_result:

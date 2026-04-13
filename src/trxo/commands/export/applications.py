@@ -18,6 +18,7 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     CommitMessageOpt,
+    ContinueOnErrorOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
     IdmUsernameOpt,
@@ -96,6 +97,7 @@ def _export_applications_with_deps(
     idm_base_url: str | None,
     idm_username: str | None,
     idm_password: str | None,
+    continue_on_error: bool = False,
 ) -> None:
     """Export managed applications plus referenced OAuth2 clients/provider/scripts."""
     base = BaseExporter()
@@ -164,6 +166,7 @@ def _export_applications_with_deps(
             )
 
         oauth_helper = OAuthExporter(realm=realm)
+        oauth_helper.continue_on_error = continue_on_error
         client_ids = _collect_oidc_client_ids(applications_list)
         complete_clients: List[Dict[str, Any]] = []
         all_script_ids: set[str] = set()
@@ -274,6 +277,7 @@ def create_applications_export_command():
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
         with_deps: WithDepsOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Export custom applications configuration"""
         if with_deps:
@@ -300,6 +304,7 @@ def create_applications_export_command():
                     idm_base_url=idm_base_url,
                     idm_username=idm_username,
                     idm_password=idm_password,
+                    continue_on_error=continue_on_error,
                 )
                 return
 
@@ -331,6 +336,7 @@ def create_applications_export_command():
             no_version=no_version,
             branch=branch,
             commit_message=commit,
+            continue_on_error=continue_on_error,
         )
 
     return export_applications

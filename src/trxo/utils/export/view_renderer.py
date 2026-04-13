@@ -201,8 +201,13 @@ class ViewRenderer:
                 ViewRenderer.create_table(
                     items, f"{command_name.title()} Data", selected_columns
                 )
+            elif isinstance(items, dict) and items:
+                # Handle structured results (like am/global split)
+                ViewRenderer.display_nested_structure(
+                    data, command_name, selected_columns
+                )
             else:
-                info("No items found in result array")
+                info("No items found in result")
 
         elif isinstance(data, list):
             if data:

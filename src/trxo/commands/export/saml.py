@@ -16,6 +16,7 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     CommitMessageOpt,
+    ContinueOnErrorOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
     IdmUsernameOpt,
@@ -184,6 +185,7 @@ def process_saml_response(exporter_instance: BaseExporter, realm: str):
                             provider_url, "GET", headers
                         )
                         provider_detail = provider_detail_response.json()
+                        provider_detail = _remove_empty_values(provider_detail)
 
                         # Step 3: Extract and fetch scripts referenced in the provider data
                         script_ids = extract_script_ids(provider_detail)
@@ -209,6 +211,8 @@ def process_saml_response(exporter_instance: BaseExporter, realm: str):
 
                     except Exception as e:
                         error(f"Failed to fetch provider {provider_id}: {str(e)}")
+                        if not exporter_instance.continue_on_error:
+                            raise
                         continue
 
             else:
@@ -216,6 +220,8 @@ def process_saml_response(exporter_instance: BaseExporter, realm: str):
 
         except Exception as e:
             error(f"Failed to fetch SAML providers list: {str(e)}")
+            if not exporter_instance.continue_on_error:
+                raise
 
         # Step 4: Get SAML metadata for each provider individually
         if entity_ids_list:
@@ -248,12 +254,35 @@ def process_saml_response(exporter_instance: BaseExporter, realm: str):
                         f"Failed to fetch metadata for entity '{entity_id}': "
                         f"{str(e)}"
                     )
+                    if not exporter_instance.continue_on_error:
+                        raise
         else:
             info("No SAML providers found, skipping metadata export")
 
         return result
 
     return filter_function
+
+
+def _remove_empty_values(data: Any) -> Any:
+    """
+    Recursively remove keys whose values are '[Empty]'.
+
+    PingAM uses '[Empty]' as a placeholder for unset script references.
+    These values are invalid UUIDs and will cause 'invalid syntax' errors
+    if stored as-is and later re-imported. Removing the key entirely allows
+    PingAM to fall back to default behavior safely.
+    """
+    if isinstance(data, dict):
+        # Build dictionary, omitting keys with '[Empty]' string
+        return {
+            k: _remove_empty_values(v)
+            for k, v in data.items()
+            if not (isinstance(v, str) and v == "[Empty]")
+        }
+    elif isinstance(data, list):
+        return [_remove_empty_values(i) for i in data]
+    return data
 
 
 def extract_script_ids(data: Any, script_ids: List[str] = None) -> List[str]:
@@ -356,6 +385,8 @@ def fetch_scripts(
 
         except Exception as e:
             warning(f"Failed to fetch script {script_id}: {str(e)}")
+            if not exporter_instance.continue_on_error:
+                raise
 
 
 def create_saml_export_command():
@@ -383,6 +414,7 @@ def create_saml_export_command():
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """
         Export SAML configuration with complete data including hosted/remote
@@ -421,6 +453,7 @@ def create_saml_export_command():
             no_version=no_version,
             branch=branch,
             commit_message=commit,
+            continue_on_error=continue_on_error,
             response_filter=process_saml_response(exporter, realm),
         )
 

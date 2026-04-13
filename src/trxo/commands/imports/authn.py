@@ -14,7 +14,9 @@ from trxo.commands.shared.options import (
     AuthModeOpt,
     BaseUrlOpt,
     BranchOpt,
+    ContinueOnErrorOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
@@ -101,6 +103,8 @@ def create_authn_import_command():
         project_name: ProjectNameOpt = None,
         auth_mode: AuthModeOpt = None,
         rollback: RollbackOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
+        dry_run: DryRunOpt = False,
         onprem_username: OnPremUsernameOpt = None,
         onprem_password: OnPremPasswordOpt = None,
         onprem_realm: OnPremRealmOpt = "root",
@@ -121,6 +125,7 @@ def create_authn_import_command():
             project_name=project_name,
             auth_mode=auth_mode,
             rollback=rollback,
+            continue_on_error=continue_on_error,
             onprem_username=onprem_username,
             onprem_password=onprem_password,
             onprem_realm=onprem_realm,
@@ -131,6 +136,7 @@ def create_authn_import_command():
             force_import=force_import,
             branch=branch,
             diff=diff,
+            dry_run=dry_run,
         )
 
     return import_authn

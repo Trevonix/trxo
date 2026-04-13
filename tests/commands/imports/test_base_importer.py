@@ -72,10 +72,8 @@ def test_validate_import_hash_calls_hash_manager(mocker):
 
 
 def test_import_from_file_local_success(mocker, tmp_path):
-    """Local-mode happy path: hash passes, process_items is called."""
     importer = DummyImporter()
 
-    # Write a real temp file so _import_from_local can open it
     data_file = tmp_path / "data.json"
     data_file.write_text(json.dumps([{"_id": "1"}]))
 
@@ -114,6 +112,26 @@ def test_import_from_file_diff_mode(mocker):
     importer._perform_diff_analysis.assert_called_once()
 
 
+def test_import_from_file_dry_run_skips_auth_and_process_items(mocker, tmp_path):
+    importer = DummyImporter()
+    data_file = tmp_path / "data.json"
+    data_file.write_text(json.dumps([{"_id": "dry-1"}]))
+
+    mocker.patch.object(importer, "_get_storage_mode", return_value="local")
+    mocker.patch.object(
+        importer, "load_data_from_file", return_value=[{"_id": "dry-1"}]
+    )
+    mocker.patch.object(importer, "validate_import_hash", return_value=True)
+    init_auth = mocker.patch.object(importer, "initialize_auth")
+    proc = mocker.patch.object(importer, "process_items")
+    mocker.patch.object(importer, "cleanup")
+
+    importer.import_from_file(file_path=str(data_file), dry_run=True)
+
+    init_auth.assert_not_called()
+    proc.assert_not_called()
+
+
 def test_apply_cherry_pick_invalid(mocker):
     importer = DummyImporter()
 
@@ -149,14 +167,105 @@ def test_process_items_success(mocker):
     assert importer.failed_updates == 0
 
 
-def test_process_items_failure_no_rollback(mocker):
+def test_process_items_failure_continue_on_error(mocker):
     importer = DummyImporter()
 
     mocker.patch.object(importer, "update_item", return_value=False)
 
-    importer.process_items([{"_id": "1"}], "t", "u")
+    importer.process_items([{"_id": "1"}], "t", "u", continue_on_error=True)
 
     assert importer.failed_updates == 1
+
+
+# ✅ FIXED
+def test_process_items_stop_on_first_false_return(mocker):
+    importer = DummyImporter()
+    mock_update = mocker.patch.object(
+        importer, "update_item", side_effect=[False, True]
+    )
+
+    with pytest.raises(typer.Exit):
+        importer.process_items(
+            [{"_id": "1"}, {"_id": "2"}], "t", "u", continue_on_error=False
+        )
+
+    assert importer.successful_updates == 0
+    assert importer.failed_updates == 1
+    assert mock_update.call_count == 1
+
+
+def test_process_items_continue_after_false_return(mocker):
+    importer = DummyImporter()
+    mock_update = mocker.patch.object(
+        importer, "update_item", side_effect=[False, True]
+    )
+
+    importer.process_items(
+        [{"_id": "1"}, {"_id": "2"}], "t", "u", continue_on_error=True
+    )
+
+    assert importer.successful_updates == 1
+    assert importer.failed_updates == 1
+    assert mock_update.call_count == 2
+
+
+# ✅ FIXED
+def test_process_items_stop_on_first_exception(mocker):
+    importer = DummyImporter()
+    mock_update = mocker.patch.object(
+        importer, "update_item", side_effect=[RuntimeError("boom"), True]
+    )
+
+    with pytest.raises(typer.Exit):
+        importer.process_items(
+            [{"_id": "1"}, {"_id": "2"}], "t", "u", continue_on_error=False
+        )
+
+    assert importer.successful_updates == 0
+    assert importer.failed_updates == 1
+    assert mock_update.call_count == 1
+
+
+def test_process_items_continue_after_exception(mocker):
+    importer = DummyImporter()
+    mock_update = mocker.patch.object(
+        importer, "update_item", side_effect=[RuntimeError("boom"), True]
+    )
+
+    importer.process_items(
+        [{"_id": "1"}, {"_id": "2"}], "t", "u", continue_on_error=True
+    )
+
+    assert importer.successful_updates == 1
+    assert importer.failed_updates == 1
+    assert mock_update.call_count == 2
+
+
+def test_import_from_file_passes_continue_on_error(mocker, tmp_path):
+    importer = DummyImporter()
+    data_file = tmp_path / "data.json"
+    data_file.write_text(json.dumps([{"_id": "1"}]))
+
+    mocker.patch.object(importer, "initialize_auth", return_value=("t", "url"))
+    mocker.patch.object(importer, "_get_storage_mode", return_value="local")
+    mocker.patch.object(importer, "load_data_from_file", return_value=[{"_id": "1"}])
+    mocker.patch.object(importer, "validate_import_hash", return_value=True)
+    mocker.patch.object(importer, "process_items")
+    mocker.patch.object(importer, "print_summary")
+    mocker.patch.object(importer, "cleanup")
+
+    importer.import_from_file(file_path=str(data_file), continue_on_error=True)
+
+    assert importer.process_items.call_args.kwargs["continue_on_error"] is True
+
+
+def test_process_items_failure_stop_on_error_default(mocker):
+    importer = DummyImporter()
+
+    mocker.patch.object(importer, "update_item", return_value=False)
+
+    with pytest.raises(typer.Exit):
+        importer.process_items([{"_id": "1"}], "t", "u")
 
 
 def test_process_items_failure_with_rollback(mocker):
@@ -177,6 +286,58 @@ def test_process_items_failure_with_rollback(mocker):
             rollback_manager=rollback_mgr,
             rollback_on_failure=True,
         )
+
+
+def test_process_items_rollback_runs_before_continue_on_error_flag(mocker):
+    importer = DummyImporter()
+    rollback_mgr = mocker.Mock()
+    rollback_mgr.baseline_snapshot = {}
+
+    mocker.patch.object(importer, "update_item", return_value=False)
+    rollback_mock = mocker.patch.object(
+        importer, "_execute_rollback_and_exit", side_effect=typer.Exit(1)
+    )
+
+    with pytest.raises(typer.Exit):
+        importer.process_items(
+            [{"_id": "1"}],
+            "t",
+            "u",
+            rollback_manager=rollback_mgr,
+            rollback_on_failure=True,
+            continue_on_error=True,
+        )
+
+    rollback_mock.assert_called_once()
+
+
+def test_process_items_exception_stop_on_error_default(mocker):
+    importer = DummyImporter()
+
+    mocker.patch.object(importer, "update_item", side_effect=RuntimeError("boom"))
+
+    with pytest.raises(typer.Exit):
+        importer.process_items([{"_id": "1"}], "t", "u")
+
+    assert importer.failed_updates == 1
+
+
+def test_process_items_exception_continue_on_error_second_item_succeeds(mocker):
+    importer = DummyImporter()
+
+    def _update(item, token, base_url):
+        if item.get("_id") == "1":
+            raise RuntimeError("boom")
+        return True
+
+    mocker.patch.object(importer, "update_item", side_effect=_update)
+
+    importer.process_items(
+        [{"_id": "1"}, {"_id": "2"}], "t", "u", continue_on_error=True
+    )
+
+    assert importer.failed_updates == 1
+    assert importer.successful_updates == 1
 
 
 def test_handle_sync_deletions_passthrough(mocker):
