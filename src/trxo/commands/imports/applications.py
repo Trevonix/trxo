@@ -35,14 +35,17 @@ from trxo.commands.shared.options import (
     RealmOpt,
     RollbackOpt,
     SaIdOpt,
-    WithDepsOpt,
     SrcRealmOpt,
     SyncOpt,
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
     WithDepsOpt,
     ContinueOnErrorOpt,
 >>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
+=======
+    WithDepsOpt,
+>>>>>>> 81005332995572deb30c36206f6338df0c1ac5d3
 )
 from trxo.config.api_headers import get_headers
 from trxo.constants import DEFAULT_REALM
@@ -203,7 +206,9 @@ class ApplicationsImporter(BaseImporter):
             oauth_imp.auth_mode = self.auth_mode
 
             for provider in self._pending_providers:
-                pid = provider.get("_id") if isinstance(provider, dict) else "<provider>"
+                pid = (
+                    provider.get("_id") if isinstance(provider, dict) else "<provider>"
+                )
                 try:
                     oauth_imp.update_provider(provider, token, base_url)
                     extra_ok += 1

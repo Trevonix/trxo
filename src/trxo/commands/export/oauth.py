@@ -379,9 +379,7 @@ def create_oauth_export_command():
                 if script_id in IGNORED_SCRIPT_IDS:
                     continue
 
-                script_data = exporter.fetch_script_data(
-                    script_id, token, api_base_url
-                )
+                script_data = exporter.fetch_script_data(script_id, token, api_base_url)
                 if script_data:
                     scripts_data.append(script_data)
 
@@ -419,9 +417,7 @@ def create_oauth_export_command():
 
             if exporter._get_storage_mode() == "local" and file_path:
                 hash_value = exporter.hash_manager.create_hash(combined_data, "oauth")
-                exporter.hash_manager.save_export_hash(
-                    "oauth", hash_value, file_path
-                )
+                exporter.hash_manager.save_export_hash("oauth", hash_value, file_path)
 
             print()
             info("OAuth2 clients exported successfully")

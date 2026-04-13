@@ -118,9 +118,7 @@ class EsvSecretsImporter(BaseImporter):
 
             if get_resp.status_code == 404:
                 if not self.continue_on_error:
-                    error(
-                        f"Secret '{item_id}' not found (404) in --stop-on-error mode"
-                    )
+                    error(f"Secret '{item_id}' not found (404) in --stop-on-error mode")
                     return False
                 # Create secret with first version
                 if "valueBase64" not in item_data:

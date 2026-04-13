@@ -56,7 +56,7 @@ def test_get_current_managed_config_error(mocker):
 
     out = imp._get_current_managed_config("t", "http://x")
 
-    assert out is None   # ✅ FIXED
+    assert out is None  # ✅ FIXED
 
 
 def test_update_item_single_create_success(mocker):

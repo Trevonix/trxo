@@ -391,8 +391,7 @@ class OAuthImporter(BaseImporter):
                 response = self.make_http_request(url, "PUT", headers, payload)
                 if hasattr(response, "status_code") and response.status_code >= 400:
                     raise Exception(
-                        "Failed to process OAuth2 Provider: "
-                        f"{response.status_code}"
+                        "Failed to process OAuth2 Provider: " f"{response.status_code}"
                     )
                 info("Successfully processed OAuth2 Provider configuration")
                 return True
