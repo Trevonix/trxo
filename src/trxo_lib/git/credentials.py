@@ -4,9 +4,10 @@ Git credentials management and validation.
 
 import httpx
 
+from trxo_lib.exceptions import TrxoGitError, TrxoValidationError
 from trxo_lib.logging import get_logger
 
-logger = get_logger("trxo.utils.git.credentials")
+logger = get_logger("trxo_lib.git.credentials")
 
 
 def build_secure_url(repo_url: str, username: str, token: str) -> str:
@@ -28,13 +29,12 @@ def validate_credentials(token: str, repo_url: str) -> dict:
         dict: Repository information from GitHub API
 
     Raises:
-        ValueError: If URL is unsupported
-        RuntimeError: If network error or unexpected response
-        PermissionError: If access denied
+        TrxoValidationError: If URL is unsupported
+        TrxoGitError: If network/auth/access validation fails
     """
     # Extract API path
     if "github.com/" not in repo_url:
-        raise ValueError(
+        raise TrxoValidationError(
             "Unsupported repo URL. Use https://github.com/owner/repo(.git)"
         )
 
@@ -46,21 +46,21 @@ def validate_credentials(token: str, repo_url: str) -> dict:
         with httpx.Client() as client:
             resp = client.get(api_url, headers=headers, timeout=15)
     except httpx.RequestError as e:
-        raise RuntimeError(f"Network error during validation: {e}")
+        raise TrxoGitError(f"Network error during validation: {e}") from e
 
     if resp.status_code == 404:
-        raise PermissionError(
+        raise TrxoGitError(
             "Repository not found or token does not grant access (404)."
         )
     if resp.status_code == 401:
-        raise PermissionError("Invalid or expired token (401).")
+        raise TrxoGitError("Invalid or expired token (401).")
     if resp.status_code != 200:
-        raise RuntimeError(f"Unexpected GitHub API response: {resp.status_code}")
+        raise TrxoGitError(f"Unexpected GitHub API response: {resp.status_code}")
 
     repo_json = resp.json()
     perms = repo_json.get("permissions", {}) or {}
     if not perms.get("push", False):
-        raise PermissionError(
+        raise TrxoGitError(
             "Token does not have push/write permission to this repository."
         )
 

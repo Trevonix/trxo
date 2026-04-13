@@ -36,7 +36,7 @@ class CLIExportHandler:
                 project_config = self.config_store.get_project_config(current_project)
                 return project_config.get("storage_mode", "local")
             return "local"
-        except Exception:
+        except (AttributeError, TypeError, OSError):
             return "local"
 
     def handle_export(
@@ -116,32 +116,40 @@ class CLIExportHandler:
         info(f"Exporting {command_name.title()}...")
         storage_mode = self._get_storage_mode()
         file_path = None
+        try:
+            if storage_mode == "git":
+                if not self.git_handler:
+                    self.git_handler = GitExportHandler(self.config_store)
 
-        if storage_mode == "git":
-            if not self.git_handler:
-                self.git_handler = GitExportHandler(self.config_store)
+                file_path = self.git_handler.save_to_git(
+                    data=result_dict,
+                    command_name=command_name,
+                    output_file=output_file,
+                    branch=branch,
+                    commit_message=commit_message,
+                )
+            else:
+                file_path = FileSaver.save_to_local(
+                    data=result_dict,
+                    command_name=command_name,
+                    output_dir=output_dir,
+                    output_file=output_file,
+                    version=version,
+                    no_version=no_version,
+                )
 
-            file_path = self.git_handler.save_to_git(
-                data=result_dict,
-                command_name=command_name,
-                output_file=output_file,
-                branch=branch,
-                commit_message=commit_message,
-            )
-        else:
-            file_path = FileSaver.save_to_local(
-                data=result_dict,
-                command_name=command_name,
-                output_dir=output_dir,
-                output_file=output_file,
-                version=version,
-                no_version=no_version,
-            )
-
-            # Create and save hash for data integrity (local mode only)
-            if file_path:
-                hash_value = self.hash_manager.create_hash(data, command_name)
-                self.hash_manager.save_export_hash(command_name, hash_value, file_path)
+                # Create and save hash for data integrity (local mode only)
+                if file_path:
+                    hash_value = self.hash_manager.create_hash(data, command_name)
+                    self.hash_manager.save_export_hash(
+                        command_name, hash_value, file_path
+                    )
+        except TrxoError as e:
+            error(str(e))
+            raise TrxoAbort(code=1) from e
+        except Exception as e:
+            error(f"Failed to save export for {command_name}: {str(e)}")
+            raise TrxoAbort(code=1) from e
 
         if file_path:
             success(f"{command_name.title()} exported successfully")

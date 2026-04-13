@@ -7,12 +7,12 @@ from contextlib import redirect_stderr
 
 from git import GitCommandError, Repo
 
+from trxo_lib.exceptions import TrxoGitError
 from trxo_lib.logging import get_logger
-from trxo.utils.console import info
 from trxo_lib.git.common import extract_branch_name_from_ref
 from trxo_lib.git.operations import validate_clean_state_for_operation
 
-logger = get_logger("trxo.utils.git.branches")
+logger = get_logger("trxo_lib.git.branches")
 
 
 def get_default_branch(repo: Repo) -> str:
@@ -54,7 +54,7 @@ def check_branch_sync_status(repo: Repo, branch_name: str) -> dict:
         dict with keys: exists_local, exists_remote, behind, ahead, diverged, in_sync
     """
     if not repo:
-        raise RuntimeError("Repository not initialized")
+        raise TrxoGitError("Repository not initialized")
 
     result = {
         "exists_local": False,
@@ -112,7 +112,7 @@ def check_branch_sync_status(repo: Repo, branch_name: str) -> dict:
         return result
 
     except Exception as e:
-        raise RuntimeError(f"Failed to check branch sync status: {e}")
+        raise TrxoGitError(f"Failed to check branch sync status: {e}") from e
 
 
 def validate_branch_sync_for_operation(
@@ -131,13 +131,13 @@ def validate_branch_sync_for_operation(
             # pull first
             repo.git.fetch("origin", branch_name)
             repo.git.pull("origin", branch_name)
-            info(f"📥 Pulled latest changes from remote '{branch_name}'")
+            logger.info(f"Pulled latest changes from remote '{branch_name}'")
         except Exception as e:
-            raise RuntimeError(f"Failed to pull latest changes: {e}")
+            raise TrxoGitError(f"Failed to pull latest changes: {e}") from e
 
     # If branches have diverged, require manual resolution
     if sync_status["diverged"]:
-        raise RuntimeError(
+        raise TrxoGitError(
             f"Cannot proceed with {operation}: local and remote branches have diverged.\n"
             f"Local is {sync_status['ahead']} commit(s) ahead and "
             f"{sync_status['behind']} commit(s) behind remote.\n"
@@ -155,7 +155,7 @@ def ensure_branch(
 ) -> Repo:
     """Ensure a specific branch exists and is checked out with proper validation"""
     if not repo:
-        raise RuntimeError("Repository not initialized.")
+        raise TrxoGitError("Repository not initialized.")
 
     # Step 1: Validate working tree is clean (if requested)
     if validate_clean:
@@ -204,7 +204,6 @@ def ensure_branch(
             sync_status = check_branch_sync_status(repo, branch_name)
             if sync_status["behind"] > 0 and sync_status["ahead"] == 0:
                 logger.info(f"Fast-forward pulling from remote '{branch_name}'...")
-                info("📥 Pulling latest changes from remote")
                 # Suppress stderr to avoid git messages
                 with open(os.devnull, "w") as devnull:
                     with redirect_stderr(devnull):
@@ -219,13 +218,17 @@ def ensure_branch(
             repo.git.checkout("-b", branch_name, f"origin/{branch_name}")
             logger.info(f"Checked out remote branch '{branch_name}'")
         except GitCommandError as e:
-            raise RuntimeError(f"Failed to checkout remote branch '{branch_name}': {e}")
+            raise TrxoGitError(
+                f"Failed to checkout remote branch '{branch_name}': {e}"
+            ) from e
 
     else:
         # Branch doesn't exist - create it
         if create_from_default:
             default_branch = get_default_branch(repo)
-            info(f"🌿 Creating new branch '{branch_name}' from '{default_branch}'")
+            logger.info(
+                f"Creating new branch '{branch_name}' from '{default_branch}'"
+            )
             try:
                 # Ensure default branch is up to date first
                 repo.git.checkout(default_branch)
@@ -234,23 +237,23 @@ def ensure_branch(
                 if default_branch in remote_branches and validate_sync:
                     sync_status = check_branch_sync_status(repo, default_branch)
                     if sync_status["behind"] > 0 and sync_status["ahead"] == 0:
-                        info(f"📥 Updating '{default_branch}' from remote...")
+                        logger.info(f"Updating '{default_branch}' from remote")
                         repo.git.pull("origin", default_branch, "--ff-only")
 
                 # Create new branch
                 repo.git.checkout("-b", branch_name)
                 logger.info(f"Created new branch '{branch_name}'")
             except GitCommandError as e:
-                raise RuntimeError(
+                raise TrxoGitError(
                     f"Failed to create branch '{branch_name}' from '{default_branch}': {e}"
-                )
+                ) from e
         else:
-            info(f"🌿 Creating new branch '{branch_name}' from current branch")
+            logger.info(f"Creating new branch '{branch_name}' from current branch")
             try:
                 repo.git.checkout("-b", branch_name)
                 logger.info(f"Created new branch '{branch_name}'")
             except GitCommandError as e:
-                raise RuntimeError(f"Failed to create branch '{branch_name}': {e}")
+                raise TrxoGitError(f"Failed to create branch '{branch_name}': {e}") from e
 
     return repo
 
@@ -258,7 +261,7 @@ def ensure_branch(
 def list_branches(repo: Repo) -> dict:
     """List all local and remote branches"""
     if not repo:
-        raise RuntimeError("Repository not initialized")
+        raise TrxoGitError("Repository not initialized")
 
     local_branches = [h.name for h in repo.heads]
     remote_branches = []
@@ -280,7 +283,7 @@ def list_branches(repo: Repo) -> dict:
 def branch_exists(repo: Repo, branch_name: str, check_remote: bool = True) -> dict:
     """Check if a branch exists locally and/or remotely"""
     if not repo:
-        raise RuntimeError("Repository not initialized")
+        raise TrxoGitError("Repository not initialized")
 
     local_exists = branch_name in [h.name for h in repo.heads]
     remote_exists = False

@@ -8,8 +8,8 @@ from typing import Optional
 from git import Repo
 
 from trxo_lib.config.constants import DEFAULT_EXPORT_BRANCH
+from trxo_lib.exceptions import TrxoGitError
 from trxo_lib.logging import get_logger
-from trxo.utils.console import error, info, warning
 from trxo_lib.git.branches import (
     branch_exists,
     check_branch_sync_status,
@@ -29,7 +29,7 @@ from trxo_lib.git.operations import (
 )
 from trxo_lib.git.repository import get_or_create_repo, get_repo_path
 
-logger = get_logger("trxo.utils.git.manager")
+logger = get_logger("trxo_lib.git.manager")
 
 
 class GitManager:
@@ -70,7 +70,7 @@ class GitManager:
         """Ensure work branch exists and is checked out (Legacy support)"""
         repo = self._repo_cache
         if not repo:
-            raise RuntimeError("Repository not initialized")
+            raise TrxoGitError("Repository not initialized")
 
         # Check commits
         try:
@@ -80,7 +80,7 @@ class GitManager:
             has_commits = False
 
         if not has_commits:
-            info("📝 Repository has no commits. Creating initial structure...")
+            logger.info("Repository has no commits. Creating initial structure")
             self._create_initial_commit(repo)
 
         if validate:
@@ -95,7 +95,7 @@ class GitManager:
             self._repo_cache = repo
             return repo
 
-        warning(
+        logger.warning(
             "Using ensure_work_branch without validation is deprecated. "
             "Consider using ensure_branch() with validation."
         )
@@ -109,15 +109,19 @@ class GitManager:
         default_branch = self._get_default_branch(repo)
 
         if work_branch in [h.name for h in repo.heads]:
-            info(f"🌿 Switching to existing work branch: {work_branch}")
+            logger.info(f"Switching to existing work branch: {work_branch}")
             repo.git.checkout(work_branch)
         else:
-            info(f"🌿 Creating work branch '{work_branch}' from '{default_branch}'")
+            logger.info(
+                f"Creating work branch '{work_branch}' from '{default_branch}'"
+            )
             try:
                 repo.git.checkout(default_branch)
                 repo.git.checkout("-b", work_branch)
             except Exception as e:
-                raise RuntimeError(f"Failed to create work branch '{work_branch}': {e}")
+                raise TrxoGitError(
+                    f"Failed to create work branch '{work_branch}': {e}"
+                ) from e
 
         return repo
 
@@ -146,12 +150,12 @@ class GitManager:
         self, file_paths: list, commit_message: str, smart_pull: bool = False
     ) -> bool:
         if smart_pull:
-            warning("smart_pull parameter is deprecated.")
+            logger.warning("smart_pull parameter is deprecated.")
         return commit_and_push(self._repo_cache, file_paths, commit_message)
 
     def get_current_branch(self) -> str:
         if not self._repo_cache:
-            raise RuntimeError("Repository not initialized")
+            raise TrxoGitError("Repository not initialized")
         return self._repo_cache.active_branch.name
 
     def list_branches(self) -> dict:
@@ -244,11 +248,11 @@ def setup_git_for_export(
                 validate_sync=True,
                 operation="export",
             )
-            info(
-                f"🌿 Using branch: {branch}, to change branch use --branch <branch_name>"
+            logger.info(
+                f"Using branch: {branch}, to change branch use --branch <branch_name>"
             )
         else:
-            info(f"🌿 Using default branch for export: {DEFAULT_EXPORT_BRANCH}")
+            logger.info(f"Using default branch for export: {DEFAULT_EXPORT_BRANCH}")
             git_manager.ensure_branch(
                 DEFAULT_EXPORT_BRANCH,
                 create_from_default=True,
@@ -259,7 +263,9 @@ def setup_git_for_export(
         return git_manager
     except Exception as e:
         logger.error(f"Git setup for export failed: {e}")
-        raise RuntimeError(f"Git setup failed: {e}")
+        if isinstance(e, TrxoGitError):
+            raise
+        raise TrxoGitError(f"Git setup failed: {e}") from e
 
 
 def setup_git_for_import(
@@ -275,7 +281,7 @@ def setup_git_for_import(
             logger.debug(f"Setting up branch '{branch}' for import...")
             branches = git_manager.branch_exists(branch)
             if not (branches["local"] or branches["remote"]):
-                raise RuntimeError(
+                raise TrxoGitError(
                     f"Branch '{branch}' does not exist locally or remotely."
                 )
 
@@ -286,8 +292,8 @@ def setup_git_for_import(
                 validate_sync=True,
                 operation="import",
             )
-            info(
-                f"🌿 Using branch: {branch}, to change branch use --branch <branch_name>"
+            logger.info(
+                f"Using branch: {branch}, to change branch use --branch <branch_name>"
             )
         else:
             current_branch = (
@@ -302,8 +308,8 @@ def setup_git_for_import(
                     validate_sync=True,
                     operation="import",
                 )
-                info(
-                    f"🌿 Using branch: {current_branch}, to change branch use --branch <branch_name>"
+                logger.info(
+                    f"Using branch: {current_branch}, to change branch use --branch <branch_name>"
                 )
             else:
                 git_manager.ensure_branch(
@@ -317,7 +323,9 @@ def setup_git_for_import(
         return git_manager
     except Exception as e:
         logger.error(f"Git setup for import failed: {e}")
-        raise RuntimeError(f"Git setup for import failed: {e}")
+        if isinstance(e, TrxoGitError):
+            raise
+        raise TrxoGitError(f"Git setup for import failed: {e}") from e
 
 
 # Legacy support
@@ -353,7 +361,7 @@ def validate_and_setup_git_repo(
         operation="setup",
     )
 
-    info(f"✅ Repository ready: {git_manager.local_path}")
-    info(f"🌿 Active branch: {repo.active_branch.name}")
+    logger.info(f"Repository ready: {git_manager.local_path}")
+    logger.info(f"Active branch: {repo.active_branch.name}")
 
     return repo

@@ -9,25 +9,21 @@ the CLI layer to catch them and handle appropriately.
 class TrxoError(Exception):
     """Base exception for all trxo_lib errors."""
 
-    pass
-
 
 class TrxoAuthError(TrxoError):
     """Authentication-related errors."""
-
-    pass
 
 
 class TrxoConfigError(TrxoError):
     """Configuration-related errors."""
 
-    pass
-
 
 class TrxoValidationError(TrxoError):
     """Data validation errors."""
 
-    pass
+
+class TrxoGitError(TrxoError):
+    """Git operation and repository errors."""
 
 
 class TrxoAbort(TrxoError):

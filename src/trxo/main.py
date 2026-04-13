@@ -4,6 +4,7 @@ from trxo.commands import config, logs, project
 from trxo.commands.batch import app as batch_app
 from trxo.commands.export import app as export_app
 from trxo.commands.imports import app as import_app
+from trxo_lib.exceptions import TrxoAbort
 from trxo_lib.logging import get_logger, setup_logging
 
 app = typer.Typer(
@@ -47,6 +48,8 @@ def main():
 
     try:
         app()
+    except TrxoAbort as e:
+        raise typer.Exit(code=e.exit_code) from e
     except Exception as e:
         logger.error(f"Unhandled exception in main: {str(e)}")
         raise

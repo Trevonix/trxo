@@ -12,7 +12,8 @@ from typing import Any, Dict, Optional
 
 from tqdm import tqdm
 
-from trxo.utils.console import error, info
+from trxo.utils.console import info
+from trxo_lib.exceptions import TrxoConfigError, TrxoGitError
 from trxo_lib.git import setup_git_for_export
 
 
@@ -42,16 +43,17 @@ class GitExportHandler:
             current_project = self.config_store.get_current_project()
             git_credentials = self.config_store.get_git_credentials(current_project)
             if not git_credentials or not all(git_credentials.values()):
-                error(
+                raise TrxoConfigError(
                     "Git credentials not found. Run 'trxo config' to set up Git integration."
                 )
-                raise ValueError("Missing Git credentials")
-
-            username, repo_url, token = git_credentials.values()
+            username = git_credentials["username"]
+            repo_url = git_credentials["repo_url"]
+            token = git_credentials["token"]
             return setup_git_for_export(username, token, repo_url, branch)
-        except Exception as e:
-            error(f"Failed to setup Git repository: {e}")
+        except (TrxoConfigError, TrxoGitError):
             raise
+        except Exception as e:
+            raise TrxoGitError(f"Failed to setup Git repository: {e}") from e
 
     @staticmethod
     def extract_realm_and_component(
@@ -232,16 +234,12 @@ Timestamp: {timestamp}
             try:
                 current_branch = git_manager.get_current_branch()
                 info(f"🌿 Branch: {current_branch}")
-            except Exception:
+            except TrxoGitError:
                 pass
 
             return str(file_path)
 
+        except (TrxoConfigError, TrxoGitError):
+            raise
         except Exception as e:
-            # Only print error if it's not already a RuntimeError from setup
-            if not isinstance(e, RuntimeError) or "Git setup failed" not in str(e):
-                error(f"Failed to save to Git: {str(e)}")
-            else:
-                # This is a setup error, just print it once
-                error(str(e).replace("Git setup failed: ", ""))
-            return None
+            raise TrxoGitError(f"Failed to save to Git: {e}") from e

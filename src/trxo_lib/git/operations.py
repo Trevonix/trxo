@@ -7,9 +7,10 @@ from contextlib import redirect_stderr
 
 from git import GitCommandError, Repo
 
+from trxo_lib.exceptions import TrxoGitError
 from trxo_lib.logging import get_logger
 
-logger = get_logger("trxo.utils.git.operations")
+logger = get_logger("trxo_lib.git.operations")
 
 
 def get_diff(repo: Repo, file_path: str) -> str:
@@ -25,7 +26,7 @@ def get_diff(repo: Repo, file_path: str) -> str:
 def is_working_tree_clean(repo: Repo) -> bool:
     """Check if working tree is clean (no uncommitted or untracked changes)"""
     if not repo:
-        raise RuntimeError("Repository not initialized")
+        raise TrxoGitError("Repository not initialized")
     try:
         # Check for uncommitted changes (staged and unstaged)
         if repo.is_dirty(untracked_files=False):
@@ -46,7 +47,7 @@ def get_working_tree_status(repo: Repo) -> dict:
         dict with keys: 'clean', 'uncommitted_changes', 'untracked_files'
     """
     if not repo:
-        raise RuntimeError("Repository not initialized")
+        raise TrxoGitError("Repository not initialized")
     try:
         uncommitted = []
         untracked = list(repo.untracked_files)
@@ -66,7 +67,7 @@ def get_working_tree_status(repo: Repo) -> dict:
             "untracked_files": untracked,
         }
     except Exception as e:
-        raise RuntimeError(f"Failed to get working tree status: {e}")
+        raise TrxoGitError(f"Failed to get working tree status: {e}") from e
 
 
 def validate_clean_state_for_operation(
@@ -91,13 +92,13 @@ def validate_clean_state_for_operation(
                 error_msg += f"  - {file}\n"
 
         error_msg += "\nPlease commit or stash your changes before proceeding."
-        raise RuntimeError(error_msg)
+        raise TrxoGitError(error_msg)
 
 
 def commit_and_push(repo: Repo, file_paths: list, commit_message: str) -> bool:
     """Commit specific files and push to remote"""
     if not repo:
-        raise RuntimeError("Repository not initialized")
+        raise TrxoGitError("Repository not initialized")
 
     try:
         current_branch = repo.active_branch.name
@@ -129,9 +130,11 @@ def commit_and_push(repo: Repo, file_paths: list, commit_message: str) -> bool:
                     f"This should not happen if branch sync was validated before commit. "
                     f"Error: {e}"
                 )
-                raise RuntimeError(f"Push rejected due to conflicts: {e}")
+                raise TrxoGitError(f"Push rejected due to conflicts: {e}") from e
             else:
-                raise RuntimeError(f"Failed to push: {e}")
+                raise TrxoGitError(f"Failed to push: {e}") from e
 
     except Exception as e:
-        raise RuntimeError(f"Failed to commit and push: {e}")
+        if isinstance(e, TrxoGitError):
+            raise
+        raise TrxoGitError(f"Failed to commit and push: {e}") from e

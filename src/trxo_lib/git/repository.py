@@ -7,10 +7,10 @@ from pathlib import Path
 
 from git import GitCommandError, InvalidGitRepositoryError, Repo
 
+from trxo_lib.exceptions import TrxoGitError
 from trxo_lib.logging import get_logger
-from trxo.utils.console import info
 
-logger = get_logger("trxo.utils.git.repository")
+logger = get_logger("trxo_lib.git.repository")
 
 
 def get_repo_base_path() -> Path:
@@ -104,7 +104,7 @@ def clone_or_init_repo(
             logger.info("Remote repository is empty. Initializing...")
             repo = init_empty_repo(local_path, repo_name, secure_url, repo_info)
         else:
-            raise RuntimeError(f"Failed to clone repository: {e}")
+            raise TrxoGitError(f"Failed to clone repository: {e}") from e
 
     return repo
 
@@ -116,7 +116,6 @@ def get_or_create_repo(
     # Check if repo already exists locally
     if local_path.exists() and (local_path / ".git").exists():
         logger.debug(f"Using existing repository: {local_path}")
-        info(f"📂 Using existing repository: {local_path}")
         try:
             repo = Repo(str(local_path))
             # Update origin remote with secure URL (with credentials) for auth
