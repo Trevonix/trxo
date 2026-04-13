@@ -20,7 +20,6 @@ class ConcreteApplicationsImporter(ApplicationsImporter):
             return False
 
         try:
-            # Mimic what a real update_item would do
             headers = self.build_auth_headers(token)
             self.make_http_request(
                 self.get_api_endpoint(item_data["_id"], base_url),
@@ -54,7 +53,6 @@ def test_applications_importer_update_item_missing_id(mocker):
     mocker.patch("trxo.commands.imports.applications.error")
 
     result = importer.update_item({}, "t", "b")
-
     assert result is False
 
 
@@ -83,7 +81,6 @@ def test_applications_importer_update_item_failure(mocker):
     mocker.patch("trxo.commands.imports.applications.error")
 
     result = importer.update_item({"_id": "app1"}, "t", "http://base")
-
     assert result is False
 
 
@@ -176,8 +173,9 @@ def test_import_applications_passes_continue_on_error(mocker):
     assert kwargs.get("continue_on_error") is True
 
 
+# ✅ FIXED: use ConcreteApplicationsImporter
 def test_applications_process_items_provider_failure_stops_by_default(mocker):
-    importer = ApplicationsImporter(realm="alpha")
+    importer = ConcreteApplicationsImporter(realm="alpha")
     importer.include_am_dependencies = True
     importer._pending_providers = [{"_id": "prov1"}]
     importer._pending_scripts = []
@@ -204,8 +202,9 @@ def test_applications_process_items_provider_failure_stops_by_default(mocker):
     BaseImporter.process_items.assert_not_called()
 
 
+# ✅ FIXED: use ConcreteApplicationsImporter
 def test_applications_process_items_provider_failure_continues_when_enabled(mocker):
-    importer = ApplicationsImporter(realm="alpha")
+    importer = ConcreteApplicationsImporter(realm="alpha")
     importer.include_am_dependencies = True
     importer._pending_providers = [{"_id": "prov1"}]
     importer._pending_scripts = []

@@ -29,7 +29,6 @@ from trxo.commands.shared.options import (
     ProjectNameOpt,
     RealmOpt,
     SaIdOpt,
-    ContinueOnErrorOpt,
     VersionOpt,
     ViewColumnsOpt,
     ViewOpt,

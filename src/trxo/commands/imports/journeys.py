@@ -48,7 +48,6 @@ from trxo.commands.shared.options import (
     RollbackOpt,
     SaIdOpt,
     SrcRealmOpt,
-    ContinueOnErrorOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.constants import DEFAULT_REALM
@@ -344,9 +343,7 @@ class JourneyImporter(BaseImporter):
                         continue_on_error=continue_on_error,
                         realm=realm,
                         storage_mode="git",
-                        source_label=str(
-                            git_file_path.relative_to(repo_path)
-                        ),
+                        source_label=str(git_file_path.relative_to(repo_path)),
                     )
                 finally:
                     self.cleanup()

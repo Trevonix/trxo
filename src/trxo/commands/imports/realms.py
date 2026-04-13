@@ -31,7 +31,6 @@ from trxo.commands.shared.options import (
     OnPremUsernameOpt,
     ProjectNameOpt,
     SaIdOpt,
-    ContinueOnErrorOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.utils.console import error, info

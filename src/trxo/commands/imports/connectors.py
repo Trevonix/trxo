@@ -34,7 +34,6 @@ from trxo.commands.shared.options import (
     RollbackOpt,
     SaIdOpt,
     SyncOpt,
-    ContinueOnErrorOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.utils.console import error, success

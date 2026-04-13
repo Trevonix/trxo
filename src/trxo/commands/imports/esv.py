@@ -32,7 +32,6 @@ from trxo.commands.shared.options import (
     ProjectNameOpt,
     RollbackOpt,
     SaIdOpt,
-    ContinueOnErrorOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.utils.console import console, error, info, warning
