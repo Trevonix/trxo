@@ -64,7 +64,6 @@ def create_authn_export_command():
         no_version: NoVersionOpt = False,
         branch: BranchOpt = None,
         commit: CommitMessageOpt = None,
-        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Export authentication settings (authn) from realm"""
         exporter = BaseExporter()
@@ -98,7 +97,6 @@ def create_authn_export_command():
             no_version=no_version,
             branch=branch,
             commit_message=commit,
-            continue_on_error=continue_on_error,
         )
 
     return export_authn

@@ -276,7 +276,6 @@ def create_policies_import_command():
         rollback: RollbackOpt = False,
         continue_on_error: ContinueOnErrorOpt = False,
         cherry_pick: CherryPickOpt = None,
-        continue_on_error: ContinueOnErrorOpt = False,
         branch: BranchOpt = None,
         realm: RealmOpt = DEFAULT_REALM,
         src_realm: SrcRealmOpt = None,
@@ -311,11 +310,7 @@ def create_policies_import_command():
             continue_on_error=continue_on_error,
             cherry_pick=cherry_pick,
             global_policy=global_policy,
-<<<<<<< HEAD
-            continue_on_error=continue_on_error,
-=======
             dry_run=dry_run,
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
         )
 
     return import_policies

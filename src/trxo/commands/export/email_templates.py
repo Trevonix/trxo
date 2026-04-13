@@ -93,7 +93,6 @@ def create_email_export_command():
             no_version=no_version,
             branch=branch,
             commit_message=commit,
-            continue_on_error=continue_on_error,
         )
 
     return export_email

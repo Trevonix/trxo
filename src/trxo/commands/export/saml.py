@@ -456,7 +456,6 @@ def create_saml_export_command():
             commit_message=commit,
             continue_on_error=continue_on_error,
             response_filter=process_saml_response(exporter, realm),
-            continue_on_error=continue_on_error,
         )
 
     return export_saml

@@ -183,10 +183,7 @@ def create_agents_import_command():
         branch: BranchOpt = None,
         rollback: RollbackOpt = False,
         continue_on_error: ContinueOnErrorOpt = False,
-<<<<<<< HEAD
-=======
         dry_run: DryRunOpt = False,
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
     ):
         importer = AgentsImporter("IdentityGatewayAgent", realm=realm)
         importer.import_from_file(
@@ -238,10 +235,7 @@ def create_agents_import_command():
         branch: BranchOpt = None,
         rollback: RollbackOpt = False,
         continue_on_error: ContinueOnErrorOpt = False,
-<<<<<<< HEAD
-=======
         dry_run: DryRunOpt = False,
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
     ):
         importer = AgentsImporter("J2EEAgent", realm=realm)
         importer.import_from_file(
@@ -293,10 +287,7 @@ def create_agents_import_command():
         branch: BranchOpt = None,
         rollback: RollbackOpt = False,
         continue_on_error: ContinueOnErrorOpt = False,
-<<<<<<< HEAD
-=======
         dry_run: DryRunOpt = False,
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
     ):
         importer = AgentsImporter("WebAgent", realm=realm)
         importer.import_from_file(

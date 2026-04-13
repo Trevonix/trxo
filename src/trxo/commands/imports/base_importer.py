@@ -269,17 +269,11 @@ class BaseImporter(BaseCommand):
                         self._execute_rollback_and_exit(
                             rollback_manager, token, base_url, item_id
                         )
-<<<<<<< HEAD
-                    # Stop on first failure in stop mode.
-                    if not continue_on_error:
-                        break
-=======
                     if not continue_on_error:
                         error(
                             f"Stopping import due to failed item: {item_id or '<unknown>'}"
                         )
                         raise typer.Exit(1)
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
 
             except typer.Exit:
                 raise
@@ -297,9 +291,6 @@ class BaseImporter(BaseCommand):
 
                     raise typer.Exit(1)
                 if not continue_on_error:
-<<<<<<< HEAD
-                    break
-=======
                     error(
                         f"Stopping import due to error on item: {item_id or '<unknown>'}"
                     )
@@ -329,9 +320,7 @@ class BaseImporter(BaseCommand):
             )
         else:
             src = file_path or "(unspecified file)"
-            info(
-                f"  • Read items from the local JSON file (your --file path): {src}"
-            )
+            info(f"  • Read items from the local JSON file (your --file path): {src}")
 
         if realm is not None:
             info(f"  • Target realm context: {realm}")
@@ -358,9 +347,7 @@ class BaseImporter(BaseCommand):
         if continue_on_error:
             info("  • With --continue-on-error: keep going after individual failures.")
         else:
-            info(
-                "  • Stop on the first failed item (unless --continue-on-error)."
-            )
+            info("  • Stop on the first failed item (unless --continue-on-error).")
 
         ids: List[str] = []
         for item in items:
@@ -378,7 +365,6 @@ class BaseImporter(BaseCommand):
                 info(f"  • IDs in scope (sample): {preview} … (+{rest} more)")
             else:
                 info(f"  • IDs in scope: {preview}")
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
 
     # ==================== Private Helper Methods ====================
 

@@ -264,11 +264,7 @@ def create_esv_commands():
             rollback=rollback,
             continue_on_error=continue_on_error,
             cherry_pick=cherry_pick,
-<<<<<<< HEAD
-            continue_on_error=continue_on_error,
-=======
             dry_run=dry_run,
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
         )
 
     def import_esv_secrets(
@@ -316,11 +312,7 @@ def create_esv_commands():
             rollback=rollback,
             continue_on_error=continue_on_error,
             cherry_pick=cherry_pick,
-<<<<<<< HEAD
-            continue_on_error=continue_on_error,
-=======
             dry_run=dry_run,
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
         )
 
     return import_esv_variables, import_esv_secrets

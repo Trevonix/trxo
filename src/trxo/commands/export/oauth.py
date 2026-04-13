@@ -158,15 +158,9 @@ class OAuthExporter(BaseExporter):
             return script_data
         except Exception as e:
             error(f"Failed to fetch script {script_id}: {str(e)}")
-<<<<<<< HEAD
-            if not self.continue_on_error:
-                raise
-            return {}
-=======
             if getattr(self, "continue_on_error", False):
                 return {}
             raise
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
 
     def fetch_oauth_client_data(
         self, client_id: str, token: str, base_url: str
@@ -186,15 +180,9 @@ class OAuthExporter(BaseExporter):
             return data
         except Exception as e:
             error(f"Failed to fetch OAuth client {client_id}: {str(e)}")
-<<<<<<< HEAD
-            if not self.continue_on_error:
-                raise
-            return {}
-=======
             if getattr(self, "continue_on_error", False):
                 return {}
             raise
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
 
     def _discover_provider_service_endpoints(
         self, token: str, base_url: str
@@ -255,17 +243,11 @@ class OAuthExporter(BaseExporter):
                 continue
 
         if last_error:
-<<<<<<< HEAD
-            warning(f"Failed to fetch OAuth provider config: {last_error}")
-            if not self.continue_on_error:
-                raise Exception(last_error)
-=======
             if getattr(self, "continue_on_error", False):
                 warning(f"Failed to fetch OAuth provider config: {last_error}")
             else:
                 error(f"Failed to fetch OAuth provider config: {last_error}")
                 raise RuntimeError(last_error) from None
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
         return {}
 
 

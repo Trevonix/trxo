@@ -245,15 +245,7 @@ def create_services_export_command():
             no_version=no_version,
             branch=branch,
             commit_message=commit,
-<<<<<<< HEAD
-<<<<<<< HEAD
-                continue_on_error=continue_on_error,
-=======
             continue_on_error=continue_on_error,
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
-=======
-            continue_on_error=continue_on_error,
->>>>>>> 81005332995572deb30c36206f6338df0c1ac5d3
         )
 
     return export_services

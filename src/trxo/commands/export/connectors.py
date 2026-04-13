@@ -63,7 +63,6 @@ def create_connectors_export_command():
         continue_on_error: ContinueOnErrorOpt = False,
         view: ViewOpt = False,
         view_columns: ViewColumnsOpt = None,
-        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Export IDM connectors configuration"""
         exporter = BaseExporter()
@@ -95,7 +94,6 @@ def create_connectors_export_command():
             no_version=no_version,
             branch=branch,
             commit_message=commit,
-            continue_on_error=continue_on_error,
         )
 
     return export_connectors

@@ -863,7 +863,6 @@ def create_journeys_export_command():
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
-        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Export journeys with their full dependency graph (nodes, scripts, themes, etc.)"""
         exporter = JourneyExporter()

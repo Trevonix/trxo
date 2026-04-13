@@ -121,10 +121,7 @@ def create_email_templates_import_command():
         idm_password: IdmPasswordOpt = None,
         rollback: RollbackOpt = False,
         continue_on_error: ContinueOnErrorOpt = False,
-<<<<<<< HEAD
-=======
         dry_run: DryRunOpt = False,
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
     ):
         """Import Email Templates from JSON file (local mode) or Git repository (Git mode)"""
 

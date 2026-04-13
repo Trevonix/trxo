@@ -142,10 +142,7 @@ def create_realms_import_command():
             branch=branch,
             diff=diff,
             continue_on_error=continue_on_error,
-<<<<<<< HEAD
-=======
             dry_run=dry_run,
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
         )
 
     return import_realms

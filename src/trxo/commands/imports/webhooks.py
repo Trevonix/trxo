@@ -140,10 +140,7 @@ def create_webhooks_import_command():
         idm_password: IdmPasswordOpt = None,
         rollback: RollbackOpt = False,
         continue_on_error: ContinueOnErrorOpt = False,
-<<<<<<< HEAD
-=======
         dry_run: DryRunOpt = False,
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
     ):
         """Import webhooks from JSON file to specified realm"""
         importer = WebhooksImporter(realm=realm)
