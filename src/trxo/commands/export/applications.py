@@ -32,6 +32,7 @@ from trxo.commands.shared.options import (
     ProjectNameOpt,
     RealmOpt,
     SaIdOpt,
+    ContinueOnErrorOpt,
     VersionOpt,
     ViewColumnsOpt,
     ViewOpt,
@@ -97,7 +98,11 @@ def _export_applications_with_deps(
     idm_base_url: str | None,
     idm_username: str | None,
     idm_password: str | None,
+<<<<<<< HEAD
     continue_on_error: bool,
+=======
+    continue_on_error: bool = False,
+>>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
 ) -> None:
     """Export managed applications plus referenced OAuth2 clients/provider/scripts."""
     base = BaseExporter()

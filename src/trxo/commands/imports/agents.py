@@ -17,6 +17,7 @@ from trxo.commands.shared.options import (
     CherryPickOpt,
     ContinueOnErrorOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
@@ -32,6 +33,7 @@ from trxo.commands.shared.options import (
     SaIdOpt,
     SrcRealmOpt,
     SyncOpt,
+    ContinueOnErrorOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.constants import DEFAULT_REALM
@@ -181,6 +183,10 @@ def create_agents_import_command():
         branch: BranchOpt = None,
         rollback: RollbackOpt = False,
         continue_on_error: ContinueOnErrorOpt = False,
+<<<<<<< HEAD
+=======
+        dry_run: DryRunOpt = False,
+>>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
     ):
         importer = AgentsImporter("IdentityGatewayAgent", realm=realm)
         importer.import_from_file(
@@ -206,6 +212,7 @@ def create_agents_import_command():
             rollback=rollback,
             continue_on_error=continue_on_error,
             sync=sync,
+            dry_run=dry_run,
         )
 
     def import_java_agents(
@@ -231,6 +238,10 @@ def create_agents_import_command():
         branch: BranchOpt = None,
         rollback: RollbackOpt = False,
         continue_on_error: ContinueOnErrorOpt = False,
+<<<<<<< HEAD
+=======
+        dry_run: DryRunOpt = False,
+>>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
     ):
         importer = AgentsImporter("J2EEAgent", realm=realm)
         importer.import_from_file(
@@ -256,6 +267,7 @@ def create_agents_import_command():
             rollback=rollback,
             continue_on_error=continue_on_error,
             sync=sync,
+            dry_run=dry_run,
         )
 
     def import_web_agents(
@@ -281,6 +293,10 @@ def create_agents_import_command():
         branch: BranchOpt = None,
         rollback: RollbackOpt = False,
         continue_on_error: ContinueOnErrorOpt = False,
+<<<<<<< HEAD
+=======
+        dry_run: DryRunOpt = False,
+>>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
     ):
         importer = AgentsImporter("WebAgent", realm=realm)
         importer.import_from_file(
@@ -306,6 +322,7 @@ def create_agents_import_command():
             rollback=rollback,
             continue_on_error=continue_on_error,
             sync=sync,
+            dry_run=dry_run,
         )
 
     return (

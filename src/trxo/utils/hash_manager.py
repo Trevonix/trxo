@@ -160,21 +160,10 @@ class HashManager:
                     for key in ("clients", "scripts"):
                         block = data.get(key)
                         if isinstance(block, list):
-<<<<<<< HEAD
                             merged.extend(x for x in block if isinstance(x, dict))
                         elif isinstance(block, dict):
                             merged.extend(
                                 x for x in block.values() if isinstance(x, dict)
-=======
-                            merged.extend(
-                                x for x in block if isinstance(x, dict)
-                            )
-                        elif isinstance(block, dict):
-                            merged.extend(
-                                x
-                                for x in block.values()
-                                if isinstance(x, dict)
->>>>>>> 6554735b377377f5b84e82b9d09cc13f76ff8197
                             )
                     return merged
                 return data["result"]

@@ -19,6 +19,7 @@ from trxo.commands.shared.options import (
     CherryPickOpt,
     ContinueOnErrorOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
@@ -34,6 +35,7 @@ from trxo.commands.shared.options import (
     SaIdOpt,
     SrcRealmOpt,
     SyncOpt,
+    ContinueOnErrorOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.constants import (
@@ -225,9 +227,14 @@ class ScriptImporter(BaseImporter):
         branch: Optional[str] = None,
         diff: bool = False,
         rollback: bool = False,
+        continue_on_error: bool = False,
         sync: bool = False,
         cherry_pick: Optional[str] = None,
+<<<<<<< HEAD
         continue_on_error: bool = False,
+=======
+        dry_run: bool = False,
+>>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
     ) -> None:
         """Override to ensure automated sync (force=True)"""
         super().import_from_file(
@@ -250,9 +257,14 @@ class ScriptImporter(BaseImporter):
             branch=branch,
             diff=diff,
             rollback=rollback,
+            continue_on_error=continue_on_error,
             sync=sync,
             cherry_pick=cherry_pick,
+<<<<<<< HEAD
             continue_on_error=continue_on_error,
+=======
+            dry_run=dry_run,
+>>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
         )
 
 
@@ -282,6 +294,7 @@ def create_script_import_command():
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
+        dry_run: DryRunOpt = False,
     ):
         """Import scripts from JSON file (local mode) or Git repository (Git mode)"""
         importer = ScriptImporter(realm=realm)
@@ -308,6 +321,7 @@ def create_script_import_command():
             continue_on_error=continue_on_error,
             sync=sync,
             cherry_pick=cherry_pick,
+            dry_run=dry_run,
         )
 
     return import_scripts

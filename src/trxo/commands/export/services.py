@@ -29,6 +29,7 @@ from trxo.commands.shared.options import (
     ProjectNameOpt,
     RealmOpt,
     SaIdOpt,
+    ContinueOnErrorOpt,
     VersionOpt,
     ViewColumnsOpt,
     ViewOpt,
@@ -244,7 +245,11 @@ def create_services_export_command():
             no_version=no_version,
             branch=branch,
             commit_message=commit,
+<<<<<<< HEAD
                 continue_on_error=continue_on_error,
+=======
+            continue_on_error=continue_on_error,
+>>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
         )
 
     return export_services

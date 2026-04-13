@@ -47,7 +47,7 @@ def test_fetch_oauth_client_data_success(mocker):
     assert "_rev" not in data
 
 
-def test_fetch_oauth_client_data_error_returns_empty(mocker):
+def test_fetch_oauth_client_data_error_returns_empty_when_continue_on_error(mocker):
     exporter = OAuthExporter()
     exporter.continue_on_error = True
     mocker.patch.object(exporter, "make_http_request", side_effect=Exception("boom"))
@@ -57,9 +57,14 @@ def test_fetch_oauth_client_data_error_returns_empty(mocker):
     assert data == {}
 
 
+<<<<<<< HEAD
 def test_fetch_oauth_client_data_error_raises_in_stop_mode(mocker):
     exporter = OAuthExporter()
     exporter.continue_on_error = False
+=======
+def test_fetch_oauth_client_data_error_raises_when_stop_on_error(mocker):
+    exporter = OAuthExporter()
+>>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
     mocker.patch.object(exporter, "make_http_request", side_effect=Exception("boom"))
 
     with pytest.raises(Exception, match="boom"):
@@ -94,6 +99,7 @@ def test_fetch_script_data_forbidden_returns_empty(mocker):
     assert data == {}
 
 
+<<<<<<< HEAD
 def test_fetch_script_data_forbidden_raises_in_stop_mode(mocker):
     exporter = OAuthExporter()
     exporter.continue_on_error = False
@@ -105,6 +111,34 @@ def test_fetch_script_data_forbidden_raises_in_stop_mode(mocker):
         exporter.fetch_script_data("script1", "token", "https://base")
 
 
+=======
+def test_fetch_script_data_not_found_raises_when_stop_on_error(mocker):
+    exporter = OAuthExporter()
+    mocker.patch.object(
+        exporter,
+        "make_http_request",
+        side_effect=Exception("404 - Script with UUID x could not be found"),
+    )
+
+    with pytest.raises(Exception, match="404"):
+        exporter.fetch_script_data("script1", "token", "https://base")
+
+
+def test_fetch_script_data_not_found_returns_empty_when_continue_on_error(mocker):
+    exporter = OAuthExporter()
+    exporter.continue_on_error = True
+    mocker.patch.object(
+        exporter,
+        "make_http_request",
+        side_effect=Exception("404 - Script with UUID x could not be found"),
+    )
+
+    data = exporter.fetch_script_data("script1", "token", "https://base")
+
+    assert data == {}
+
+
+>>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
 def test_export_oauth_happy_path(mocker):
     export_oauth = create_oauth_export_command()
 

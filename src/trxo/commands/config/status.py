@@ -123,12 +123,15 @@ class StatusChecker:
             ", ".join(self.auth_mode) if self.auth_mode else "None",
         )
 
+    @property
     def am_configured(self) -> bool:
         return bool(self.am_url)
 
+    @property
     def idm_configured(self) -> bool:
         return bool(self.idm_url)
 
+    @property
     def aic_configured(self) -> bool:
         return bool(self.aic_url)
 

@@ -19,6 +19,7 @@ from trxo.commands.shared.options import (
     CherryPickOpt,
     ContinueOnErrorOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
@@ -31,6 +32,7 @@ from trxo.commands.shared.options import (
     ProjectNameOpt,
     RollbackOpt,
     SaIdOpt,
+    ContinueOnErrorOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.utils.console import console, error, info, warning
@@ -239,6 +241,7 @@ def create_esv_commands():
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
+        dry_run: DryRunOpt = False,
     ):
         """Import Environment Variables configuration from JSON file"""
         importer = EsvVariablesImporter()
@@ -261,8 +264,13 @@ def create_esv_commands():
             branch=branch,
             diff=diff,
             rollback=rollback,
-            cherry_pick=cherry_pick,
             continue_on_error=continue_on_error,
+            cherry_pick=cherry_pick,
+<<<<<<< HEAD
+            continue_on_error=continue_on_error,
+=======
+            dry_run=dry_run,
+>>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
         )
 
     def import_esv_secrets(
@@ -285,6 +293,7 @@ def create_esv_commands():
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
+        dry_run: DryRunOpt = False,
     ):
         """Import Environment Secrets configuration from JSON file"""
         importer = EsvSecretsImporter()
@@ -307,8 +316,13 @@ def create_esv_commands():
             branch=branch,
             diff=diff,
             rollback=rollback,
-            cherry_pick=cherry_pick,
             continue_on_error=continue_on_error,
+            cherry_pick=cherry_pick,
+<<<<<<< HEAD
+            continue_on_error=continue_on_error,
+=======
+            dry_run=dry_run,
+>>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
         )
 
     return import_esv_variables, import_esv_secrets

@@ -100,6 +100,19 @@ DiffOpt = Annotated[
     ),
 ]
 
+DryRunOpt = Annotated[
+    bool,
+    typer.Option(
+        ...,
+        "--dry-run",
+        help=(
+            "Validate input and print a medium summary of what a real import "
+            "would do; no import API calls. Ignored when --diff is set (diff uses "
+            "the API to compare)."
+        ),
+    ),
+]
+
 RollbackOpt = Annotated[
     bool,
     typer.Option(
@@ -127,6 +140,15 @@ ContinueOnErrorOpt = Annotated[
         ...,
         "--continue-on-error/--stop-on-error",
         help="Stop on the first error (default) or continue processing after failures",
+    ),
+]
+
+ContinueOnErrorOpt = Annotated[
+    bool,
+    typer.Option(
+        ...,
+        "--continue-on-error/--stop-on-error",
+        help="Stop on first error by default; use --continue-on-error to process all items",
     ),
 ]
 

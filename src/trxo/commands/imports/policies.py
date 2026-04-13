@@ -18,6 +18,7 @@ from trxo.commands.shared.options import (
     CherryPickOpt,
     ContinueOnErrorOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     GlobalOpt,
     IdmBaseUrlOpt,
@@ -34,6 +35,7 @@ from trxo.commands.shared.options import (
     SaIdOpt,
     SrcRealmOpt,
     SyncOpt,
+    ContinueOnErrorOpt,
 )
 from trxo.config.api_headers import get_headers
 from trxo.constants import DEFAULT_REALM
@@ -272,11 +274,13 @@ def create_policies_import_command():
         diff: DiffOpt = False,
         sync: SyncOpt = False,
         rollback: RollbackOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
         cherry_pick: CherryPickOpt = None,
         continue_on_error: ContinueOnErrorOpt = False,
         branch: BranchOpt = None,
         realm: RealmOpt = DEFAULT_REALM,
         src_realm: SrcRealmOpt = None,
+        dry_run: DryRunOpt = False,
     ):
         """
         Import policies from JSON file (local mode) or
@@ -304,9 +308,14 @@ def create_policies_import_command():
             diff=diff,
             sync=sync,
             rollback=rollback,
+            continue_on_error=continue_on_error,
             cherry_pick=cherry_pick,
             global_policy=global_policy,
+<<<<<<< HEAD
             continue_on_error=continue_on_error,
+=======
+            dry_run=dry_run,
+>>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
         )
 
     return import_policies
