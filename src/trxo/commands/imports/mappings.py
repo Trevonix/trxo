@@ -574,10 +574,7 @@ def create_mappings_import_command():
         sync: SyncOpt = False,
         rollback: RollbackOpt = False,
         continue_on_error: ContinueOnErrorOpt = False,
-<<<<<<< HEAD
-=======
         dry_run: DryRunOpt = False,
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
     ):
         """Import sync mappings from JSON file (local mode) or Git repository (Git mode).
 
@@ -605,10 +602,7 @@ def create_mappings_import_command():
             rollback=rollback,
             sync=sync,
             continue_on_error=continue_on_error,
-<<<<<<< HEAD
-=======
             dry_run=dry_run,
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
         )
 
     return import_mappings

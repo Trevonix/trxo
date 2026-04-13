@@ -37,15 +37,8 @@ from trxo.commands.shared.options import (
     SaIdOpt,
     SrcRealmOpt,
     SyncOpt,
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
     WithDepsOpt,
     ContinueOnErrorOpt,
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
-=======
-    WithDepsOpt,
->>>>>>> 81005332995572deb30c36206f6338df0c1ac5d3
 )
 from trxo.config.api_headers import get_headers
 from trxo.constants import DEFAULT_REALM
@@ -287,10 +280,7 @@ def create_applications_import_command():
         idm_password: IdmPasswordOpt = None,
         with_deps: WithDepsOpt = False,
         continue_on_error: ContinueOnErrorOpt = False,
-<<<<<<< HEAD
-=======
         dry_run: DryRunOpt = False,
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
     ):
         importer = ApplicationsImporter(realm=realm)
         importer.include_am_dependencies = with_deps
@@ -318,11 +308,7 @@ def create_applications_import_command():
             continue_on_error=continue_on_error,
             cherry_pick=cherry_pick,
             sync=sync,
-<<<<<<< HEAD
-            continue_on_error=continue_on_error,
-=======
             dry_run=dry_run,
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
         )
 
     return import_applications

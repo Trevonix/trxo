@@ -121,7 +121,6 @@ def create_scripts_export_command():
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
-        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Export scripts configuration"""
         exporter = BaseExporter()
@@ -156,7 +155,6 @@ def create_scripts_export_command():
             commit_message=commit,
             continue_on_error=continue_on_error,
             response_filter=decode_script_response,
-            continue_on_error=continue_on_error,
         )
 
     return export_scripts

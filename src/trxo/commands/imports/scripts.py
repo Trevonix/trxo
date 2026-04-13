@@ -230,11 +230,7 @@ class ScriptImporter(BaseImporter):
         continue_on_error: bool = False,
         sync: bool = False,
         cherry_pick: Optional[str] = None,
-<<<<<<< HEAD
-        continue_on_error: bool = False,
-=======
         dry_run: bool = False,
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
     ) -> None:
         """Override to ensure automated sync (force=True)"""
         super().import_from_file(
@@ -260,11 +256,7 @@ class ScriptImporter(BaseImporter):
             continue_on_error=continue_on_error,
             sync=sync,
             cherry_pick=cherry_pick,
-<<<<<<< HEAD
-            continue_on_error=continue_on_error,
-=======
             dry_run=dry_run,
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
         )
 
 

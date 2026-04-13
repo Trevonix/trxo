@@ -105,10 +105,7 @@ def create_authn_import_command():
         auth_mode: AuthModeOpt = None,
         rollback: RollbackOpt = False,
         continue_on_error: ContinueOnErrorOpt = False,
-<<<<<<< HEAD
-=======
         dry_run: DryRunOpt = False,
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
         onprem_username: OnPremUsernameOpt = None,
         onprem_password: OnPremPasswordOpt = None,
         onprem_realm: OnPremRealmOpt = "root",

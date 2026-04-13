@@ -118,8 +118,7 @@ class SamlImporter(BaseImporter):
             )
         if sync:
             info(
-                "  • With --sync: delete server SAML items missing from this "
-                "export."
+                "  • With --sync: delete server SAML items missing from this " "export."
             )
         if continue_on_error:
             info("  • With --continue-on-error: continue after individual failures.")
@@ -145,11 +144,7 @@ class SamlImporter(BaseImporter):
         diff: bool = False,
         sync: bool = False,
         cherry_pick: str = None,
-<<<<<<< HEAD
-        continue_on_error: bool = False,
-=======
         dry_run: bool = False,
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
     ):
         """
         Override import flow for SAML only.
@@ -175,11 +170,7 @@ class SamlImporter(BaseImporter):
                 branch=branch,
                 diff=diff,
                 cherry_pick=cherry_pick,
-<<<<<<< HEAD
-                continue_on_error=continue_on_error,
-=======
                 dry_run=False,
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
             )
 
         if dry_run:
@@ -303,17 +294,11 @@ class SamlImporter(BaseImporter):
                 scripts_data, token, base_url, selected_entity_ids, data
             )
             if not script_success:
-<<<<<<< HEAD
-                if not continue_on_error:
-                    return False
-                warning("Some scripts failed to import, but continuing...")
-=======
                 if continue_on_error:
                     warning("Some scripts failed to import, but continuing...")
                 else:
                     error("Script import failed; stopping due to --stop-on-error")
                     return False
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
 
         # Step 2: Import remote metadata (only for remote entities)
         metadata_data = data.get("metadata", [])
@@ -328,17 +313,11 @@ class SamlImporter(BaseImporter):
                 metadata_data, remote_entities, token, base_url, selected_entity_ids
             )
             if not metadata_success:
-<<<<<<< HEAD
-                if not continue_on_error:
-                    return False
-                warning("Some metadata imports failed, but continuing...")
-=======
                 if continue_on_error:
                     warning("Some metadata imports failed, but continuing...")
                 else:
                     error("Metadata import failed; stopping due to --stop-on-error")
                     return False
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
 
         # Step 3: Upsert hosted entities
         hosted_entities = data.get("hosted", [])
@@ -357,10 +336,7 @@ class SamlImporter(BaseImporter):
                         error("Failure detected. Stopping import for rollback.")
                         return False
                     if not continue_on_error:
-<<<<<<< HEAD
-=======
                         error("Entity import failed; stopping due to --stop-on-error")
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
                         return False
 
         # Step 4: Upsert remote entities
@@ -374,13 +350,8 @@ class SamlImporter(BaseImporter):
                     success_count += 1
                 else:
                     error_count += 1
-<<<<<<< HEAD
-                    self.failed_updates += 1
-                    if not continue_on_error:
-=======
                     if not continue_on_error:
                         error("Entity import failed; stopping due to --stop-on-error")
->>>>>>> 8dc291c548055214e3452c4e135d037eaf02a366
                         return False
 
         # Print summary
@@ -907,9 +878,7 @@ def create_saml_import_command():
                     from pathlib import Path
 
                     git_base = Path(git_manager.local_path)
-                    effective_src_realm = (
-                        src_realm if src_realm is not None else realm
-                    )
+                    effective_src_realm = src_realm if src_realm is not None else realm
                     resolved_path = (
                         git_base
                         / effective_src_realm
