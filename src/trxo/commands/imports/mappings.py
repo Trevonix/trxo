@@ -10,6 +10,8 @@ Import functionality for PingIDM sync mappings with smart upsert logic:
 import json
 from typing import Any, Dict, List
 
+import typer
+
 from trxo.commands.shared.options import (
     AmBaseUrlOpt,
     AuthModeOpt,
@@ -453,6 +455,7 @@ class MappingsImporter(BaseImporter):
             dry_run=dry_run,
             **kwargs,
         )
+        storage_mode = self._get_storage_mode()
         if storage_mode == "git" or file_path is None:
             # Use parent class Git mode logic
             super().import_from_file(

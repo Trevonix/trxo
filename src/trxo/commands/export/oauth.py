@@ -8,6 +8,8 @@ PingOne Advanced Identity Cloud OAuth2 clients with script dependencies.
 import base64
 from typing import Any, Dict, Set
 
+import typer
+
 from trxo.commands.shared.options import (
     AmBaseUrlOpt,
     AuthModeOpt,
