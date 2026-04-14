@@ -11,7 +11,9 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from trxo_lib.config.constants import DEFAULT_REALM
-from trxo.utils.console import error, success, warning
+from trxo_lib.logging import get_logger
+
+logger = get_logger("trxo_lib.state.hash")
 
 
 class HashManager:
@@ -57,7 +59,7 @@ class HashManager:
     ) -> bool:
         """Validate import data against stored export hash"""
         if force:
-            warning("Force import enabled - skipping integrity check")
+            logger.warning("Force import enabled - skipping integrity check")
             return True
 
         try:
@@ -68,7 +70,7 @@ class HashManager:
             stored_metadata = self._get_hash_metadata(command_name)
 
             if not stored_metadata:
-                error(
+                logger.error(
                     f"Integrity metadata not found for command "
                     f"'{command_name}'. Please export data first."
                 )
@@ -76,26 +78,28 @@ class HashManager:
 
             stored_hash = stored_metadata.get("hash")
             if not stored_hash:
-                error(f"Invalid integrity metadata for command '{command_name}'")
+                logger.error(f"Invalid integrity metadata for command '{command_name}'")
                 return False
 
             # Compare hashes
             if import_hash == stored_hash:
-                success("Data integrity verified - import data matches exported data")
+                logger.info(
+                    "Data integrity verified - import data matches exported data"
+                )
                 return True
             else:
-                error(
+                logger.error(
                     "Data integrity check failed - import data differs from exported data"
                 )
-                error("This could indicate:")
-                error("  - File has been modified after export")
-                error("  - Different data source")
-                error("  - Data corruption")
-                error("  - Use --force-import to bypass validation")
+                logger.error("This could indicate:")
+                logger.error("  - File has been modified after export")
+                logger.error("  - Different data source")
+                logger.error("  - Data corruption")
+                logger.error("  - Use --force-import to bypass validation")
                 return False
 
         except Exception as e:
-            error(f"Data integrity check error: {str(e)}")
+            logger.error(f"Data integrity check error: {str(e)}")
             return False
 
     def get_hash_info(self, command_name: str) -> Optional[Dict[str, Any]]:
