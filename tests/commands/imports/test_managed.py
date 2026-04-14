@@ -1,5 +1,6 @@
 import json
 
+import httpx
 import pytest
 
 from trxo.commands.imports.managed import (
@@ -64,8 +65,8 @@ def test_update_item_single_create_success(mocker):
     mocker.patch("trxo.commands.imports.managed.info")
     imp._get_current_managed_config = mocker.Mock(return_value={"objects": []})
     imp.make_http_request = mocker.Mock()
-    imp._update_relationship_properties = mocker.Mock()
-    imp._delete_orphaned_properties = mocker.Mock()
+    imp._update_relationship_properties = mocker.Mock(return_value=True)
+    imp._delete_orphaned_properties = mocker.Mock(return_value=True)
 
     data = {"name": "obj1"}
     assert imp.update_item(data, "t", "http://x") is True
@@ -78,8 +79,8 @@ def test_update_item_single_update_with_patch(mocker):
         return_value={"objects": [{"name": "obj1", "x": 1}]}
     )
     imp.make_http_request = mocker.Mock()
-    imp._update_relationship_properties = mocker.Mock()
-    imp._delete_orphaned_properties = mocker.Mock()
+    imp._update_relationship_properties = mocker.Mock(return_value=True)
+    imp._delete_orphaned_properties = mocker.Mock(return_value=True)
 
     data = {"name": "obj1", "x": 2}
     assert imp.update_item(data, "t", "http://x") is True
@@ -92,10 +93,47 @@ def test_update_item_single_no_changes(mocker):
         return_value={"objects": [{"name": "obj1"}]}
     )
     imp.make_http_request = mocker.Mock()
-    imp._delete_orphaned_properties = mocker.Mock()
+    imp._delete_orphaned_properties = mocker.Mock(return_value=True)
 
     data = {"name": "obj1"}
     assert imp.update_item(data, "t", "http://x") is True
+
+
+def test_update_item_single_no_changes_orphan_step_fails(mocker):
+    imp = ManagedObjectsImporter()
+    mocker.patch("trxo.commands.imports.managed.info")
+    imp._get_current_managed_config = mocker.Mock(
+        return_value={"objects": [{"name": "obj1"}]}
+    )
+    imp.make_http_request = mocker.Mock()
+    imp._delete_orphaned_properties = mocker.Mock(return_value=False)
+
+    data = {"name": "obj1"}
+    assert imp.update_item(data, "t", "http://x") is False
+
+
+def test_update_item_single_patch_relationship_step_fails(mocker):
+    imp = ManagedObjectsImporter()
+    mocker.patch("trxo.commands.imports.managed.info")
+    imp._get_current_managed_config = mocker.Mock(
+        return_value={"objects": [{"name": "obj1", "x": 1}]}
+    )
+    imp.make_http_request = mocker.Mock()
+    imp._update_relationship_properties = mocker.Mock(return_value=False)
+    imp._delete_orphaned_properties = mocker.Mock(return_value=True)
+
+    data = {"name": "obj1", "x": 2}
+    assert imp.update_item(data, "t", "http://x") is False
+
+
+def test_http_status_from_error_reads_httpx_cause():
+    imp = ManagedObjectsImporter()
+    req = httpx.Request("GET", "http://example.invalid/x")
+    resp = httpx.Response(501, request=req)
+    inner = httpx.HTTPStatusError("msg", request=req, response=resp)
+    outer = Exception("501 - Not Implemented")
+    outer.__cause__ = inner
+    assert imp._http_status_from_error(outer) == 501
 
 
 def test_update_item_single_missing_name(mocker):
@@ -111,8 +149,8 @@ def test_update_item_multi_objects_patch_and_put(mocker):
         return_value={"objects": [{"name": "a"}]}
     )
     imp.make_http_request = mocker.Mock()
-    imp._update_relationship_properties = mocker.Mock()
-    imp._delete_orphaned_properties = mocker.Mock()
+    imp._update_relationship_properties = mocker.Mock(return_value=True)
+    imp._delete_orphaned_properties = mocker.Mock(return_value=True)
 
     data = {
         "objects": [

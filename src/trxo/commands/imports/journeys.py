@@ -1229,7 +1229,12 @@ class JourneyImporter(BaseImporter):
     def _post_saml_metadata(
         self, entity_id: str, metadata_xml: str, token: str, base_url: str
     ) -> bool:
-        """POST metadata ignoring 500/409 conflict errors which indicate it exists."""
+        """POST remote SAML2 metadata only (`importEntity` on .../saml2/remote/).
+
+        409/500 are treated as non-fatal (metadata often already present), including
+        under ``--stop-on-error``. Does not run for hosted entities or any other AM
+        calls — only this single remote metadata POST from ``_import_saml_entity``.
+        """
         url = self._construct_api_url(
             base_url,
             f"/am/json/realms/root/realms/{self.realm}/realm-config/"
@@ -1252,22 +1257,15 @@ class JourneyImporter(BaseImporter):
 
         # We explicitly use httpx here instead of self.make_http_request
         # to avoid printing loud ERROR messages to the console for the
-        # expected 409/500 "metadata already exists" responses.
+        # expected 409/500 "metadata already exists" responses (remote POST only).
         try:
             with httpx.Client(timeout=30.0) as client:
                 response = client.post(url, headers=headers, json=payload)
 
-                # If it's a 409 or 500, we treat it as "already exists" and skip
                 if response.status_code in (409, 500):
-                    if not self.continue_on_error:
-                        error(
-                            f"Metadata import for '{entity_id}' returned "
-                            f"{response.status_code} in --stop-on-error mode"
-                        )
-                        return False
                     self.logger.debug(
                         f"Metadata for '{entity_id}' likely already exists "
-                        f"(status {response.status_code}), skipping POST."
+                        f"(status {response.status_code}), treating remote POST as ok."
                     )
                     return True
 
