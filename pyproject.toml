@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "trxo"
-version = "1.0.0"
+version = "1.1.0"
 description = "PingOne Advanced Identity Cloud Configuration Management Tool"
 readme = "README.md"
 license = {text = "MIT"}

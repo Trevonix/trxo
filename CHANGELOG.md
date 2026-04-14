@@ -10,6 +10,20 @@ The format is based on Keep a Changelog and the project follows Semantic Version
 
 ---
 
+## [1.1.0] - 2026-04-14
+
+### Added
+- Default policies support for export/import  
+- CLI options: stop-on-error (default) and continue-on-error  
+- Dry-run option for import commands  
+- Project credential status command  
+
+### Changed
+- Rollback extended to local operations  
+
+### Improved
+- General usability and workflow refinements  
+
 ## [1.0.0] - 2026-03-30
 
 ### Added
