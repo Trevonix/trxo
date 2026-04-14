@@ -9,7 +9,9 @@ Import functionality for PingOne Advanced Identity Cloud managed objects with sm
 
 import json
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+
+import httpx
 
 from trxo.commands.shared.options import (
     AmBaseUrlOpt,
@@ -46,6 +48,17 @@ class ManagedObjectsImporter(BaseImporter):
     def __init__(self):
         super().__init__()
         self.product = "idm"
+
+    @staticmethod
+    def _http_status_from_error(exc: BaseException) -> Optional[int]:
+        """Resolve HTTP status from nested httpx.HTTPStatusError (see BaseCommand.make_http_request)."""
+        cur: Optional[BaseException] = exc
+        while cur is not None:
+            if isinstance(cur, httpx.HTTPStatusError):
+                return cur.response.status_code
+            nxt = getattr(cur, "__cause__", None)
+            cur = nxt if isinstance(nxt, BaseException) else None
+        return None
 
     def get_required_fields(self) -> List[str]:
         return []
@@ -162,8 +175,11 @@ class ManagedObjectsImporter(BaseImporter):
 
     def _get_server_schema_properties(
         self, object_name: str, token: str, base_url: str
-    ) -> Dict[str, Any]:
-        """Fetch all properties from server schema for a managed object"""
+    ) -> Optional[Dict[str, Any]]:
+        """Fetch all properties from server schema for a managed object.
+
+        Returns ``None`` if the schema could not be retrieved (any HTTP/API failure).
+        """
         url = f"{base_url}/openidm/schema/managed/{object_name}"
         info(
             f"[DEBUG] Fetching server schema properties for '{object_name}' from: {url}"
@@ -178,10 +194,10 @@ class ManagedObjectsImporter(BaseImporter):
             info(
                 f"[DEBUG] Found {len(properties)} properties on server for '{object_name}'"
             )
-            return properties
+            return properties if isinstance(properties, dict) else {}
         except Exception as e:
-            warning(f"Failed to fetch server schema for '{object_name}': {e}")
-            return {}
+            error(f"Failed to fetch server schema for '{object_name}': {e}")
+            return None
 
     def _delete_orphaned_properties(
         self,
@@ -198,7 +214,9 @@ class ManagedObjectsImporter(BaseImporter):
         server_properties = self._get_server_schema_properties(
             object_name, token, base_url
         )
-        if not server_properties:
+        if server_properties is None:
+            return False
+        if len(server_properties) == 0:
             info(
                 f"[DEBUG] No server properties found for '{object_name}',"
                 " skipping orphaned property check"
@@ -262,12 +280,15 @@ class ManagedObjectsImporter(BaseImporter):
 
     def _update_relationship_properties(
         self, object_name: str, object_data: Dict[str, Any], token: str, base_url: str
-    ):
+    ) -> bool:
         """Update relationship properties for a managed object via specific endpoint
 
         This is called after PATCH/PUT to ensure relationship properties are updated
         in the repo.ds config as well, since PATCH/PUT operations don't automatically
         update the schema endpoint configuration.
+
+        Returns False if any non-recoverable HTTP/API error occurred (4xx/5xx on PUT,
+        or on GET except 404 for a not-yet-created property).
         """
         info(f"[DEBUG] Starting relationship properties update for '{object_name}'...")
         schema = object_data.get("schema", {})
@@ -276,7 +297,7 @@ class ManagedObjectsImporter(BaseImporter):
                 f"[DEBUG] No schema found for '{object_name}',"
                 "skipping relationship property updates"
             )
-            return
+            return True
 
         properties = schema.get("properties", {})
         if not properties or not isinstance(properties, dict):
@@ -284,7 +305,7 @@ class ManagedObjectsImporter(BaseImporter):
                 f"[DEBUG] No properties found in schema for '{object_name}', "
                 "skipping relationship property updates"
             )
-            return
+            return True
 
         relationship_props = [
             prop_name
@@ -297,7 +318,7 @@ class ManagedObjectsImporter(BaseImporter):
                 f"[DEBUG] No relationship properties found for '{object_name}', "
                 "skipping relationship property updates"
             )
-            return
+            return True
 
         info(
             f"[DEBUG] Found {len(relationship_props)} relationship property/"
@@ -326,12 +347,18 @@ class ManagedObjectsImporter(BaseImporter):
                         f"[DEBUG] Successfully fetched existing property schema for '{prop_name}'"
                     )
                 except Exception as e:
-                    # Likely property doesn't exist yet or other error;
-                    # ignore and proceed with fresh data
-                    info(
-                        f"[DEBUG] Could not fetch existing property schema for '{prop_name}' "
-                        f"(may be new): {e}"
-                    )
+                    status = self._http_status_from_error(e)
+                    if status == 404:
+                        info(
+                            f"[DEBUG] Could not fetch existing property schema for '{prop_name}' "
+                            f"(404 — may be new): {e}"
+                        )
+                    else:
+                        error(
+                            f"✗ Failed to fetch relationship property schema '{prop_name}' "
+                            f"for '{object_name}': {e}"
+                        )
+                        return False
 
                 # Fix for Schema endpoint strictness on reverse relationships
                 # The schema endpoint requires 'reverseProperty' in resourceCollection items
@@ -430,13 +457,14 @@ class ManagedObjectsImporter(BaseImporter):
                         f"for managed object: {object_name}"
                     )
                 except Exception as e:
-                    # We log error but don't fail the entire operation as the main object is updated
                     error(
                         f"✗ Failed to update relationship"
                         f"property '{prop_name}' for '{object_name}': {e}"
                     )
+                    return False
 
         info(f"[DEBUG] Completed relationship properties update for '{object_name}'")
+        return True
 
     def update_item(self, item_data: Dict[str, Any], token: str, base_url: str) -> bool:
         """Smart upsert for managed objects using PATCH for updates, PUT for creates"""
@@ -487,9 +515,10 @@ class ManagedObjectsImporter(BaseImporter):
                             if isinstance(source_schema, dict)
                             else {}
                         )
-                        self._delete_orphaned_properties(
+                        if not self._delete_orphaned_properties(
                             name, source_properties, token, base_url
-                        )
+                        ):
+                            all_ok = False
                     else:
                         payload = json.dumps(patch_operations)
                         try:
@@ -513,15 +542,19 @@ class ManagedObjectsImporter(BaseImporter):
                                 if isinstance(source_schema, dict)
                                 else {}
                             )
-                            self._update_relationship_properties(
+                            if not self._update_relationship_properties(
                                 name, obj, token, base_url
-                            )
+                            ):
+                                all_ok = False
+                                continue
 
                             # Delete orphaned properties to
                             # ensure source and destination are identical
-                            self._delete_orphaned_properties(
+                            if not self._delete_orphaned_properties(
                                 name, source_properties, token, base_url
-                            )
+                            ):
+                                all_ok = False
+                                continue
 
                             # Keep local state in sync
                             current_objects[idx] = obj
@@ -551,12 +584,18 @@ class ManagedObjectsImporter(BaseImporter):
                             if isinstance(source_schema, dict)
                             else {}
                         )
-                        self._update_relationship_properties(name, obj, token, base_url)
+                        if not self._update_relationship_properties(
+                            name, obj, token, base_url
+                        ):
+                            all_ok = False
+                            continue
 
                         # Delete orphaned properties to ensure source and destination are identical
-                        self._delete_orphaned_properties(
+                        if not self._delete_orphaned_properties(
                             name, source_properties, token, base_url
-                        )
+                        ):
+                            all_ok = False
+                            continue
 
                         # Keep local state in sync
                         current_objects = updated_objects
@@ -612,10 +651,9 @@ class ManagedObjectsImporter(BaseImporter):
                     if isinstance(source_schema, dict)
                     else {}
                 )
-                self._delete_orphaned_properties(
+                return self._delete_orphaned_properties(
                     object_name, source_properties, token, base_url
                 )
-                return True
 
             payload = json.dumps(patch_operations)
 
@@ -638,14 +676,16 @@ class ManagedObjectsImporter(BaseImporter):
                     if isinstance(source_schema, dict)
                     else {}
                 )
-                self._update_relationship_properties(
+                if not self._update_relationship_properties(
                     object_name, selected_object, token, base_url
-                )
+                ):
+                    return False
 
                 # Delete orphaned properties to ensure source and destination are identical
-                self._delete_orphaned_properties(
+                if not self._delete_orphaned_properties(
                     object_name, source_properties, token, base_url
-                )
+                ):
+                    return False
 
                 info(f"[DEBUG] Completed all operations for '{object_name}'")
                 return True
@@ -676,14 +716,16 @@ class ManagedObjectsImporter(BaseImporter):
                     if isinstance(source_schema, dict)
                     else {}
                 )
-                self._update_relationship_properties(
+                if not self._update_relationship_properties(
                     object_name, selected_object, token, base_url
-                )
+                ):
+                    return False
 
                 # Delete orphaned properties to ensure source and destination are identical
-                self._delete_orphaned_properties(
+                if not self._delete_orphaned_properties(
                     object_name, source_properties, token, base_url
-                )
+                ):
+                    return False
 
                 info(f"[DEBUG] Completed all operations for '{object_name}'")
                 return True
