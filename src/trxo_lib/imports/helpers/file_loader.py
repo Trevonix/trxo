@@ -8,10 +8,12 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from trxo.utils.console import error, info, warning
 from trxo_lib.git import GitManager
+from trxo_lib.logging import get_logger
 
 from .component_mapper import ComponentMapper
+
+logger = get_logger(__name__)
 
 
 class FileLoader:
@@ -115,14 +117,14 @@ class FileLoader:
                 # Direct list format
                 return data
             else:
-                warning(f"Unexpected data format in {file_path.name}")
+                logger.warning(f"Unexpected data format in {file_path.name}")
                 return []
 
         except json.JSONDecodeError as e:
-            error(f"Invalid JSON in {file_path.name}: {e}")
+            logger.error(f"Invalid JSON in {file_path.name}: {e}")
             return []
         except Exception as e:
-            error(f"Failed to read {file_path.name}: {e}")
+            logger.error(f"Failed to read {file_path.name}: {e}")
             return []
 
     @staticmethod
@@ -153,7 +155,7 @@ class FileLoader:
                         continue
 
                     discovered_files.append(json_file)
-                    info(f"Found: {json_file.relative_to(repo_path)}")
+                    logger.info(f"Found: {json_file.relative_to(repo_path)}")
         else:
             # Search in all realms
             for realm_dir in repo_path.iterdir():
@@ -162,7 +164,7 @@ class FileLoader:
                     if component_dir.exists():
                         for json_file in component_dir.glob("*.json"):
                             discovered_files.append(json_file)
-                            info(f"Found: {json_file.relative_to(repo_path)}")
+                            logger.info(f"Found: {json_file.relative_to(repo_path)}")
 
         return discovered_files
 
@@ -197,11 +199,11 @@ class FileLoader:
         all_items = []
         for file_path in discovered_files:
             try:
-                info(f"Loading from: {file_path.relative_to(repo_path)}")
+                logger.info(f"Loading from: {file_path.relative_to(repo_path)}")
                 items = FileLoader.load_from_git_file(file_path)
                 all_items.extend(items)
             except Exception as e:
-                warning(f"Failed to load {file_path.name}: {e}")
+                logger.warning(f"Failed to load {file_path.name}: {e}")
                 continue
 
         return all_items

@@ -6,7 +6,9 @@ Handles filtering items based on cherry-pick IDs.
 
 from typing import Any, Dict, List
 
-from trxo.utils.console import error, info
+from trxo_lib.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class CherryPickFilter:
@@ -30,7 +32,7 @@ class CherryPickFilter:
         target_ids = [id.strip() for id in cherry_pick_ids.split(",") if id.strip()]
 
         if not target_ids:
-            error("Cherry-pick: No valid IDs provided")
+            logger.error("Cherry-pick: No valid IDs provided")
             return []
 
         filtered_items = []
@@ -48,7 +50,7 @@ class CherryPickFilter:
                 if item_id == target_id:
                     filtered_items.append(item)
                     found_ids.append(target_id)
-                    info(f"Cherry-pick: Found item with _id '{target_id}'")
+                    logger.info(f"Cherry-pick: Found item with _id '{target_id}'")
                     item_found = True
                     break
 
@@ -57,7 +59,9 @@ class CherryPickFilter:
                     if item.get(id_field) == target_id:
                         filtered_items.append(item)
                         found_ids.append(target_id)
-                        info(f"Cherry-pick: Found item with {id_field} '{target_id}'")
+                        logger.info(
+                            f"Cherry-pick: Found item with {id_field} '{target_id}'"
+                        )
                         item_found = True
                         break
 
@@ -68,11 +72,11 @@ class CherryPickFilter:
         missing_ids = [id for id in target_ids if id not in found_ids]
         if missing_ids:
             if len(missing_ids) == 1:
-                error(
+                logger.error(
                     f"Cherry-pick: Item with ID '{missing_ids[0]}' not found in export file"
                 )
             else:
-                error(
+                logger.error(
                     f"Cherry-pick: Items with IDs {missing_ids} not found in export file"
                 )
 

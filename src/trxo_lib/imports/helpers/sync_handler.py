@@ -6,9 +6,11 @@ Handles sync mode deletion of orphaned items.
 
 from typing import Any, Dict, Optional
 
-from trxo.utils.console import info, success, warning
+from trxo_lib.logging import get_logger
 from trxo_lib.state.delete import DeletionManager
 from trxo_lib.state.diff.diff_manager import DiffManager
+
+logger = get_logger(__name__)
 
 
 class SyncHandler:
@@ -65,7 +67,7 @@ class SyncHandler:
         Returns:
             Deletion summary or None if no deletions needed
         """
-        info("\n🔄 Sync mode: Checking for orphaned items to delete...")
+        logger.info("\n🔄 Sync mode: Checking for orphaned items to delete...")
 
         # Perform diff to identify removed items
         diff_manager = DiffManager()
@@ -90,7 +92,7 @@ class SyncHandler:
         )
 
         if not diff_result:
-            warning("Could not perform diff analysis for sync mode")
+            logger.warning("Could not perform diff analysis for sync mode")
             return None
 
         # Get items to delete
@@ -98,16 +100,16 @@ class SyncHandler:
         items_to_delete = deletion_manager.get_items_to_delete(diff_result)
 
         if not items_to_delete:
-            success("✓ No orphaned items found - nothing to delete")
+            logger.info("✓ No orphaned items found - nothing to delete")
             return None
 
         # Get user confirmation
         if not deletion_manager.confirm_deletions(items_to_delete, item_type, force):
-            warning("Deletion cancelled by user")
+            logger.warning("Deletion cancelled by user")
             return None
 
         # Execute deletions
-        info(f"\nDeleting {len(items_to_delete)} orphaned item(s)...")
+        logger.info(f"\nDeleting {len(items_to_delete)} orphaned item(s)...")
         summary = deletion_manager.execute_deletions(
             items_to_delete=items_to_delete,
             delete_func=delete_func,
