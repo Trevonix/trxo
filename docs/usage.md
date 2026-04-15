@@ -44,6 +44,7 @@ trxo config status
 ```
 ![TRXO Export Scripts](assets/screenshots/trxo-config-status.png){: .screenshot}
 *Displaying project configuration and validation status*
+
 ---
 
 ## 3. Export Commands
