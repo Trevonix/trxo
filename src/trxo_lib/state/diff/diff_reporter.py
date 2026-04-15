@@ -15,14 +15,18 @@ from typing import Any, Dict, List, Optional
 
 from rich.panel import Panel
 
-from trxo.utils.console import console, error, info, success
+from trxo_lib.logging import get_logger
 from trxo_lib.state.diff.diff_engine import DiffResult
+
+logger = get_logger(__name__)
 
 
 class DiffReporter:
     """Generator for diff reports and summaries"""
 
     def __init__(self):
+        from trxo.utils.console import console
+
         self.console = console
 
     def display_summary(self, diff_result: DiffResult) -> None:
@@ -72,7 +76,7 @@ class DiffReporter:
             self.console.print()
 
         except Exception as e:
-            error(f"Failed to display summary: {str(e)}")
+            logger.error(f"Failed to display summary: {str(e)}")
 
     def _display_key_insights(
         self, key_insights: List[str], diff_result: DiffResult
@@ -223,7 +227,7 @@ class DiffReporter:
             Path to generated HTML file or None if failed
         """
         try:
-            info("Generating HTML diff report...")
+            logger.info("Generating HTML diff report...")
 
             # Determine output path
             if not output_dir:
@@ -247,11 +251,11 @@ class DiffReporter:
             with open(html_path, "w", encoding="utf-8") as f:
                 f.write(html_content)
 
-            success(f"HTML diff report saved: {html_path}")
+            logger.info(f"HTML diff report saved: {html_path}")
             return str(html_path)
 
         except Exception as e:
-            error(f"Failed to generate HTML diff: {str(e)}")
+            logger.error(f"Failed to generate HTML diff: {str(e)}")
             return None
 
     def _generate_html_content(

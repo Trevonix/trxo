@@ -5,14 +5,14 @@ This module provides the main interface for diff functionality,
 coordinating data fetching, comparison, and reporting.
 """
 
-from pathlib import Path
 from typing import Any, Dict, Optional
 
 from trxo_lib.config.constants import DEFAULT_REALM
-from trxo.utils.console import error, info
+from trxo_lib.logging import get_logger
 from trxo_lib.state.diff.data_fetcher import DataFetcher, get_command_api_endpoint
 from trxo_lib.state.diff.diff_engine import DiffEngine, DiffResult
-from trxo_lib.state.diff.diff_reporter import DiffReporter
+
+logger = get_logger(__name__)
 
 
 class DiffManager:
@@ -21,7 +21,6 @@ class DiffManager:
     def __init__(self):
         self.data_fetcher = DataFetcher()
         self.diff_engine = DiffEngine()
-        self.diff_reporter = DiffReporter()
 
     def perform_diff(
         self,
@@ -71,7 +70,7 @@ class DiffManager:
             DiffResult or None if failed
         """
         try:
-            info(f"Performing diff analysis for {command_name}...")
+            logger.info(f"Performing diff analysis for {command_name}...")
 
             # Step 1: Fetch current server data
             current_data = self._fetch_current_data(
@@ -93,11 +92,11 @@ class DiffManager:
             )
 
             if not current_data:
-                error("Failed to fetch current server data")
+                logger.error("Failed to fetch current server data")
                 return None
 
             # Step 2: Fetch new data to be imported
-            info("Fetching import data (file or git)")
+            logger.info("Fetching import data (file or git)")
             new_data = self._fetch_import_data(
                 command_name=command_name,
                 file_path=file_path,
@@ -107,7 +106,7 @@ class DiffManager:
             )
 
             if not new_data:
-                error("Failed to fetch import data")
+                logger.error("Failed to fetch import data")
                 return None
 
             # Step 3: Perform comparison
@@ -118,27 +117,13 @@ class DiffManager:
                 realm=realm,
             )
 
-            # Step 4: Display summary
-            self.diff_reporter.display_summary(diff_result)
-
-            # Step 5: Generate HTML report if requested
-            if generate_html:
-                html_path = self.diff_reporter.generate_html_diff(
-                    diff_result=diff_result,
-                    current_data=current_data,
-                    new_data=new_data,
-                    output_dir=html_output_dir,
-                )
-
-                if html_path:
-                    html_uri = Path(html_path).absolute().as_uri()
-                    msg = f"Open HTML report: [link={html_uri}]{html_uri}[/link]"
-                    info(msg)
-
+            # Step 4: Add payloads to result and return
+            diff_result.current_data = current_data
+            diff_result.new_data = new_data
             return diff_result
 
         except Exception as e:
-            error(f"Diff analysis failed: {str(e)}")
+            logger.error(f"Diff analysis failed: {str(e)}")
             return None
 
     def _fetch_current_data(
@@ -167,7 +152,7 @@ class DiffManager:
         )
 
         if not api_endpoint:
-            error(f"Unknown command: {command_name}")
+            logger.error(f"Unknown command: {command_name}")
             return None
 
         return self.data_fetcher.fetch_data(
@@ -234,12 +219,10 @@ class DiffManager:
                 realm=realm,
             )
 
-            self.diff_reporter.display_summary(diff_result)
-
             return diff_result
 
         except Exception as e:
-            error(f"Quick diff failed: {str(e)}")
+            logger.error(f"Quick diff failed: {str(e)}")
             return None
 
 

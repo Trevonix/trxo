@@ -60,7 +60,7 @@ def test_display_summary_with_changes_and_insights(mocker):
 def test_display_summary_exception(mocker):
     rep = DiffReporter()
     mocker.patch.object(rep, "console", side_effect=Exception("boom"))
-    mocker.patch("trxo_lib.state.diff.diff_reporter.error")
+    mocker.patch("trxo_lib.state.diff.diff_reporter.logger")
 
     dr = make_diff_result()
     rep.display_summary(dr)
@@ -119,7 +119,7 @@ def test_has_changes_true_and_false():
 
 def test_generate_html_diff_success(tmp_path, mocker):
     rep = DiffReporter()
-    mocker.patch("trxo_lib.state.diff.diff_reporter.success")
+    mocker.patch("trxo_lib.state.diff.diff_reporter.logger")
 
     dr = make_diff_result(cmd="x")
     path = rep.generate_html_diff(dr, {"a": 1}, {"a": 2}, output_dir=str(tmp_path))
@@ -129,8 +129,7 @@ def test_generate_html_diff_success(tmp_path, mocker):
 
 def test_generate_html_diff_failure(mocker):
     rep = DiffReporter()
-    mocker.patch("trxo_lib.state.diff.diff_reporter.info")
-    mocker.patch("trxo_lib.state.diff.diff_reporter.error")
+    mocker.patch("trxo_lib.state.diff.diff_reporter.logger")
 
     mocker.patch("pathlib.Path.mkdir", side_effect=Exception("boom"))
 

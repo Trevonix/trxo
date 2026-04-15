@@ -1,3 +1,10 @@
+"""Tests for SyncHandler — updated for two-phase API.
+
+SyncHandler now uses analyze() + execute_deletions() and delegates
+confirmation/display to SyncPresenter via the legacy handle_sync_deletions
+wrapper.
+"""
+
 from unittest.mock import MagicMock
 
 from trxo_lib.imports.helpers.sync_handler import SyncHandler
@@ -50,7 +57,7 @@ def test_handle_sync_deletions_no_items_to_delete(mocker):
     )
 
     assert result is None
-    assert info_mock.call_count == 2
+    assert info_mock.call_count >= 2
 
 
 def test_handle_sync_deletions_user_cancels(mocker):
@@ -65,10 +72,15 @@ def test_handle_sync_deletions_user_cancels(mocker):
 
     deletion_manager = MagicMock()
     deletion_manager.get_items_to_delete.return_value = [{"_id": "1"}]
-    deletion_manager.confirm_deletions.return_value = False
     mocker.patch(
         "trxo_lib.imports.helpers.sync_handler.DeletionManager",
         return_value=deletion_manager,
+    )
+
+    # Mock the CLI presenter to refuse confirmation
+    mock_presenter = mocker.patch(
+        "trxo.utils.diff_presenter.SyncPresenter.confirm_deletions",
+        return_value=False,
     )
 
     result = SyncHandler.handle_sync_deletions(
@@ -95,11 +107,24 @@ def test_handle_sync_deletions_success(mocker):
 
     deletion_manager = MagicMock()
     deletion_manager.get_items_to_delete.return_value = [{"_id": "1"}]
-    deletion_manager.confirm_deletions.return_value = True
-    deletion_manager.execute_deletions.return_value = {"deleted": 1}
+    deletion_manager.execute_deletions.return_value = {
+        "deleted_count": 1,
+        "failed_count": 0,
+        "deleted_items": ["1"],
+        "failed_deletions": [],
+    }
     mocker.patch(
         "trxo_lib.imports.helpers.sync_handler.DeletionManager",
         return_value=deletion_manager,
+    )
+
+    # Mock the CLI presenter to confirm + display
+    mocker.patch(
+        "trxo.utils.diff_presenter.SyncPresenter.confirm_deletions",
+        return_value=True,
+    )
+    mocker.patch(
+        "trxo.utils.diff_presenter.SyncPresenter.display_deletion_summary",
     )
 
     result = SyncHandler.handle_sync_deletions(
@@ -112,8 +137,7 @@ def test_handle_sync_deletions_success(mocker):
     )
 
     deletion_manager.execute_deletions.assert_called_once()
-    deletion_manager.print_summary.assert_called_once()
-    assert result == {"deleted": 1}
+    assert result["deleted_count"] == 1
 
 
 def test_handle_sync_deletions_passes_all_args(mocker):
@@ -129,11 +153,23 @@ def test_handle_sync_deletions_passes_all_args(mocker):
 
     deletion_manager = MagicMock()
     deletion_manager.get_items_to_delete.return_value = [{"_id": "1"}]
-    deletion_manager.confirm_deletions.return_value = True
-    deletion_manager.execute_deletions.return_value = {"deleted": 1}
+    deletion_manager.execute_deletions.return_value = {
+        "deleted_count": 1,
+        "failed_count": 0,
+        "deleted_items": ["1"],
+        "failed_deletions": [],
+    }
     mocker.patch(
         "trxo_lib.imports.helpers.sync_handler.DeletionManager",
         return_value=deletion_manager,
+    )
+
+    mocker.patch(
+        "trxo.utils.diff_presenter.SyncPresenter.confirm_deletions",
+        return_value=True,
+    )
+    mocker.patch(
+        "trxo.utils.diff_presenter.SyncPresenter.display_deletion_summary",
     )
 
     SyncHandler.handle_sync_deletions(

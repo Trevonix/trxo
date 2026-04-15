@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 
 from trxo_lib.config.constants import DEFAULT_REALM
 from trxo_lib.state.diff.data_fetcher import DataFetcher, get_command_api_endpoint
@@ -25,11 +24,10 @@ def test_fetch_data_happy_path(mocker):
 
     captured = {"data": {"x": 1}}
 
-    def fake_export_data(**kwargs):
-        fetcher.exporter.save_response(captured)
+    mock_result = mocker.Mock()
+    mock_result.data = captured
 
-    mock_exporter.export_data.side_effect = fake_export_data
-    mock_exporter.save_response.side_effect = lambda data, *a, **k: Path("/tmp/x.json")
+    mock_exporter.export_data.return_value = mock_result
 
     result = fetcher.fetch_data(
         command_name="scripts",
@@ -45,7 +43,7 @@ def test_fetch_data_failure_returns_none(mocker):
     mock_exporter = mocker.Mock()
     fetcher.exporter = mock_exporter
 
-    mocker.patch("trxo_lib.state.diff.data_fetcher.error")
+    mocker.patch("trxo_lib.state.diff.data_fetcher.logger")
     mock_exporter.export_data.side_effect = Exception("boom")
 
     result = fetcher.fetch_data("scripts", "/am/json/x")
@@ -73,7 +71,7 @@ def test_fetch_from_local_file_not_found(mocker):
     fetcher = DataFetcher()
 
     mocker.patch.object(fetcher, "_get_storage_mode", return_value="local")
-    mocker.patch("trxo_lib.state.diff.data_fetcher.error")
+    mocker.patch("trxo_lib.state.diff.data_fetcher.logger")
 
     result = fetcher.fetch_from_file_or_git(
         command_name="scripts",
@@ -97,8 +95,7 @@ def test_fetch_from_git_no_repo_returns_none(mocker, tmp_path):
 
     mocker.patch("trxo_lib.config.config_store.ConfigStore", return_value=mock_config)
     mocker.patch("trxo_lib.git.get_repo_base_path", return_value=tmp_path)
-    mocker.patch("trxo_lib.state.diff.data_fetcher.warning")
-    mocker.patch("trxo_lib.state.diff.data_fetcher.error")
+    mocker.patch("trxo_lib.state.diff.data_fetcher.logger")
 
     result = fetcher.fetch_from_file_or_git(
         command_name="scripts",

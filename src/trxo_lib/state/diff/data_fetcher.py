@@ -16,7 +16,9 @@ from trxo_lib.exports.domains.saml import process_saml_response
 from trxo_lib.exports.domains.scripts import decode_script_response
 from trxo_lib.config.api_headers import get_headers
 from trxo_lib.config.constants import DEFAULT_REALM
-from trxo.utils.console import error, info, warning
+from trxo_lib.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 def _process_nodes_response(exporter: BaseExporter, realm: str):
@@ -89,7 +91,7 @@ def _fetch_nodes_direct(
         url = exporter._construct_api_url(base_url, endpoint)
 
         # Make POST request with nextdescendents action
-        info(f"Fetching {command_name} via POST {url}?_action=nextdescendents")
+        logger.info(f"Fetching {command_name} via POST {url}?_action=nextdescendents")
         resp = exporter.make_http_request(
             url + "?_action=nextdescendents", "POST", headers, "{}"
         )
@@ -107,12 +109,14 @@ def _fetch_nodes_direct(
             if isinstance(node, dict) and "_id" in node:
                 node_map[node["_id"]] = node
 
-        info(f"Fetched {len(node_map)} {command_name} from nextdescendents action")
+        logger.info(
+            f"Fetched {len(node_map)} {command_name} from nextdescendents action"
+        )
 
         # Return with appropriate key based on command_name
         return {command_name: node_map}
     except Exception as exc:
-        warning(f"Could not fetch {command_name} via nextdescendents: {exc}")
+        logger.warning(f"Could not fetch {command_name} via nextdescendents: {exc}")
         return None
 
 
@@ -168,7 +172,7 @@ class DataFetcher:
             Dict containing the fetched data or None if failed
         """
         try:
-            info(f"Fetching current {command_name} data from server...")
+            logger.info(f"Fetching current {command_name} data from server...")
 
             # Special handling for nodes - use direct POST action fetch
             if command_name == "nodes":
@@ -202,16 +206,6 @@ class DataFetcher:
                 )
                 return result
 
-            # Use a custom data capture approach
-            original_save_method = self.exporter.save_response
-            captured_data = None
-
-            def capture_data(data, *args, **kwargs):
-                nonlocal captured_data
-                captured_data = data
-                # Return a dummy path since we're not actually saving
-                return Path("/tmp/dummy_path.json")  # nosec
-
             if command_name == "saml":
                 response_filter = process_saml_response(self.exporter, realm)
             elif command_name == "nodes":
@@ -234,10 +228,8 @@ class DataFetcher:
                 response_filter = process_oauth_response(
                     self.exporter, realm or DEFAULT_REALM
                 )
-            # Temporarily replace save_response to capture data
-            self.exporter.save_response = capture_data
 
-            # Also suppress hash persistence: export_data calls
+            # Suppress hash persistence: export_data calls
             # save_export_hash after every successful export, which would
             # overwrite the checksum stored for this command with the live
             # server's hash.  On the next real import the validator would
@@ -247,8 +239,8 @@ class DataFetcher:
             self.exporter.hash_manager.save_export_hash = lambda *a, **kw: None
 
             try:
-                # Call export_data but capture the data instead of saving
-                self.exporter.export_data(
+                # Call export_data and capture the returned ExportResult
+                result = self.exporter.export_data(
                     command_name=command_name,
                     api_endpoint=api_endpoint,
                     headers=get_headers(command_name),
@@ -270,18 +262,19 @@ class DataFetcher:
                     version=None,
                 )
 
-                if isinstance(captured_data, dict) and "data" in captured_data:
-                    return captured_data["data"]
-                return captured_data
+                if result and hasattr(result, "data"):
+                    # The data is already filtered by export_data
+                    if isinstance(result.data, dict) and "data" in result.data:
+                        return result.data["data"]
+                    return result.data
+                return None
 
             finally:
-                # Restore original methods — order matters least here, but
-                # hash must be restored before save_response to be safe.
+                # Restore original methods
                 self.exporter.hash_manager.save_export_hash = original_save_export_hash
-                self.exporter.save_response = original_save_method
 
         except Exception as e:
-            error(f"Failed to fetch {command_name} data: {str(e)}")
+            logger.error(f"Failed to fetch {command_name} data: {str(e)}")
             return None
 
     def fetch_from_file_or_git(
@@ -318,7 +311,7 @@ class DataFetcher:
                 return self._fetch_from_local_file(file_path, command_name)
 
         except Exception as e:
-            error(f"Failed to fetch data from file/git: {str(e)}")
+            logger.error(f"Failed to fetch data from file/git: {str(e)}")
             return None
 
     def _get_storage_mode(
@@ -344,7 +337,7 @@ class DataFetcher:
         """Fetch data from local JSON file"""
         try:
             if not file_path or not Path(file_path).exists():
-                error(f"File not found: {file_path}")
+                logger.error(f"File not found: {file_path}")
                 return None
 
             with open(file_path, "r", encoding="utf-8") as f:
@@ -366,7 +359,7 @@ class DataFetcher:
                 return data
 
         except Exception as e:
-            error(f"Failed to read file {file_path}: {str(e)}")
+            logger.error(f"Failed to read file {file_path}: {str(e)}")
             return None
 
     def _fetch_from_git(
@@ -386,7 +379,7 @@ class DataFetcher:
             # Get Git credentials to find repo name
             git_credentials = config_store.get_git_credentials(project_name)
             if not git_credentials or not all(git_credentials.values()):
-                error(
+                logger.error(
                     "Git credentials not found. Please run 'trxo config' "
                     "to set up Git integration."
                 )
@@ -401,14 +394,14 @@ class DataFetcher:
             repo_path = repo_base / repo_name
 
             if not repo_path.exists() or not (repo_path / ".git").exists():
-                warning(f"Local Git repository not found at {repo_path}")
-                warning(
+                logger.warning(f"Local Git repository not found at {repo_path}")
+                logger.warning(
                     "Please run an export command first to initialize "
                     "the Git repository"
                 )
                 return None
 
-            info(f"📂 Using local Git repository: {repo_path}")
+            logger.info(f"Using local Git repository: {repo_path}")
 
             # Look for files matching the command pattern. Prefer realm-specific files
             effective_realm = realm or DEFAULT_REALM
@@ -428,7 +421,7 @@ class DataFetcher:
                     break
 
             if not matching_files:
-                warning(
+                logger.warning(
                     f"No {command_name} files found in Git repository, "
                     "so please run an export first."
                 )
@@ -436,14 +429,14 @@ class DataFetcher:
 
             # Use the first match (repo ordering) — callers can refine if needed
             file_path = matching_files[0]
-            info(f"🔄 Loading {command_name} data from Git: {file_path.name}")
+            logger.info(f"Loading {command_name} data from Git: {file_path.name}")
 
             with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 return data
 
         except Exception as e:
-            error(f"Failed to fetch from Git: {str(e)}")
+            logger.error(f"Failed to fetch from Git: {str(e)}")
             return None
 
 

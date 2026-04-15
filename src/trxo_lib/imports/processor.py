@@ -234,7 +234,7 @@ class BaseImporter(BaseCommand):
             except TrxoAbort:
                 raise
 
-            except Exception as e:
+            except Exception:
                 self.failed_updates += 1
 
                 if rollback_on_failure and rollback_manager:
@@ -569,6 +569,7 @@ class BaseImporter(BaseCommand):
         """Perform diff analysis and return results via logging"""
         try:
             from trxo_lib.state.diff.diff_manager import DiffManager
+            from trxo.utils.diff_presenter import DiffPresenter
 
             # Get command name for data fetcher
             command_name = self.component_mapper.get_command_name(self.get_item_type())
@@ -596,6 +597,16 @@ class BaseImporter(BaseCommand):
             )
 
             if diff_result:
+                # Display Rich summary via presenter
+                presenter = DiffPresenter()
+                presenter.display_diff_summary(diff_result)
+
+                # Generate HTML Report
+                if diff_result.current_data and diff_result.new_data:
+                    presenter.generate_html_report(
+                        diff_result, diff_result.current_data, diff_result.new_data
+                    )
+
                 # Show summary of what would happen
                 total_changes = (
                     len(diff_result.added_items)

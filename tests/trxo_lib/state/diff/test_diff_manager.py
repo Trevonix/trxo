@@ -1,3 +1,9 @@
+"""Tests for DiffManager — updated for decoupled architecture.
+
+DiffManager no longer has a diff_reporter attribute. perform_diff() and
+quick_diff() return pure DiffResult without triggering display.
+"""
+
 from unittest.mock import MagicMock
 
 import pytest
@@ -8,27 +14,18 @@ from trxo_lib.state.diff.diff_manager import DiffManager
 def test_perform_diff_success(mocker):
     manager = DiffManager()
 
-    # Mock get_command_api_endpoint at correct import path
     mocker.patch(
         "trxo_lib.state.diff.diff_manager.get_command_api_endpoint",
         return_value=("/api/test", None),
     )
 
-    # Mock DataFetcher methods
     manager.data_fetcher.fetch_data = mocker.MagicMock(return_value={"current": 1})
     manager.data_fetcher.fetch_from_file_or_git = mocker.MagicMock(
         return_value={"new": 2}
     )
 
-    # Mock DiffEngine
     fake_diff_result = MagicMock()
     manager.diff_engine.compare_data = mocker.MagicMock(return_value=fake_diff_result)
-
-    # Mock DiffReporter
-    manager.diff_reporter.display_summary = mocker.MagicMock()
-    manager.diff_reporter.generate_html_diff = mocker.MagicMock(
-        return_value="/tmp/report.html"
-    )
 
     result = manager.perform_diff(
         command_name="journeys",
@@ -41,8 +38,6 @@ def test_perform_diff_success(mocker):
     manager.data_fetcher.fetch_data.assert_called_once()
     manager.data_fetcher.fetch_from_file_or_git.assert_called_once()
     manager.diff_engine.compare_data.assert_called_once()
-    manager.diff_reporter.display_summary.assert_called_once()
-    manager.diff_reporter.generate_html_diff.assert_called_once()
 
 
 def test_perform_diff_fails_on_current_data_fetch(mocker):
@@ -81,7 +76,6 @@ def test_quick_diff_success(mocker):
 
     fake_diff_result = MagicMock()
     manager.diff_engine.compare_data = mocker.MagicMock(return_value=fake_diff_result)
-    manager.diff_reporter.display_summary = mocker.MagicMock()
 
     result = manager.quick_diff(
         command_name="journeys",
@@ -92,7 +86,6 @@ def test_quick_diff_success(mocker):
 
     assert result == fake_diff_result
     manager.diff_engine.compare_data.assert_called_once()
-    manager.diff_reporter.display_summary.assert_called_once()
 
 
 def test_quick_diff_exception(mocker):

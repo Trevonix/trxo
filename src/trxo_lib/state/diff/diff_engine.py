@@ -15,7 +15,9 @@ from deepdiff import DeepDiff
 
 from trxo_lib.exports.domains.saml import SamlExporter
 from trxo_lib.exports.domains.services import ServicesExporter
-from trxo.utils.console import error, info
+from trxo_lib.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class ChangeType(Enum):
@@ -53,9 +55,9 @@ class DiffResult:
     removed_items: List[DiffItem]
     unchanged_items: List[DiffItem]
     raw_diff: Dict[str, Any]
-    key_insights: Optional[List[str]] = (
-        None  # Human-readable insights about the changes
-    )
+    key_insights: Optional[List[str]] = None
+    current_data: Optional[Dict[str, Any]] = None
+    new_data: Optional[Dict[str, Any]] = None
 
     def __post_init__(self):
         """Initialize key_insights as empty list if not provided"""
@@ -86,7 +88,7 @@ class DiffEngine:
         ]
 
     def _fetch_current_services(self, realm: Optional[str]):
-        info("Fetching current services via ServicesExporter for diff")
+        logger.info("Fetching current services via ServicesExporter for diff")
         exporter = ServicesExporter()
         return exporter.export_as_dict(
             scope="realm",
@@ -94,7 +96,7 @@ class DiffEngine:
         )
 
     def _fetch_current_saml(self, realm: Optional[str]):
-        info("Fetching current saml via SamlExporter for diff")
+        logger.info("Fetching current saml via SamlExporter for diff")
         exporter = SamlExporter()
         return exporter.export_as_dict(realm=realm)
 
@@ -118,7 +120,7 @@ class DiffEngine:
             DiffResult containing detailed comparison
         """
         try:
-            info(f"\nComparing {command_name} data...")
+            logger.info(f"Comparing {command_name} data...")
 
             # Auto-fetch current data if not provided
             # Always fetch current data from server for services
@@ -129,7 +131,7 @@ class DiffEngine:
                 current_data = self._fetch_current_saml(realm)
 
             if command_name == "authn":
-                info(
+                logger.info(
                     "Notice: For authn command, diff is performed on individual config sections"
                     " rather than entire file to provide more actionable insights."
                 )
@@ -223,7 +225,7 @@ class DiffEngine:
             )
 
         except Exception as e:
-            error(f"Failed to compare data: {str(e)}")
+            logger.error(f"Failed to compare data: {str(e)}")
             raise
 
     def _extract_items(
