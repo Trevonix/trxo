@@ -84,7 +84,7 @@ def test_load_from_git_file_invalid_json(tmp_path, mocker):
     file = tmp_path / "a.json"
     file.write_text("{ bad json")
 
-    mocker.patch("trxo_lib.imports.helpers.file_loader.error")
+    mocker.patch("trxo_lib.imports.helpers.file_loader.logger.error")
 
     result = FileLoader.load_from_git_file(file)
 
@@ -137,7 +137,7 @@ def test_load_git_files_happy_path(tmp_path, mocker):
         return_value=[f1],
     )
 
-    mocker.patch("trxo_lib.imports.helpers.file_loader.info")
+    mocker.patch("trxo_lib.imports.helpers.file_loader.logger.info")
 
     result = FileLoader.load_git_files(git_manager, "scripts", "alpha")
 
@@ -170,8 +170,8 @@ def test_load_git_files_partial_failure(tmp_path, mocker):
         return_value=[good, bad],
     )
 
-    mocker.patch("trxo_lib.imports.helpers.file_loader.info")
-    mocker.patch("trxo_lib.imports.helpers.file_loader.warning")
+    mocker.patch("trxo_lib.imports.helpers.file_loader.logger.info")
+    mocker.patch("trxo_lib.imports.helpers.file_loader.logger.warning")
 
     result = FileLoader.load_git_files(git_manager, "scripts", "alpha")
 
