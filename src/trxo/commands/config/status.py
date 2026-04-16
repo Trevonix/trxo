@@ -119,7 +119,7 @@ class StatusChecker:
         if self.idm_url:
             self.auth_mode.append("idm")
         if self.aic_url:
-            self.auth_mode.append("aic")
+            self.auth_mode.append("cloud")
 
         self.add_result(
             "Auth mode detected",
@@ -331,7 +331,7 @@ class StatusChecker:
 
     def check_aic_url(self) -> None:
         if not self.aic_url:
-            self.add_result("AIC URL reachable", False, "No AIC URL configured")
+            self.add_result("Cloud URL reachable", False, "No Cloud URL configured")
             return
 
         try:
@@ -342,27 +342,27 @@ class StatusChecker:
                 detail = self.aic_url
                 if 300 <= resp.status_code < 400:
                     location = resp.headers.get("Location", "unknown")
-                    detail = f"Redirect {resp.status_code} -> {location}"
-                self.add_result("AIC URL reachable", True, detail)
+                    detail = "Server responded successfully"
+                self.add_result("Cloud URL reachable", True, detail)
             else:
                 self.add_result(
-                    "AIC URL reachable",
+                    "Cloud URL reachable",
                     False,
                     f"HTTP {resp.status_code} {resp.reason_phrase} for url {resp.url}",
                 )
         except Exception as e:
-            self.add_result("AIC URL reachable", False, str(e))
+            self.add_result("Cloud URL reachable", False, str(e))
 
     def check_aic_auth(self) -> None:
         try:
             self.am_token = self.token_manager.get_token(self.project_name)
             self.add_result(
-                "AIC authentication successful",
+                "Cloud authentication successful",
                 True,
                 "Service account token acquired",
             )
         except Exception as e:
-            self.add_result("AIC authentication successful", False, str(e))
+            self.add_result("Cloud authentication successful", False, str(e))
 
     def validate_aic_token(self) -> None:
         if not self.am_token:
@@ -377,7 +377,7 @@ class StatusChecker:
                 resp.raise_for_status()
         except Exception:
             self.add_result(
-                "AIC token valid", False, f"Failed to validate against {self.aic_url}"
+                "Cloud token valid", False, f"Failed to validate against {self.aic_url}"
             )
 
     def display(self) -> None:
@@ -426,9 +426,9 @@ class StatusChecker:
                 "IDM access unsuccessful: Check credentials or run 'trxo config setup'"
             )
         if "aic url" in normalized:
-            return "AIC URL unreachable: Verify AIC base URL and server running"
+            return "Cloud URL unreachable: Verify Cloud base URL and server running"
         if "aic authentication" in normalized:
-            return "AIC auth unsuccessful: Check SA ID/JWK or run 'trxo config setup'"
+            return "Cloud authentication unsuccessful: Check credentials or run 'trxo config setup'"
         if "auth mode" in normalized:
             return "Auth mode not detected: Run 'trxo config setup'"
         return ""
