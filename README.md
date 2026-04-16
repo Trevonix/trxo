@@ -1,5 +1,11 @@
 # TRXO: Ping Identity Configuration Management
 
+![Build Status](https://github.com/Trevonix/trxo/.github/workflows/ci.yml/badge.svg) &nbsp;&nbsp;
+![License](https://img.shields.io/github/license/Trevonix/trxo) &nbsp;&nbsp;
+![Release](https://img.shields.io/github/v/release/Trevonix/trxo)
+ 
+ 
+
 **Manage, compare, and deploy Ping configurations—safely and consistently.**
 
 
