@@ -30,7 +30,7 @@ def test_status_checker_detects_aic_auth_mode():
     checker = StatusChecker(project_name="test_project", config=config, no_prompt=True)
     checker.detect_auth_mode()
 
-    assert checker.auth_mode == ["aic"]
+    assert checker.auth_mode == ["cloud"]
     assert checker.total_checks == 1
     assert checker.successful_checks == 1
     assert checker.results[0].name == "Auth mode detected"
