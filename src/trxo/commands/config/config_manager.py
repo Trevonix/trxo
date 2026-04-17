@@ -9,7 +9,7 @@ from typing import Optional
 
 import typer
 
-from trxo_lib.logging import LogLevel, get_logger, setup_logging
+from trxo.logging import LogLevel, get_logger, setup_logging
 from trxo_lib.config.config_store import ConfigStore
 from trxo.utils.console import error, info, success, warning
 

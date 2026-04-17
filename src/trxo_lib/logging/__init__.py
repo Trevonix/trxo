@@ -1,43 +1,27 @@
 """
-TRXO Logging Module
+TRXO Library Logging Module
 
-This module provides comprehensive logging functionality for the TRXO CLI tool.
-It includes structured logging, API call tracking, cross-platform log storage,
-and automatic sanitization of sensitive information.
-
-Key Features:
-- Single log file with daily rotation
-- Cross-platform log directory detection
-- API call logging with request/response details
-- Transaction and authentication logging
-- Automatic sanitization of sensitive data
-- Configurable log levels and formatting
-- Integration with existing console output
+This module provides logging for the library. It acts as a passive emitter
+and adds a NullHandler, expecting the consumer (like the TRXO CLI) to configure
+the log outputs (files, formatters, etc.).
 """
 
-from .config import LogConfig
 from .logger import (
-    LogLevel,
     get_logger,
     log_api_call,
     log_application_event,
     log_authentication_event,
     log_transaction,
-    setup_logging,
 )
-from .utils import get_log_directory, sanitize_data
+from .utils import sanitize_dict as sanitize_data
 
 __all__ = [
     "get_logger",
-    "setup_logging",
     "log_api_call",
     "log_transaction",
     "log_application_event",
     "log_authentication_event",
-    "LogLevel",
-    "LogConfig",
     "sanitize_data",
-    "get_log_directory",
 ]
 
 # Version info

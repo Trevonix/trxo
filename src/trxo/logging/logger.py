@@ -69,13 +69,17 @@ def setup_logging(
         # Get log file path
         log_file_path = get_log_file_path(config)
 
-        # Create root logger for TRXO
+        # Create loggers for both CLI and Library
         root_logger = logging.getLogger("trxo")
+        lib_logger = logging.getLogger("trxo_lib")
+
         # Ensure root logger level is at least as low as the lowest target
         root_logger.setLevel(logging.DEBUG)
+        lib_logger.setLevel(logging.DEBUG)
 
         # Clear existing handlers
         root_logger.handlers.clear()
+        lib_logger.handlers.clear()
 
         # Create daily rotating file handler
         file_handler = logging.handlers.TimedRotatingFileHandler(
@@ -112,8 +116,9 @@ def setup_logging(
         )
         file_handler.setFormatter(multiplex_formatter)
 
-        # Add file handler to root logger
+        # Add file handler to both loggers
         root_logger.addHandler(file_handler)
+        lib_logger.addHandler(file_handler)
 
         # Setup console handler
         console_handler = logging.StreamHandler(sys.stderr)
@@ -127,6 +132,7 @@ def setup_logging(
         )
         console_handler.setFormatter(console_formatter)
         root_logger.addHandler(console_handler)
+        lib_logger.addHandler(console_handler)
 
         # Explicitly set API logger to DEBUG
         api_logger = logging.getLogger("trxo.api")
@@ -150,6 +156,9 @@ def get_logger(name: str) -> logging.Logger:
     """Get a logger instance for the specified name."""
     if not _logging_configured:
         setup_logging()
+
+    if not name.startswith("trxo.") and not name.startswith("trxo_lib."):
+        name = f"trxo.{name}"
 
     if name not in _loggers:
         logger = logging.getLogger(name)

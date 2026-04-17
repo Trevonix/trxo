@@ -6,8 +6,6 @@ log management, and logging-related operations.
 """
 
 import re
-from datetime import datetime, timedelta
-from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 
@@ -135,45 +133,3 @@ def format_size(size_bytes: int) -> str:
         return f"{size_bytes / (1024 * 1024):.1f}MB"
     else:
         return f"{size_bytes / (1024 * 1024 * 1024):.1f}GB"
-
-
-def cleanup_old_logs(log_directory: Path, retention_days: int = 30) -> int:
-    """
-    Clean up old log files based on retention policy.
-
-    Args:
-        log_directory: Directory containing log files
-        retention_days: Number of days to retain logs
-
-    Returns:
-        int: Number of files cleaned up
-    """
-    if not log_directory.exists():
-        return 0
-
-    cutoff_date = datetime.now() - timedelta(days=retention_days)
-    cleaned_count = 0
-
-    # Look for rotated log files (trxo.log.1, trxo.log.2, etc.)
-    for log_file in log_directory.glob("trxo.log.*"):
-        try:
-            if log_file.stat().st_mtime < cutoff_date.timestamp():
-                log_file.unlink()
-                cleaned_count += 1
-        except (OSError, ValueError):
-            # Skip files we can't process
-            continue
-
-    return cleaned_count
-
-
-def get_log_directory() -> Path:
-    """
-    Get the log directory path (imported from config for convenience).
-
-    Returns:
-        Path: Log directory path
-    """
-    from .config import get_log_directory as _get_log_directory
-
-    return _get_log_directory()
