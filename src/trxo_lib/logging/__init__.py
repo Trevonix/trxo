@@ -7,11 +7,15 @@ the log outputs (files, formatters, etc.).
 """
 
 from .logger import (
+    error,
     get_logger,
+    info,
     log_api_call,
     log_application_event,
     log_authentication_event,
     log_transaction,
+    success,
+    warning,
 )
 from .utils import sanitize_dict as sanitize_data
 
@@ -22,6 +26,10 @@ __all__ = [
     "log_application_event",
     "log_authentication_event",
     "sanitize_data",
+    "info",
+    "error",
+    "warning",
+    "success",
 ]
 
 # Version info

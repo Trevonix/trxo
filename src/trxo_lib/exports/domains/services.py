@@ -11,7 +11,7 @@ from typing import Any
 
 from trxo_lib.config.api_headers import get_headers
 from trxo_lib.config.constants import DEFAULT_REALM
-from trxo.utils.console import warning
+from trxo_lib.logging import warning
 
 from trxo_lib.exports.processor import BaseExporter
 

@@ -10,7 +10,7 @@ from typing import Any, Dict, Set
 
 from trxo_lib.config.api_headers import get_headers
 from trxo_lib.config.constants import DEFAULT_REALM, IGNORED_SCRIPT_IDS
-from trxo.utils.console import error, info, warning
+from trxo_lib.logging import error, info, warning
 
 from trxo_lib.exports.processor import BaseExporter
 

@@ -18,7 +18,7 @@ from urllib.parse import quote
 
 
 from trxo_lib.config.constants import DEFAULT_REALM
-from trxo.utils.console import error, info, warning
+from trxo_lib.logging import error, info, warning
 
 from trxo_lib.exports.processor import BaseExporter
 

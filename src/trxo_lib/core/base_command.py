@@ -41,7 +41,7 @@ class BaseCommand(ABC):
 
         # Initialize logging
         self.logger = get_logger(
-            f"trxo.{self.__class__.__module__}.{self.__class__.__name__}"
+            f"{self.__class__.__module__}.{self.__class__.__name__}"
         )
 
     def _construct_api_url(self, base_url: str, endpoint: str) -> str:

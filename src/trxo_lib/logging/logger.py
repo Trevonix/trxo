@@ -21,12 +21,36 @@ _base_logger.addHandler(logging.NullHandler())
 _loggers: Dict[str, logging.Logger] = {}
 
 
+def info(msg: str, *args, **kwargs):
+    """Log an info message to the base library logger."""
+    get_logger(_ROOT_LOGGER_NAME).info(msg, *args, **kwargs)
+
+
+def error(msg: str, *args, **kwargs):
+    """Log an error message to the base library logger."""
+    get_logger(_ROOT_LOGGER_NAME).error(msg, *args, **kwargs)
+
+
+def warning(msg: str, *args, **kwargs):
+    """Log a warning message to the base library logger."""
+    get_logger(_ROOT_LOGGER_NAME).warning(msg, *args, **kwargs)
+
+
+def success(msg: str, *args, **kwargs):
+    """Log a success message (as info) to the base library logger."""
+    get_logger(_ROOT_LOGGER_NAME).info(f"✔ {msg}", *args, **kwargs)
+
+
 def get_logger(name: str) -> logging.Logger:
     """
     Get a logger instance within the trxo_lib namespace.
 
     If the name does not start with 'trxo_lib.', it will be prefixed.
     """
+    if name.startswith("trxo."):
+        # Normalize trxo.* to trxo_lib.* for library components
+        name = name.replace("trxo.", f"{_ROOT_LOGGER_NAME}.", 1)
+
     if not name.startswith(_ROOT_LOGGER_NAME):
         name = f"{_ROOT_LOGGER_NAME}.{name}"
 

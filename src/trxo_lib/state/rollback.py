@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional
 
 from trxo_lib.config.api_headers import get_headers
 from trxo_lib.config.constants import DEFAULT_REALM
-from trxo.utils.console import error, info, warning
+from trxo_lib.logging import error, info, warning
 from trxo_lib.state.diff.data_fetcher import DataFetcher, get_command_api_endpoint
 from trxo_lib.git import GitManager
 

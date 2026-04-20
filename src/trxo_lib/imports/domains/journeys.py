@@ -27,7 +27,7 @@ import httpx
 
 from trxo_lib.config.api_headers import get_headers
 from trxo_lib.config.constants import DEFAULT_REALM
-from trxo.utils.console import error, info, success, warning
+from trxo_lib.logging import error, info, success, warning
 
 from trxo_lib.imports.processor import BaseImporter
 
@@ -562,7 +562,7 @@ class JourneyImporter(BaseImporter):
         diff_result = None
 
         if current_data is None:
-            from trxo.utils.console import warning as _warning
+            from trxo_lib.logging import warning as _warning
 
             _warning("Could not fetch live data — showing file counts only")
         else:
@@ -601,14 +601,14 @@ class JourneyImporter(BaseImporter):
                 + len(diff_result.removed_items)
             )
             if total > 0:
-                from trxo.utils.console import warning as _warning
+                from trxo_lib.logging import warning as _warning
 
                 _warning(
                     f"Journey diff: {total} change(s) found — "
                     "run without --diff to import"
                 )
             else:
-                from trxo.utils.console import success as _success
+                from trxo_lib.logging import success as _success
 
                 _success("Journey diff: no changes — journeys are already up to date")
 

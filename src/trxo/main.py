@@ -25,14 +25,38 @@ app.add_typer(logs.app, name="logs")
 app.command("projects")(project.list_projects)
 
 
-@app.callback(invoke_without_command=True)
-def callback(ctx: typer.Context):
+@app.callback()
+def callback(
+    ctx: typer.Context,
+    log_level: str = typer.Option(None, "--log-level", help="Override log level"),
+    console_level: str = typer.Option(
+        None, "--console-level", help="Override console level"
+    ),
+):
     """
     [bold blue]TRXO[/bold blue] - PingOne Advanced Identity Cloud "\
         "Configuration Management Tool
 
     A CLI tool for managing PingOne configurations across environments.
     """
+    # Setup logging for all commands
+    from trxo.logging.config import LogConfig, LogLevel
+
+    config = LogConfig()
+    if log_level:
+        try:
+            config.default_level = LogLevel(log_level.upper())
+        except ValueError:
+            pass
+
+    if console_level:
+        try:
+            config.console_level = LogLevel(console_level.upper())
+        except ValueError:
+            pass
+
+    setup_logging(config=config)
+
     if not ctx.invoked_subcommand:
         print(
             "Welcome to the TRXO CLI! Manage your configurations effortlessly."

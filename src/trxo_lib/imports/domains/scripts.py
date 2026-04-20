@@ -16,8 +16,6 @@ from trxo_lib.config.constants import (
     IGNORED_SCRIPT_IDS,
     IGNORED_SCRIPT_NAMES,
 )
-from trxo.utils.console import error, info
-
 from trxo_lib.imports.processor import BaseImporter
 
 
@@ -70,11 +68,11 @@ class ScriptImporter(BaseImporter):
         item_name = item_data.get("name", "Unknown")
 
         if item_id in IGNORED_SCRIPT_IDS or item_name in IGNORED_SCRIPT_NAMES:
-            info(f"Skipping internal script update: {item_name}")
+            self.logger.info(f"Skipping internal script update: {item_name}")
             return True
 
         if not item_id:
-            error(f"Script '{item_name}' missing _id field, skipping")
+            self.logger.error(f"Script '{item_name}' missing _id field, skipping")
             return False
 
         # Make a copy to avoid modifying the original data
@@ -91,7 +89,7 @@ class ScriptImporter(BaseImporter):
             elif isinstance(script_value, str):
                 script_text = script_value
             else:
-                error(
+                self.logger.error(
                     f"Script field for '{item_name}' has invalid type: "
                     f"{type(script_value)}"
                 )
@@ -107,7 +105,7 @@ class ScriptImporter(BaseImporter):
                         payload_data["script"] = encoded_script
                         # info(f"Encoded script field for: {item_name}")
                     except Exception as e:
-                        error(
+                        self.logger.error(
                             f"Failed to encode script field for '{item_name}': {str(e)}"
                         )
                         return False
@@ -142,10 +140,10 @@ class ScriptImporter(BaseImporter):
                     response.raise_for_status()
 
         except Exception as e:
-            error(f"Error updating/creating script '{item_name}': {str(e)}")
+            self.logger.error(f"Error updating/creating script '{item_name}': {str(e)}")
             return False
 
-        info(f"Successfully processed script: {item_name} (ID: {item_id})")
+        self.logger.info(f"Successfully processed script: {item_name} (ID: {item_id})")
         if hasattr(self, "rollback_manager") and self.rollback_manager:
             baseline = self.rollback_manager.baseline_snapshot.get("scripts", {}).get(
                 item_id
@@ -168,10 +166,10 @@ class ScriptImporter(BaseImporter):
 
         try:
             self.make_http_request(url, "DELETE", headers)
-            info(f"Successfully deleted script: {item_id}")
+            self.logger.info(f"Successfully deleted script: {item_id}")
             return True
         except Exception as e:
-            error(f"Error deleting script '{item_id}': {str(e)}")
+            self.logger.error(f"Error deleting script '{item_id}': {str(e)}")
             return False
 
     def import_from_file(

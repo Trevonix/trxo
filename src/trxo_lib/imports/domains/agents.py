@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional
 
 from trxo_lib.config.api_headers import get_headers
 from trxo_lib.config.constants import DEFAULT_REALM
-from trxo.utils.console import error, info
+from trxo_lib.logging import error, info
 
 from trxo_lib.imports.processor import BaseImporter
 
@@ -136,7 +136,8 @@ def create_agents_callback():
 
     def agents_callback(ctx=None):
         if getattr(ctx, "invoked_subcommand", None) is None:
-            from trxo.utils.console import console, info, warning
+            from trxo.utils.console import console
+            from trxo_lib.logging import info, warning
 
             console.print()
             warning("No agents subcommand selected.")
@@ -166,11 +167,12 @@ class AgentsImportService:
 
     def execute(self) -> Any:
         from trxo_lib.config.constants import DEFAULT_REALM
-        realm = self.kwargs.get('realm', DEFAULT_REALM)
+
+        realm = self.kwargs.get("realm", DEFAULT_REALM)
         importer = AgentsImporter(agent_type=self.agent_type, realm=realm)
 
         # Typer passes 'file' which maps to 'file_path' in BaseImporter
-        if 'file' in self.kwargs:
-            self.kwargs['file_path'] = self.kwargs.pop('file')
+        if "file" in self.kwargs:
+            self.kwargs["file_path"] = self.kwargs.pop("file")
 
         return importer.import_from_file(**self.kwargs)

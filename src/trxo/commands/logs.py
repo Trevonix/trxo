@@ -13,7 +13,7 @@ from rich.syntax import Syntax
 from rich.table import Table
 
 from trxo_lib.config.constants import LOG_APP_NAME, LOG_LINES_TO_SHOW
-from trxo.logging import get_logger, setup_logging
+from trxo.logging import get_logger
 from trxo.logging.config import LogConfig, get_log_directory, get_log_file_path
 from trxo.utils.console import error, info, warning
 
@@ -32,7 +32,6 @@ def show_logs(
     ),
 ) -> None:
     """Show recent log entries"""
-    setup_logging()
     logger = get_logger("trxo.commands.logs")
 
     try:
@@ -94,7 +93,6 @@ def show_logs(
 @app.command("info")
 def log_info() -> None:
     """Show log configuration and file information"""
-    setup_logging()
     logger = get_logger("trxo.commands.logs")
 
     try:

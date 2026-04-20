@@ -12,7 +12,7 @@ from typing import Any, Dict, List
 
 
 from trxo_lib.config.api_headers import get_headers
-from trxo.utils.console import error, info
+from trxo_lib.logging import error, info
 
 from trxo_lib.imports.processor import BaseImporter
 
