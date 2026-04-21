@@ -8,10 +8,16 @@ side effects such as logging, diff presentation, and confirmation logic.
 
 from typing import Any, Callable, Dict
 
+from rich.console import Console
+
 from trxo.utils.console import error, info, warning
 from trxo.utils.diff_presenter import DiffPresenter
+from trxo.utils.imports.import_progress_handler import ImportProgressHandler
 from trxo_lib.state.diff.diff_engine import DiffResult
 from trxo_lib.exceptions import TrxoAbort, TrxoError
+
+# Shared console instance
+_console = Console()
 
 
 class CLIImportHandler:
@@ -42,53 +48,90 @@ class CLIImportHandler:
         }
         diff_mode = service_kwargs.get("diff", False)
 
+        # ── DIFF MODE ─────────────────────────────────────────────────────────
+        if diff_mode:
+            return self._handle_diff(command_name, service_function, service_kwargs)
+
+        # ── IMPORT MODE (with live progress) ──────────────────────────────────
+        return self._handle_import_with_progress(
+            command_name, service_function, service_kwargs
+        )
+
+    # ─────────────────────────────────────────────────────────────────────────
+
+    def _handle_diff(
+        self,
+        command_name: str,
+        service_function: Callable[..., Any],
+        service_kwargs: Dict[str, Any],
+    ) -> Any:
+        """Run diff mode — no progress handler, DiffPresenter owns the output."""
         try:
-            # 1. Execute the SDK standard import logic
             result = service_function(**service_kwargs)
 
-            # 2. Handle Diff Result (if in diff mode)
-            if diff_mode:
-                if isinstance(result, DiffResult):
-                    self.diff_presenter.display_diff_summary(result)
+            if isinstance(result, DiffResult):
+                self.diff_presenter.display_diff_summary(result)
 
-                    # Generate HTML Report if requested (handled in DiffPresenter)
-                    if result.current_data and result.new_data:
-                        self.diff_presenter.generate_html_report(
-                            result, result.current_data, result.new_data
-                        )
-
-                    # Log summary of changes for visibility
-                    total_changes = (
-                        len(result.added_items)
-                        + len(result.modified_items)
-                        + len(result.removed_items)
+                if result.current_data and result.new_data:
+                    self.diff_presenter.generate_html_report(
+                        result, result.current_data, result.new_data
                     )
 
-                    if total_changes > 0:
-                        warning(f"Import would make {total_changes} changes")
-                        info(
-                            "Use the import command without --diff to proceed "
-                            "with the actual import"
-                        )
-                    else:
-                        info("Configuration is already up to date")
-
-                    return result
-                elif result is None:
-                    # Some importers might return None if diff fails internally
-                    error(f"Diff analysis failed for {command_name}")
-                    raise TrxoAbort(code=1)
+                total_changes = (
+                    len(result.added_items)
+                    + len(result.modified_items)
+                    + len(result.removed_items)
+                )
+                if total_changes > 0:
+                    warning(f"Import would make {total_changes} changes")
+                    info("Run the import command without --diff to apply the changes")
                 else:
-                    # If we got a result but it's not a DiffResult (fallback)
-                    return result
+                    info("Configuration is already up to date")
 
-            # Library handles its own logging during import
-            # If we reach here and it wasn't diff mode, assume success
+                return result
+            elif result is None:
+                error(f"Diff analysis failed for {command_name}")
+                raise TrxoAbort(code=1)
+            else:
+                return result
+
+        except TrxoError as e:
+            error(str(e))
+            raise TrxoAbort(code=1) from e
+        except Exception as e:
+            error(f"Diff failed for {command_name}: {str(e)}")
+            raise TrxoAbort(code=1) from e
+
+    def _handle_import_with_progress(
+        self,
+        command_name: str,
+        service_function: Callable[..., Any],
+        service_kwargs: Dict[str, Any],
+    ) -> Any:
+        """
+        Run the actual import wrapped in a Rich live-progress session.
+
+        The ImportProgressHandler is installed on the trxo_lib logger for the
+        duration of this call. It intercepts every INFO/WARNING/ERROR record and
+        renders it to the console in real-time. On completion it prints a
+        summary panel.
+        """
+        progress_handler = ImportProgressHandler(command_name, console=_console)
+        progress_handler.attach()
+
+        try:
+            result = service_function(**service_kwargs)
             return result
 
+        except TrxoAbort:
+            # Library already logged the failure; detach renders it
+            raise
         except TrxoError as e:
             error(str(e))
             raise TrxoAbort(code=1) from e
         except Exception as e:
             error(f"Import failed for {command_name}: {str(e)}")
             raise TrxoAbort(code=1) from e
+        finally:
+            progress_handler.detach()
+            progress_handler.print_summary()

@@ -7,7 +7,6 @@ user confirmation prompts, and HTML report linking.
 """
 
 import html as _html
-import json
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -20,7 +19,7 @@ from rich.table import Table
 from rich.text import Text
 
 from trxo.utils.console import error, info, warning, success
-from trxo_lib.state.diff.diff_engine import ChangeType, DiffItem, DiffResult
+from trxo_lib.state.diff.diff_engine import DiffItem, DiffResult
 
 
 class DiffPresenter:
