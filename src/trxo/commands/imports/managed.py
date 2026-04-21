@@ -46,8 +46,11 @@ def create_managed_import_command():
         rollback: RollbackOpt = False,
         sync: SyncOpt = False,
     ):
-        """Import managed objects from JSON file (local mode) or Git repository (Git mode)."""
+        """Import managed objects from JSON file or Git repository."""
+        from trxo.utils.imports.cli_handler import CLIImportHandler
+
         kwargs = locals()
-        return ImportService().import_managed(**kwargs)
+        handler = CLIImportHandler()
+        return handler.handle_import("managed", ImportService().import_managed, kwargs)
 
     return import_managed

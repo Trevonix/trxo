@@ -20,7 +20,10 @@ from .scripts import ScriptImporter
 
 
 class OAuthImporter(BaseImporter):
-    """Enhanced importer for PingOne Advanced Identity Cloud OAuth2 Clients with script dependencies"""
+    """
+    Enhanced importer for Advanced Identity Cloud OAuth2 Clients
+    with script dependencies.
+    """
 
     def __init__(self, realm: str = DEFAULT_REALM):
         super().__init__()
@@ -193,7 +196,7 @@ class OAuthImporter(BaseImporter):
         import os
 
         if not os.path.exists(file_path):
-            print(f"File not found: {file_path}")
+            error(f"File not found: {file_path}")
             raise TrxoAbort(code=1)
 
         info(f"Loading OAuth2_Clients from local file: {file_path}")
@@ -265,9 +268,6 @@ class OAuthImporter(BaseImporter):
         item_id = item_data.get("_id")
 
         if not item_id:
-            print(
-                f"DEBUG oauth update_item: no _id found. Keys={list(item_data.keys())[:10]}"
-            )
             error("OAuth2 Client missing '_id'")
             return False
 

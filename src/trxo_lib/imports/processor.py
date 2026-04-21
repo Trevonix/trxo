@@ -61,7 +61,7 @@ class BaseImporter(BaseCommand):
         rollback: bool = False,
         sync: bool = False,
         cherry_pick: Optional[str] = None,
-    ) -> None:
+    ) -> Any:
         """Main import workflow with Git and local storage support."""
         item_type = self.get_item_type()
         self.logger.info(f"Starting import operation: {item_type}")
@@ -88,7 +88,7 @@ class BaseImporter(BaseCommand):
 
             # Handle diff mode - show differences and exit
             if diff:
-                self._perform_diff_analysis(
+                return self._perform_diff_analysis(
                     file_path=file_path,
                     realm=realm,
                     jwk_path=jwk_path,
@@ -105,7 +105,6 @@ class BaseImporter(BaseCommand):
                     am_base_url=am_base_url,
                     branch=branch,
                 )
-                return
 
             # Determine storage mode and load data
             storage_mode = self._get_storage_mode()
@@ -565,11 +564,10 @@ class BaseImporter(BaseCommand):
         idm_password: Optional[str] = None,
         am_base_url: Optional[str] = None,
         branch: Optional[str] = None,
-    ) -> None:
+    ) -> Any:
         """Perform diff analysis and return results via logging"""
         try:
             from trxo_lib.state.diff.diff_manager import DiffManager
-            from trxo.utils.diff_presenter import DiffPresenter
 
             # Get command name for data fetcher
             command_name = self.component_mapper.get_command_name(self.get_item_type())
@@ -597,43 +595,21 @@ class BaseImporter(BaseCommand):
             )
 
             if diff_result:
-                # Display Rich summary via presenter
-                presenter = DiffPresenter()
-                presenter.display_diff_summary(diff_result)
-
-                # Generate HTML Report
-                if diff_result.current_data and diff_result.new_data:
-                    presenter.generate_html_report(
-                        diff_result, diff_result.current_data, diff_result.new_data
-                    )
-
-                # Show summary of what would happen
-                total_changes = (
-                    len(diff_result.added_items)
-                    + len(diff_result.modified_items)
-                    + len(diff_result.removed_items)
-                )
-
-                if total_changes > 0:
-                    self.logger.warning(f"Import would make {total_changes} changes")
-                    self.logger.info(
-                        "Use the import command without --diff to proceed "
-                        "with the import"
-                    )
-                else:
-                    self.logger.info(
-                        "No changes would be made - data is already up to date"
-                    )
+                # Library is presentation-agnostic; returning diff_result for caller
+                return diff_result
             else:
-                self.logger.error("Diff analysis failed")
+                self.logger.error("Diff analysis failed: diff_manager returned None")
+                return None
 
         except ImportError:
             self.logger.error(
                 "Diff functionality requires deepdiff. "
                 "Install with: pip install deepdiff>=6.0.0"
             )
+            return None
         except Exception as e:
             self.logger.error(f"Diff analysis failed: {str(e)}")
+            return None
 
     def _format_rollback_report(self, report: Dict[str, Any]) -> Dict[str, Any]:
         """Format and log a rollback report.

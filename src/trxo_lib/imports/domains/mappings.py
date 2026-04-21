@@ -394,7 +394,7 @@ class MappingsImporter(BaseImporter):
         cherry_pick: str = None,
         sync: bool = False,
         **kwargs,
-    ) -> None:
+    ) -> Any:
         """Delegate to BaseImporter so sync/diff/rollback machinery runs correctly."""
 
         # For diff mode, adapt mappings to the shape expected by DiffEngine
@@ -407,7 +407,7 @@ class MappingsImporter(BaseImporter):
         # Ensure no realm conflict
         kwargs.pop("realm", None)
 
-        super().import_from_file(
+        return super().import_from_file(
             file_path=file_path,
             realm="root",
             src_realm=None,

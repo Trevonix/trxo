@@ -52,7 +52,10 @@ def create_oauth_import_command():
         idm_password: IdmPasswordOpt = None,
     ):
         """Import OAuth2 Clients with script dependencies."""
+        from trxo.utils.imports.cli_handler import CLIImportHandler
+
         kwargs = locals()
-        return ImportService().import_oauth(**kwargs)
+        handler = CLIImportHandler()
+        return handler.handle_import("oauth", ImportService().import_oauth, kwargs)
 
     return import_oauth

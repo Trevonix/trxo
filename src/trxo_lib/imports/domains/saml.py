@@ -58,7 +58,7 @@ class SamlImporter(BaseImporter):
         diff: bool = False,
         sync: bool = False,
         cherry_pick: str = None,
-    ):
+    ) -> Any:
         """
         Override import flow for SAML only.
         Keeps BaseImporter behavior unchanged.

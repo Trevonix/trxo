@@ -41,6 +41,41 @@ class DiffItem:
     summary: str
     detailed_changes: Dict[str, Any]
 
+    def get_unified_diff(self) -> str:
+        """
+        Generate a unified diff string for this item.
+
+        Returns:
+            Unified diff string or empty string if no diff available
+        """
+        if self.change_type != ChangeType.MODIFIED:
+            return ""
+
+        import difflib
+        import json
+
+        current_item = self.detailed_changes.get("current_item")
+        new_item = self.detailed_changes.get("new_item")
+
+        if current_item is None or new_item is None:
+            return ""
+
+        current_json = json.dumps(current_item, indent=2, ensure_ascii=False)
+        new_json = json.dumps(new_item, indent=2, ensure_ascii=False)
+
+        diff_lines = list(
+            difflib.unified_diff(
+                current_json.splitlines(),
+                new_json.splitlines(),
+                fromfile="Server",
+                tofile="Import",
+                lineterm="",
+                n=3,
+            )
+        )
+
+        return "\n".join(diff_lines)
+
 
 @dataclass
 class DiffResult:

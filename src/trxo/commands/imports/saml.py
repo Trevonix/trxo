@@ -59,7 +59,10 @@ def create_saml_import_command():
         idm_password: IdmPasswordOpt = None,
     ):
         """Import SAML configurations."""
+        from trxo.utils.imports.cli_handler import CLIImportHandler
+
         kwargs = locals()
-        return ImportService().import_saml(**kwargs)
+        handler = CLIImportHandler()
+        return handler.handle_import("saml", ImportService().import_saml, kwargs)
 
     return import_saml

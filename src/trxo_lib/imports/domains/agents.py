@@ -131,33 +131,6 @@ class AgentsImporter(BaseImporter):
             return False
 
 
-def create_agents_callback():
-    """Create agents callback function for import group"""
-
-    def agents_callback(ctx=None):
-        if getattr(ctx, "invoked_subcommand", None) is None:
-            from trxo.utils.console import console
-            from trxo_lib.logging import info, warning
-
-            console.print()
-            warning("No agents subcommand selected.")
-            info("Agents has three subcommands:")
-            info("  • gateway")
-            info("  • java")
-            info("  • web")
-            console.print()
-            info("Run one of:")
-            info("  trxo import agent gateway --help")
-            info("  trxo import agent java --help")
-            info("  trxo import agent web --help")
-            console.print()
-            info("Tip: use --help on any command to see options.")
-            console.print()
-            raise TrxoAbort(code=0)
-
-    return agents_callback
-
-
 class AgentsImportService:
     """Service wrapper for agents import operations."""
 

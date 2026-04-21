@@ -58,7 +58,10 @@ def create_script_import_command():
         idm_password: IdmPasswordOpt = None,
     ):
         """Import scripts from JSON file (local mode) or Git repository (Git mode)"""
+        from trxo.utils.imports.cli_handler import CLIImportHandler
+
         kwargs = locals()
-        ImportService().import_scripts(**kwargs)
+        handler = CLIImportHandler()
+        return handler.handle_import("scripts", ImportService().import_scripts, kwargs)
 
     return import_scripts

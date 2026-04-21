@@ -241,7 +241,7 @@ class JourneyImporter(BaseImporter):
                 # Git mode does not perform local hash validation
 
                 if diff:
-                    self._perform_enriched_journey_diff(
+                    return self._perform_enriched_journey_diff(
                         payload=payload,
                         realm=realm,
                         jwk_path=jwk_path,
@@ -258,7 +258,6 @@ class JourneyImporter(BaseImporter):
                         am_base_url=am_base_url,
                         file_path=str(git_file_path),
                     )
-                    return
 
                 ok = self.import_journey_data(
                     data=payload,
@@ -352,7 +351,7 @@ class JourneyImporter(BaseImporter):
 
             # ── Diff mode: show changes without importing ─────────────────
             if diff:
-                self._perform_enriched_journey_diff(
+                return self._perform_enriched_journey_diff(
                     payload=payload,
                     realm=realm,
                     jwk_path=jwk_path,
@@ -369,7 +368,6 @@ class JourneyImporter(BaseImporter):
                     am_base_url=am_base_url,
                     file_path=file_path,
                 )
-                return
 
             ok = self.import_journey_data(
                 data=payload,
@@ -523,7 +521,6 @@ class JourneyImporter(BaseImporter):
             get_command_api_endpoint,
         )
         from trxo_lib.state.diff.diff_engine import DiffEngine
-        from trxo_lib.state.diff.diff_reporter import DiffReporter
 
         info("Diff mode: comparing journey trees against live environment...")
 
@@ -582,66 +579,13 @@ class JourneyImporter(BaseImporter):
                 realm=realm,
             )
 
-            # ── Step 4: Display rich diff report ──────────────────────────
-            reporter = DiffReporter()
-            reporter.display_summary(diff_result)
-
-            html_path = reporter.generate_html_diff(
-                diff_result=diff_result,
-                current_data=current_data,
-                new_data=new_data,
-            )
-            if html_path:
-                html_uri = Path(html_path).absolute().as_uri()
-                info(f"Open HTML report: {html_uri}")
-
-            total = (
-                len(diff_result.added_items)
-                + len(diff_result.modified_items)
-                + len(diff_result.removed_items)
-            )
-            if total > 0:
-                from trxo_lib.logging import warning as _warning
-
-                _warning(
-                    f"Journey diff: {total} change(s) found — "
-                    "run without --diff to import"
-                )
-            else:
-                from trxo_lib.logging import success as _success
-
-                _success("Journey diff: no changes — journeys are already up to date")
+            # ── Step 4: Return diff result ────────────────────────────────
+            # We no longer display the summary or generate HTML here.
+            # Presentation is now handled purely by the CLI layer.
+            return diff_result
 
         # ── Step 5: Dep counts table (file counts only) ───────────────────
-        dep_sections = [
-            ("Trees (journeys)", "trees"),
-            ("Root nodes", "nodes"),
-            ("Inner nodes", "innerNodes"),
-            ("Scripts", "scripts"),
-            ("Email templates", "emailTemplates"),
-            ("SAML2 entities", "saml2Entities"),
-            ("Circles of trust", "saml2CirclesOfTrust"),
-            ("Themes", "themes"),
-            ("Social providers", "socialIdentityProviders"),
-        ]
-
-        rows = [
-            (label, len(payload.get(key, {})))
-            for label, key in dep_sections
-            if len(payload.get(key, {})) > 0
-        ]
-
-        if rows:
-            print()
-            col_w = max(len(label) for label, _ in rows) + 2
-            separator = "+" + "-" * (col_w + 2) + "+" + "-" * 9 + "+"
-            print(separator)
-            print(f"| {'Dependency':<{col_w}} | {'In file':>7} |")
-            print(separator)
-            for label, count in rows:
-                print(f"| {label:<{col_w}} | {count:>7} |")
-            print(separator)
-            info("(Dep counts are from the export file — use import to apply them)")
+        pass
 
     # ── Enriched import orchestrator ─────────────────────────────────────
 

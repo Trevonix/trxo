@@ -60,7 +60,12 @@ def create_applications_import_command():
         with_deps: WithDepsOpt = False,
     ):
         """Import applications from file or Git repository."""
+        from trxo.utils.imports.cli_handler import CLIImportHandler
+
         kwargs = locals()
-        ImportService().import_applications(**kwargs)
+        handler = CLIImportHandler()
+        return handler.handle_import(
+            "applications", ImportService().import_applications, kwargs
+        )
 
     return import_applications

@@ -191,7 +191,6 @@ def _export_applications_with_deps(
         export_payload = {"metadata": metadata, "data": combined_data}
 
         info("Exporting Applications (with OAuth2 clients and scripts)...")
-        print()
 
         file_path = base.save_response(
             data=export_payload,

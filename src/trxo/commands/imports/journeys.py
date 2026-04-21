@@ -51,7 +51,12 @@ def create_journey_import_command():
         sync: SyncOpt = False,
     ):
         """Import journeys from JSON file (local mode) or Git repository (Git mode)."""
+        from trxo.utils.imports.cli_handler import CLIImportHandler
+
         kwargs = locals()
-        return ImportService().import_journeys(**kwargs)
+        handler = CLIImportHandler()
+        return handler.handle_import(
+            "journeys", ImportService().import_journeys, kwargs
+        )
 
     return import_journeys

@@ -195,9 +195,9 @@ class ScriptImporter(BaseImporter):
         rollback: bool = False,
         sync: bool = False,
         cherry_pick: Optional[str] = None,
-    ) -> None:
+    ) -> Any:
         """Override to ensure automated sync (force=True)"""
-        super().import_from_file(
+        return super().import_from_file(
             file_path=file_path,
             realm=realm,
             src_realm=src_realm,
