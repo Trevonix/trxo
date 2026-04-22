@@ -61,7 +61,7 @@ _SUPPRESS_RE = re.compile(
     r"|Authentication initialized"
     r"|setting up git|Cloning repository|Fetching branch"
     r"|Import operation complete"
-    r"|TRxO CLI"
+    r"|trxo CLI"
     r"|Logging initialized"
     r"|API call"
     r"|Data integrity verified"  # hash check — not useful noise

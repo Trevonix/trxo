@@ -2,11 +2,11 @@ import logging
 
 import pytest
 
-from trxo.logging.formatters import APICallFormatter, MultiplexFormatter, TRxOFormatter
+from trxo.logging.formatters import APICallFormatter, MultiplexFormatter, TrxoFormatter
 
 
 def test_trxo_formatter_basic_format():
-    formatter = TRxOFormatter(include_timestamps=False)
+    formatter = TrxoFormatter(include_timestamps=False)
     record = logging.LogRecord(
         name="trxo.test",
         level=logging.INFO,
@@ -29,7 +29,7 @@ def test_trxo_formatter_sanitizes_msg(mocker):
         return_value={"token": "***"},
     )
 
-    formatter = TRxOFormatter(include_timestamps=False)
+    formatter = TrxoFormatter(include_timestamps=False)
     record = logging.LogRecord(
         name="trxo.test",
         level=logging.INFO,
@@ -50,7 +50,7 @@ def test_trxo_formatter_sanitizes_args(mocker):
         return_value={"token": "***"},
     )
 
-    formatter = TRxOFormatter(include_timestamps=False)
+    formatter = TrxoFormatter(include_timestamps=False)
     record = logging.LogRecord(
         name="trxo.test",
         level=logging.INFO,
@@ -89,7 +89,7 @@ def test_api_call_formatter_basic():
 
 
 def test_multiplex_formatter_uses_api_formatter():
-    default_formatter = TRxOFormatter(include_timestamps=False)
+    default_formatter = TrxoFormatter(include_timestamps=False)
     api_formatter = APICallFormatter()
     formatter = MultiplexFormatter(default_formatter, api_formatter)
 
@@ -114,7 +114,7 @@ def test_multiplex_formatter_uses_api_formatter():
 
 
 def test_multiplex_formatter_uses_default_formatter():
-    default_formatter = TRxOFormatter(include_timestamps=False)
+    default_formatter = TrxoFormatter(include_timestamps=False)
     api_formatter = APICallFormatter()
     formatter = MultiplexFormatter(default_formatter, api_formatter)
 

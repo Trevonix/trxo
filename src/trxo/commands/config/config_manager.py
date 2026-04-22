@@ -264,7 +264,7 @@ def set_log_level(
 
 @app.command("get-log-level")
 def get_log_level() -> None:
-    """Get the current logging level for TRxO"""
+    """Get the current logging level for trxo"""
     setup_logging()
     logger = get_logger("trxo.config.log_level")
 

@@ -13,7 +13,7 @@ from trxo_lib.config.constants import SENSITIVE_KEYS
 from .utils import sanitize_data
 
 
-class TRxOFormatter(logging.Formatter):
+class TrxoFormatter(logging.Formatter):
     """
     Custom formatter for TRXO log entries.
 
@@ -118,7 +118,7 @@ class MultiplexFormatter(logging.Formatter):
     """
     Formatter that delegates to different formatters based on the log record.
 
-    Uses APICallFormatter for API logs and TRxOFormatter for everything else.
+    Uses APICallFormatter for API logs and TrxoFormatter for everything else.
     """
 
     def __init__(

@@ -11,7 +11,7 @@ import sys
 from typing import Any, Dict, Optional
 
 from .config import LogConfig, LogLevel, get_log_file_path
-from .formatters import APICallFormatter, MultiplexFormatter, TRxOFormatter
+from .formatters import APICallFormatter, MultiplexFormatter, TrxoFormatter
 
 # Global logger registry
 _loggers: Dict[str, logging.Logger] = {}
@@ -24,7 +24,7 @@ def setup_logging(
     config: Optional[LogConfig] = None, force_reconfigure: bool = False
 ) -> None:
     """
-    Set up the TRxO logging system.
+    Set up the trxo logging system.
 
     Args:
         config: LogConfig instance, uses default if None
@@ -97,7 +97,7 @@ def setup_logging(
         file_handler.suffix = "%Y-%m-%d"
 
         # Create formatters
-        standard_formatter = TRxOFormatter(
+        standard_formatter = TrxoFormatter(
             include_timestamps=config.include_timestamps,
             include_thread_info=config.include_thread_info,
             include_process_info=config.include_process_info,
@@ -125,7 +125,7 @@ def setup_logging(
         # Console uses its own level from config (defaults to WARNING)
         console_handler.setLevel(getattr(logging, config.console_level.value))
 
-        console_formatter = TRxOFormatter(
+        console_formatter = TrxoFormatter(
             include_timestamps=False,
             sanitize_sensitive=config.sanitize_sensitive_data,
             sensitive_keys=config.sensitive_keys,
