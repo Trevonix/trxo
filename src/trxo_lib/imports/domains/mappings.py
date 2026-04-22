@@ -2,10 +2,13 @@
 Mappings import command.
 
 Import functionality for PingIDM sync mappings with smart upsert logic:
-- If mapping exists by name → PATCH to update
-- If mapping doesn't exist → PUT to add to the mappings array
+- If mapping exists by name -> PATCH to update
+- If mapping doesn't exist -> PUT to add to the mappings array
 - Handles both single mappings and multiple mappings
 """
+
+from trxo_lib.exceptions import TrxoValidationError
+
 
 import json
 from typing import Any, Dict, List
@@ -257,7 +260,10 @@ class MappingsImporter(BaseImporter):
             # Array of mappings
             return data
         else:
-            raise ValueError("Invalid file format. Expected JSON object or array")
+            raise TrxoValidationError(
+                "Invalid file format. Expected JSON object or array",
+                hint="Ensure the file is a valid TRXO mappings export.",
+            )
 
     def _convert_to_sync_format(self, data):
         """

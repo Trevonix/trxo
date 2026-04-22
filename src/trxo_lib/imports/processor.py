@@ -7,7 +7,14 @@ common functionality like file loading, API calls, and progress tracking.
 Refactored to use focused utility modules for better maintainability.
 """
 
-from trxo_lib.exceptions import TrxoAbort
+from trxo_lib.exceptions import (
+    TrxoAbort,
+    TrxoConfigError,
+    TrxoGitError,
+    TrxoIOError,
+    TrxoValidationError,
+    TrxoError,
+)
 from abc import abstractmethod
 from typing import Any, Dict, List, Optional
 
@@ -117,7 +124,11 @@ class BaseImporter(BaseCommand):
                 )
             else:
                 if not file_path:
-                    raise TrxoAbort("File path is required for local storage mode")
+                    raise TrxoConfigError(
+                        "File path is required for local storage mode",
+                        hint="Provide a file path using --file <path> or check your "
+                        "storage configuration.",
+                    )
                 items_to_process = self._import_from_local(file_path, force_import)
 
             if not items_to_process:
@@ -266,20 +277,22 @@ class BaseImporter(BaseCommand):
                 current_project = self.config_store.get_current_project()
                 git_credentials = self.config_store.get_git_credentials(current_project)
                 if not git_credentials or not all(git_credentials.values()):
-                    raise TrxoAbort(
-                        "Git credentials not found. Please run 'trxo config' "
-                        "to set up Git integration."
+                    raise TrxoGitError(
+                        "Git credentials not configured.",
+                        hint="Run 'trxo config setup' to configure Git integration.",
                     )
 
                 username, repo_url, token = git_credentials.values()
                 self._git_manager = setup_git_for_import(
                     username, token, repo_url, branch
                 )
-            except TrxoAbort:
+            except TrxoGitError:
                 raise
             except Exception as e:
-                self.logger.error(f"Failed to setup Git manager: {e}")
-                raise TrxoAbort(f"Failed to setup Git manager: {e}")
+                raise TrxoGitError(
+                    f"Failed to initialize Git manager: {e}",
+                    hint="Check your Git credentials and repository URL.",
+                ) from None
         return self._git_manager
 
     def _import_from_local(
@@ -316,19 +329,19 @@ class BaseImporter(BaseCommand):
             # Validate import hash against raw file content so the hash
             # matches whatever was generated at export time (wrapper vs list)
             if not self.validate_import_hash(raw_data, force_import):
-                self.logger.error(
-                    "Import validation failed: Hash mismatch with exported data"
-                )
-                raise TrxoAbort(
-                    "Import validation failed: Hash mismatch with exported data"
+                raise TrxoValidationError(
+                    "Data integrity check failed: file content has changed since export.",
+                    hint="Use --force-import to skip this check, or re-export the data.",
                 )
 
             return items_to_process
-        except TrxoAbort:
+        except TrxoError:
             raise
         except Exception as e:
-            self.logger.error(f"Failed to load {item_type} from local file: {str(e)}")
-            raise TrxoAbort(f"Failed to load {item_type} from local file: {str(e)}")
+            raise TrxoIOError(
+                f"Failed to load {item_type} from local file: {str(e)}",
+                hint="Verify the file path exists and is a valid TRXO JSON export.",
+            ) from None
 
     def _import_from_git(
         self, realm: Optional[str], force_import: bool, branch: Optional[str] = None
@@ -425,12 +438,16 @@ class BaseImporter(BaseCommand):
         required_fields = self.get_required_fields()
         for i, item in enumerate(items):
             if not isinstance(item, dict):
-                raise ValueError(f"Invalid item at index {i}: Should be an object")
+                raise TrxoValidationError(
+                    f"Invalid item at index {i}: expected an object, got {type(item).__name__}",
+                    hint="Ensure every item in the import file is a JSON object.",
+                )
 
             for field in required_fields:
                 if field not in item:
-                    raise ValueError(
-                        f"Invalid item at index {i}: Missing required field '{field}'"
+                    raise TrxoValidationError(
+                        f"Invalid item at index {i}: missing required field '{field}'",
+                        hint="The file may be corrupted or from an incompatible version.",
                     )
 
     def _apply_cherry_pick_filter(
@@ -439,10 +456,9 @@ class BaseImporter(BaseCommand):
         """Apply cherry-pick filtering to items"""
         # Validate cherry-pick argument
         if not self.cherry_pick_filter.validate_cherry_pick_argument(cherry_pick):
-            raise TrxoAbort(
-                f"Invalid cherry-pick ID: '{cherry_pick}'. "
-                "Please provide a valid item ID. "
-                "Usage: --cherry-pick <id1> or --cherry-pick <id1,id2,id3>"
+            raise TrxoValidationError(
+                f"Invalid cherry-pick value: '{cherry_pick}'.",
+                hint="Usage: --cherry-pick <id1> or --cherry-pick <id1,id2,id3>",
             )
 
         filtered_items = self.cherry_pick_filter.apply_filter(items, cherry_pick)

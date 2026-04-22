@@ -9,6 +9,7 @@ from typing import Any, Dict, Optional
 from urllib.parse import quote
 
 from trxo_lib.core.url import construct_api_url
+from trxo_lib.exceptions import TrxoError
 from trxo_lib.logging import get_logger
 from trxo_lib.state.diff.data_fetcher import get_command_api_endpoint
 
@@ -174,7 +175,10 @@ class RollbackUrlBuilder:
         api_endpoint, _ = get_command_api_endpoint(self.command_name, self.realm)
 
         if not api_endpoint:
-            raise RuntimeError("Unknown command API endpoint")
+            raise TrxoError(
+                f"Unknown API endpoint for command '{self.command_name}'",
+                hint="This command type may not support rollback.",
+            )
 
         api_endpoint = api_endpoint.split("?")[0]
 

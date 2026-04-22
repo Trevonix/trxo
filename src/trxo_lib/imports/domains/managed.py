@@ -7,6 +7,9 @@ Import functionality for PingOne Advanced Identity Cloud managed objects with sm
 - Handles both single objects and multiple objects
 """
 
+from trxo_lib.exceptions import TrxoValidationError
+
+
 import json
 import os
 from typing import Any, Dict, List
@@ -685,7 +688,10 @@ class ManagedObjectsImporter(BaseImporter):
             # Array of managed objects
             return data
         else:
-            raise ValueError("Invalid file format. Expected JSON object or array")
+            raise TrxoValidationError(
+                "Invalid file format. Expected JSON object or array",
+                hint="Ensure the file is a valid TRXO managed objects export.",
+            )
 
     def load_data_from_file(self, file_path: str) -> List[Dict[str, Any]]:
         """Load managed objects with flexible format support
@@ -722,8 +728,9 @@ class ManagedObjectsImporter(BaseImporter):
                 # Direct list of objects
                 objects_to_process = [o for o in data if isinstance(o, dict)]
         else:
-            raise ValueError(
-                "Invalid file format. Expected object or array of managed objects"
+            raise TrxoValidationError(
+                "Invalid file format. Expected object or array of managed objects",
+                hint="Ensure the file is a valid TRXO managed objects export.",
             )
 
         if not objects_to_process:

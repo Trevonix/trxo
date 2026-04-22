@@ -5,7 +5,13 @@ This module provides the base class that contains common functionality
 used by both import and export commands.
 """
 
-from trxo_lib.exceptions import TrxoAbort, TrxoAuthError
+from trxo_lib.exceptions import (
+    TrxoAbort,
+    TrxoAuthError,
+    TrxoError,
+    TrxoIOError,
+    TrxoValidationError,
+)
 import json
 import os
 import time
@@ -181,25 +187,42 @@ class BaseCommand(ABC):
 
             # Check if file exists
             if not os.path.exists(file_path):
-                raise FileNotFoundError(f"File not found: {file_path}")
+                raise TrxoIOError(
+                    f"File not found: {file_path}",
+                    hint=f"Check if the file exists at {file_path}. Use --file to specify the correct path.",
+                )
 
-            # Read and parse JSON file
             with open(file_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
+                content = f.read()
+
+            # Decode JSON with hint for non-JSON files
+            try:
+                data = json.loads(content)
+            except json.JSONDecodeError as e:
+                raise TrxoIOError(
+                    f"Invalid JSON format in {os.path.basename(file_path)}: {str(e)}",
+                    hint=f"Ensure the file {os.path.basename(file_path)} is a valid JSON.",
+                )
 
             # Validate JSON structure
             if not isinstance(data, dict):
-                raise ValueError("Invalid JSON structure: Root should be an object")
+                raise TrxoValidationError(
+                    "Invalid JSON structure in export file",
+                    hint="The root of the JSON file should be an object.",
+                )
 
             # Check for expected structure
             if "data" not in data:
-                raise ValueError("Invalid JSON structure: Missing 'data' field")
+                raise TrxoValidationError(
+                    "Invalid JSON structure: Missing 'data' field",
+                    hint="The file does not appear to be a standard TRXO export.",
+                )
 
             # Support both collection (data.result = [...]) and single-object (data = {...}) shapes
             if "result" in data["data"]:
                 items = data["data"]["result"]
                 if not isinstance(items, list):
-                    raise ValueError(
+                    raise TrxoValidationError(
                         "Invalid JSON structure: 'data.result' should be an array"
                     )
             else:
@@ -207,7 +230,7 @@ class BaseCommand(ABC):
                 if isinstance(data["data"], dict):
                     items = [data["data"]]
                 else:
-                    raise ValueError(
+                    raise TrxoValidationError(
                         "Invalid JSON structure: 'data' must be an object or contain 'result' array"
                     )
 
@@ -215,20 +238,27 @@ class BaseCommand(ABC):
             required_fields = self.get_required_fields()
             for i, item in enumerate(items):
                 if not isinstance(item, dict):
-                    raise ValueError(f"Invalid item at index {i}: Should be an object")
+                    raise TrxoValidationError(
+                        f"Invalid item at index {i}: Should be an object"
+                    )
 
                 for field in required_fields:
                     if field not in item:
-                        raise ValueError(
-                            f"Invalid item at index {i}: Missing required field '{field}'"
+                        raise TrxoValidationError(
+                            f"Invalid item at index {i}: Missing required field '{field}'",
+                            hint=f"Each item in this command requires the '{field}' field.",
                         )
 
             return items
 
-        except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON format: {str(e)}")
+        except TrxoError:
+            raise
         except Exception as e:
-            raise Exception(f"Error loading file: {str(e)}")
+            file_name = os.path.basename(file_path)
+            raise TrxoIOError(
+                f"Error loading file {file_name}: {str(e)}",
+                hint="Verify the file exists, is readable, and is formatted correctly.",
+            )
 
     def make_http_request(
         self,
@@ -260,7 +290,7 @@ class BaseCommand(ABC):
                 elif method_upper == "DELETE":
                     response = client.delete(url, headers=headers)
                 else:
-                    raise ValueError(f"Unsupported HTTP method: {method}")
+                    raise TrxoError(f"Unsupported HTTP method: {method}")
 
                 # Calculate timing and response size
                 duration = time.time() - start_time
@@ -321,7 +351,7 @@ class BaseCommand(ABC):
 
             # Raise generic exception with clean message
             # to avoid verbose string representation in callers
-            raise Exception(clean_error) from e
+            raise TrxoIOError(clean_error) from None
         except Exception as e:
             duration = time.time() - start_time
             error_msg = str(e)

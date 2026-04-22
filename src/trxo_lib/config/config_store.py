@@ -7,6 +7,8 @@ from typing import Dict, Optional
 
 import keyring
 
+from trxo_lib.exceptions import TrxoConfigError
+
 SERVICE_NAME = "trxo_git_credentials"
 
 
@@ -39,7 +41,11 @@ class ConfigStore:
     def get_project_dir(self, project_name: str) -> Path:
         """Get project-specific directory"""
         if project_name is None:
-            raise ValueError("project_name cannot be None")
+            raise TrxoConfigError(
+                "No active project found.",
+                hint="Run 'trxo project set <name>' to select a project, "
+                "or 'trxo config setup' to create one.",
+            )
         project_dir = self.base_dir / "projects" / project_name
         os.makedirs(project_dir, exist_ok=True)
         return project_dir

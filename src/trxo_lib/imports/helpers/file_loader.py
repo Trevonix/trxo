@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from trxo_lib.exceptions import TrxoIOError, TrxoValidationError
 from trxo_lib.git import GitManager
 from trxo_lib.logging import get_logger
 
@@ -51,34 +52,50 @@ class FileLoader:
 
             # Validate JSON structure
             if not isinstance(data, dict):
-                raise ValueError("Invalid JSON structure: Root should be an object")
+                raise TrxoValidationError(
+                    "Invalid JSON structure: Root should be an object",
+                    hint="Ensure the file is a valid TRXO export (a JSON object at root).",
+                )
 
             # Check for expected structure
             if "data" not in data:
-                raise ValueError("Invalid JSON structure: Missing 'data' field")
+                raise TrxoValidationError(
+                    "Invalid JSON structure: Missing 'data' field",
+                    hint="The file does not appear to be a standard TRXO export.",
+                )
 
-            # Support both collection (data.result = [...]) and single-object (data = {...}) shapes
+            # Support both collection (data.result = [...]) and single-object shapes
             if "result" in data["data"]:
                 items = data["data"]["result"]
                 if not isinstance(items, list):
-                    raise ValueError(
-                        "Invalid JSON structure: 'data.result' should be an array"
+                    raise TrxoValidationError(
+                        "Invalid JSON structure: 'data.result' should be an array",
+                        hint="The export file structure is unexpected. Re-export and try again.",
                     )
             else:
                 # No 'result' array; accept a single object and wrap it
                 if isinstance(data["data"], dict):
                     items = [data["data"]]
                 else:
-                    raise ValueError(
-                        "Invalid JSON structure: 'data' must be an object or contain 'result' array"
+                    raise TrxoValidationError(
+                        "Invalid JSON structure: 'data' must be an object or"
+                        " contain 'result' array",
+                        hint="The export file structure is unexpected. Re-export and try again.",
                     )
 
             return items
 
+        except (TrxoIOError, TrxoValidationError):
+            raise
         except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON format: {str(e)}")
+            raise TrxoIOError(
+                f"Invalid JSON format: {str(e)}",
+                hint="Invalid JSON syntax.",
+            ) from None
+        except FileNotFoundError as e:
+            raise TrxoIOError(str(e), hint="Check the path and try again.") from None
         except Exception as e:
-            raise Exception(f"Error loading file: {str(e)}")
+            raise TrxoIOError(f"Error loading file: {str(e)}") from None
 
     @staticmethod
     def load_from_git_file(file_path: Path) -> List[Dict[str, Any]]:

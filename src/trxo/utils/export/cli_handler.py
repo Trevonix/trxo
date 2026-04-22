@@ -7,6 +7,7 @@ side effects such as logging, progressing bars, printing tabular views,
 and saving to files or git.
 """
 
+import sys
 from typing import Any, Callable, Dict
 
 from trxo.utils.console import error, info, success, warning
@@ -18,6 +19,7 @@ from trxo.utils.export.view_renderer import ViewRenderer
 from trxo_lib.config.config_store import ConfigStore
 from trxo_lib.state.hash import HashManager
 from trxo_lib.exceptions import TrxoAbort, TrxoError
+from trxo.utils.error_presenter import present_error, present_generic_error
 
 
 class CLIExportHandler:
@@ -75,11 +77,11 @@ class CLIExportHandler:
             # 1. Execute the SDK standard export logic
             export_result = service_function(**kwargs)
         except TrxoError as e:
-            error(str(e))
-            raise TrxoAbort(code=1) from e
+            present_error(e)
+            raise TrxoAbort(code=e.exit_code) from None
         except Exception as e:
-            error(f"Export failed for {command_name}: {str(e)}")
-            raise TrxoAbort(code=1) from e
+            present_generic_error(e, command_name)
+            raise TrxoAbort(code=1) from None
 
         # Handle when the service intercepts the workflow (e.g. applications with dependencies) and handles output itself
         if export_result is None:
@@ -144,12 +146,15 @@ class CLIExportHandler:
                     self.hash_manager.save_export_hash(
                         command_name, hash_value, file_path
                     )
+        except TrxoAbort as e:
+            # Already presented upstream — just exit
+            sys.exit(e.exit_code)
         except TrxoError as e:
-            error(str(e))
-            raise TrxoAbort(code=1) from e
+            present_error(e)
+            sys.exit(e.exit_code)
         except Exception as e:
-            error(f"Failed to save export for {command_name}: {str(e)}")
-            raise TrxoAbort(code=1) from e
+            present_generic_error(e, command_name)
+            sys.exit(1)
 
         if file_path:
             success(f"{command_name.title()} exported successfully")

@@ -5,7 +5,7 @@ This module provides import functionality for PingOne Advanced Identity Cloud OA
 clients with script dependencies.
 """
 
-from trxo_lib.exceptions import TrxoAbort
+from trxo_lib.exceptions import TrxoAbort, TrxoIOError, TrxoValidationError
 import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -196,8 +196,10 @@ class OAuthImporter(BaseImporter):
         import os
 
         if not os.path.exists(file_path):
-            error(f"File not found: {file_path}")
-            raise TrxoAbort(code=1)
+            raise TrxoIOError(
+                f"File not found: {file_path}",
+                hint="Provide a valid file path using --file <path>.",
+            )
 
         info(f"Loading OAuth2_Clients from local file: {file_path}")
 
@@ -216,9 +218,14 @@ class OAuthImporter(BaseImporter):
             return clients
 
         except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON format: {str(e)}")
+            raise TrxoIOError(
+                f"Invalid JSON format: {str(e)}",
+                hint="The file is not valid JSON. Check for syntax errors.",
+            ) from None
+        except (TrxoIOError, TrxoValidationError):
+            raise
         except Exception as e:
-            raise Exception(f"Failed to load OAuth2_Clients: {str(e)}")
+            raise TrxoIOError(f"Failed to load OAuth2 Clients: {str(e)}") from None
 
     def process_items(
         self,
@@ -289,9 +296,10 @@ class OAuthImporter(BaseImporter):
             response = self.make_http_request(url, "PUT", headers, payload)
 
             if hasattr(response, "status_code") and response.status_code >= 400:
-                raise Exception(
+                self.logger.error(
                     f"Failed to process OAuth2 Client '{item_id}': {response.status_code}"
                 )
+                return False
 
             info(f"Successfully processed OAuth2 Client: {item_id}")
             return True
@@ -361,20 +369,22 @@ class OAuthImporter(BaseImporter):
             try:
                 response = self.make_http_request(url, "PUT", headers, payload)
                 if hasattr(response, "status_code") and response.status_code >= 400:
-                    raise Exception(
-                        "Failed to process OAuth2 Provider: " f"{response.status_code}"
-                    )
+                    last_error = f"HTTP {response.status_code}"
+                    continue
                 info("Successfully processed OAuth2 Provider configuration")
                 return True
             except Exception as e:
                 last_error = str(e)
                 continue
 
-        error(
+        self.logger.error(
             "Failed to process OAuth2 Provider using known endpoints"
             + (f": {last_error}" if last_error else "")
         )
-        raise Exception(last_error or "Unknown provider import error")
+        raise TrxoIOError(
+            "Failed to import OAuth2 Provider configuration.",
+            hint="Check the provider settings and ensure the AM realm is correct.",
+        )
 
     def delete_item(self, item_id: str, token: str, base_url: str) -> bool:
         """Delete a single OAuth2 Client via API"""

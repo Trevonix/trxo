@@ -1,11 +1,13 @@
+import sys
 import typer
 
 from trxo.commands import config, logs, project
 from trxo.commands.batch import app as batch_app
 from trxo.commands.export import app as export_app
 from trxo.commands.imports import app as import_app
-from trxo_lib.exceptions import TrxoAbort
+from trxo_lib.exceptions import TrxoAbort, TrxoError
 from trxo.logging import get_logger, setup_logging
+from trxo.utils.error_presenter import present_error, present_generic_error
 
 app = typer.Typer(
     help="[bold blue]TRXO[/bold blue] - PingOne Advanced Identity Cloud "
@@ -25,7 +27,7 @@ app.add_typer(logs.app, name="logs")
 app.command("projects")(project.list_projects)
 
 
-@app.callback()
+@app.callback(invoke_without_command=True)
 def callback(
     ctx: typer.Context,
     log_level: str = typer.Option(None, "--log-level", help="Override log level"),
@@ -58,27 +60,44 @@ def callback(
     setup_logging(config=config)
 
     if not ctx.invoked_subcommand:
-        print(
-            "Welcome to the TRXO CLI! Manage your configurations effortlessly."
-            "To proceed type trxo --help"
-        )
+        typer.echo(ctx.get_help())
+        raise typer.Exit()
 
 
 def main():
+    # Override Python's exception hook to suppress ALL raw tracebacks.
+    # Our handlers present errors cleanly; this is the final safety net.
+    def _no_traceback_hook(exc_type, exc_value, exc_tb):
+        pass
+
+    sys.excepthook = _no_traceback_hook
+
     # Initialize logging early
     setup_logging()
     logger = get_logger("trxo.main")
-    logger.info("TRxO CLI started")
+    logger.info("TRXO CLI started")
 
     try:
-        app()
+        app(standalone_mode=False)
+    except typer.Exit as e:
+        sys.exit(e.code)
+    except typer.Abort:
+        sys.exit(1)
     except TrxoAbort as e:
-        raise typer.Exit(code=e.exit_code) from e
+        # If the error was already presented by a handler, message might be empty
+        if str(e):
+            present_error(e)
+        sys.exit(e.exit_code)
+    except TrxoError as e:
+        present_error(e)
+        sys.exit(e.exit_code)
     except Exception as e:
         logger.error(f"Unhandled exception in main: {str(e)}")
-        raise
+        # Check if we should show a traceback (e.g. if log level is DEBUG)
+        present_generic_error(e)
+        sys.exit(1)
     finally:
-        logger.info("TRxO CLI finished")
+        logger.info("TRXO CLI finished")
 
 
 if __name__ == "__main__":

@@ -65,7 +65,7 @@ Repository = "https://github.com/Trevonix/trxo.git"
 Documentation = "https://github.com/Trevonix/trxo/docs"
 
 [project.scripts]
-trxo = "trxo.main:app"
+trxo = "trxo.main:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

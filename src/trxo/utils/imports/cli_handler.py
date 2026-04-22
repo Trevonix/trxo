@@ -6,11 +6,13 @@ It executes the library (SDK) import services and handles all CLI-specific
 side effects such as logging, diff presentation, and confirmation logic.
 """
 
+import sys
 from typing import Any, Callable, Dict
 
 from rich.console import Console
 
 from trxo.utils.console import error, info, warning
+from trxo.utils.error_presenter import present_error, present_generic_error
 from trxo.utils.diff_presenter import DiffPresenter
 from trxo.utils.imports.import_progress_handler import ImportProgressHandler
 from trxo_lib.state.diff.diff_engine import DiffResult
@@ -40,7 +42,7 @@ class CLIImportHandler:
             service_function: The SDK service function to call
             kwargs: Parameters to pass to the service function
         """
-        # Filter out CLI-specific variables from kwargs to avoid unexpected argument errors in SDK
+        # Filter out CLI-specific variables from kwargs
         service_kwargs = {
             k: v
             for k, v in kwargs.items()
@@ -91,16 +93,19 @@ class CLIImportHandler:
                 return result
             elif result is None:
                 error(f"Diff analysis failed for {command_name}")
-                raise TrxoAbort(code=1)
+                sys.exit(1)
             else:
                 return result
 
+        except TrxoAbort as e:
+            # Already presented upstream — just exit cleanly
+            sys.exit(e.exit_code)
         except TrxoError as e:
-            error(str(e))
-            raise TrxoAbort(code=1) from e
+            present_error(e)
+            sys.exit(e.exit_code)
         except Exception as e:
-            error(f"Diff failed for {command_name}: {str(e)}")
-            raise TrxoAbort(code=1) from e
+            present_generic_error(e, command_name)
+            sys.exit(1)
 
     def _handle_import_with_progress(
         self,
@@ -123,15 +128,18 @@ class CLIImportHandler:
             result = service_function(**service_kwargs)
             return result
 
-        except TrxoAbort:
-            # Library already logged the failure; detach renders it
-            raise
+        except TrxoAbort as e:
+            # Already presented — just clean up and exit
+            progress_handler.detach()
+            sys.exit(e.exit_code)
         except TrxoError as e:
-            error(str(e))
-            raise TrxoAbort(code=1) from e
+            progress_handler.detach()
+            present_error(e)
+            sys.exit(e.exit_code)
         except Exception as e:
-            error(f"Import failed for {command_name}: {str(e)}")
-            raise TrxoAbort(code=1) from e
+            progress_handler.detach()
+            present_generic_error(e, command_name)
+            sys.exit(1)
         finally:
             progress_handler.detach()
             progress_handler.print_summary()

@@ -258,6 +258,13 @@ class ImportProgressHandler(logging.Handler):
 
     def print_summary(self) -> None:
         """Render the final import summary panel with colour-coded counts."""
+        if (
+            self.success_count == 0
+            and self.failure_count == 0
+            and self.warning_count == 0
+        ):
+            return
+
         total = self.success_count + self.failure_count
 
         # Grid layout: ✔ N  imported   ✖ N  failed   ⚠ N  warnings
