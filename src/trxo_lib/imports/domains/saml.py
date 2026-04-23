@@ -53,10 +53,15 @@ class SamlImporter(BaseImporter):
         onprem_username=None,
         onprem_password=None,
         onprem_realm=None,
+        idm_base_url=None,
+        idm_username=None,
+        idm_password=None,
+        am_base_url=None,
         force_import: bool = False,
         branch: str = None,
         diff: bool = False,
         sync: bool = False,
+        rollback: bool = False,
         cherry_pick: str = None,
     ) -> Any:
         """
@@ -78,18 +83,79 @@ class SamlImporter(BaseImporter):
                 onprem_username=onprem_username,
                 onprem_password=onprem_password,
                 onprem_realm=onprem_realm,
+                idm_base_url=idm_base_url,
+                idm_username=idm_username,
+                idm_password=idm_password,
+                am_base_url=am_base_url,
                 force_import=force_import,
                 branch=branch,
                 diff=diff,
+                rollback=rollback,
+                sync=sync,
                 cherry_pick=cherry_pick,
             )
 
-        info(f"Loading saml from local file: {file_path}")
+        storage_mode = self._get_storage_mode()
+        raw = None
 
-        # Load JSON
-        raw = self.file_loader.load_from_local_file(file_path)
+        if storage_mode == "git":
+            from pathlib import Path as _Path
 
-        # Initialize auth (same as BaseImporter)
+            from trxo_lib.imports.helpers.file_loader import FileLoader
+
+            git_manager = self._setup_git_manager(branch)
+            effective_realm = self._determine_effective_realm(
+                realm, self.get_item_type(), branch
+            )
+            repo_path = _Path(git_manager.local_path)
+            discovered = FileLoader.discover_git_files(
+                repo_path, self.get_item_type(), effective_realm
+            )
+
+            if not discovered:
+                self._handle_no_git_files_found(
+                    self.get_item_type(), effective_realm, realm
+                )
+                return False
+
+            # Use the first discovered file
+            git_file_path = discovered[0]
+            info(f"Loading saml from Git: {git_file_path.relative_to(repo_path)}")
+
+            with open(git_file_path, "r", encoding="utf-8") as f:
+                raw = json.load(f)
+        else:
+            if not file_path:
+                from trxo_lib.exceptions import TrxoConfigError
+
+                raise TrxoConfigError(
+                    "File path is required for local storage mode",
+                    hint="Provide a file path using --file <path> or check your "
+                    "storage configuration.",
+                )
+
+            info(f"Loading saml from local file: {file_path}")
+
+            import os
+
+            fp = file_path if os.path.isabs(file_path) else os.path.abspath(file_path)
+            with open(fp, "r", encoding="utf-8") as f:
+                raw = json.load(f)
+
+        if not raw:
+            return False
+
+        # Hash validation for local mode
+        if storage_mode == "local":
+            if not self.validate_import_hash(raw, force_import):
+                from trxo_lib.exceptions import TrxoValidationError
+
+                raise TrxoValidationError(
+                    "Data integrity check failed: file content has changed since export.",
+                    hint="Use --force-import to skip this check, or re-export the data.",
+                )
+
+        # Initialize auth
         token, api_base_url = self.initialize_auth(
             jwk_path=jwk_path,
             sa_id=sa_id,
@@ -99,15 +165,25 @@ class SamlImporter(BaseImporter):
             onprem_username=onprem_username,
             onprem_password=onprem_password,
             onprem_realm=onprem_realm,
+            idm_base_url=idm_base_url,
+            idm_username=idm_username,
+            idm_password=idm_password,
+            am_base_url=am_base_url,
         )
 
         # Unwrap export format
-        if isinstance(raw, list):
+        if isinstance(raw, dict) and "data" in raw:
+            saml_data = raw["data"]
+        elif isinstance(raw, list):
             saml_data = raw[0] if raw else {}
-        elif isinstance(raw, dict):
-            saml_data = raw.get("data", raw)
         else:
             saml_data = raw
+
+        # Setup rollback manager if requested
+        if rollback:
+            self.rollback_manager = self._setup_rollback_manager(
+                rollback, storage_mode, realm, branch, token, api_base_url
+            )
 
         ok = self.import_saml_data(
             data=saml_data,
@@ -120,7 +196,7 @@ class SamlImporter(BaseImporter):
             self._handle_sync_deletions(
                 token=token,
                 base_url=api_base_url,
-                file_path=file_path,
+                file_path=str(file_path) if file_path else None,
                 realm=realm,
                 src_realm=src_realm,
                 jwk_path=jwk_path,
@@ -130,6 +206,11 @@ class SamlImporter(BaseImporter):
                 onprem_username=onprem_username,
                 onprem_password=onprem_password,
                 onprem_realm=onprem_realm,
+                idm_base_url=idm_base_url,
+                idm_username=idm_username,
+                idm_password=idm_password,
+                am_base_url=am_base_url,
+                branch=branch,
                 force=True,
             )
 
@@ -660,12 +741,5 @@ class SamlImportService:
         # Typer passes 'file' which maps to 'file_path' in SamlImporter
         if "file" in self.kwargs:
             self.kwargs["file_path"] = self.kwargs.pop("file")
-
-        # SamlImporter.import_from_file doesn't accept 'rollback' yet
-        self.kwargs.pop("rollback", None)
-        self.kwargs.pop("am_base_url", None)
-        self.kwargs.pop("idm_base_url", None)
-        self.kwargs.pop("idm_username", None)
-        self.kwargs.pop("idm_password", None)
 
         return importer.import_from_file(**self.kwargs)
