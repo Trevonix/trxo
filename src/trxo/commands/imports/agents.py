@@ -59,10 +59,17 @@ def create_agents_import_command():
         branch: BranchOpt = None,
         rollback: RollbackOpt = False,
     ):
+        from trxo.utils.imports.cli_handler import CLIImportHandler
+
         kwargs = locals()
-        return ImportService().import_agents(
-            agent_type="IdentityGatewayAgent", **kwargs
-        )
+        handler = CLIImportHandler()
+
+        def service_fn(**sub_kwargs):
+            return ImportService().import_agents(
+                agent_type="IdentityGatewayAgent", **sub_kwargs
+            )
+
+        return handler.handle_import("agents-gateway", service_fn, kwargs)
 
     def import_java_agents(
         file: InputFileOpt = None,
@@ -87,8 +94,15 @@ def create_agents_import_command():
         branch: BranchOpt = None,
         rollback: RollbackOpt = False,
     ):
+        from trxo.utils.imports.cli_handler import CLIImportHandler
+
         kwargs = locals()
-        return ImportService().import_agents(agent_type="J2EEAgent", **kwargs)
+        handler = CLIImportHandler()
+
+        def service_fn(**sub_kwargs):
+            return ImportService().import_agents(agent_type="J2EEAgent", **sub_kwargs)
+
+        return handler.handle_import("agents-java", service_fn, kwargs)
 
     def import_web_agents(
         file: InputFileOpt = None,
@@ -113,8 +127,15 @@ def create_agents_import_command():
         branch: BranchOpt = None,
         rollback: RollbackOpt = False,
     ):
+        from trxo.utils.imports.cli_handler import CLIImportHandler
+
         kwargs = locals()
-        return ImportService().import_agents(agent_type="WebAgent", **kwargs)
+        handler = CLIImportHandler()
+
+        def service_fn(**sub_kwargs):
+            return ImportService().import_agents(agent_type="WebAgent", **sub_kwargs)
+
+        return handler.handle_import("agents-web", service_fn, kwargs)
 
     return (
         import_identity_gateway_agents,

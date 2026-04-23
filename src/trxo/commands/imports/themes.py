@@ -56,7 +56,10 @@ def create_themes_import_command():
         sync: SyncOpt = False,
     ):
         """Import themes from JSON file or Git repository."""
+        from trxo.utils.imports.cli_handler import CLIImportHandler
+
         kwargs = locals()
-        return ImportService().import_themes(**kwargs)
+        handler = CLIImportHandler()
+        return handler.handle_import("themes", ImportService().import_themes, kwargs)
 
     return import_themes

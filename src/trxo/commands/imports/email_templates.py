@@ -53,7 +53,12 @@ def create_email_templates_import_command():
         rollback: RollbackOpt = False,
     ):
         """Import Email Templates from JSON file (local mode) or Git repository (Git mode)"""
+        from trxo.utils.imports.cli_handler import CLIImportHandler
+
         kwargs = locals()
-        return ImportService().import_email_templates(**kwargs)
+        handler = CLIImportHandler()
+        return handler.handle_import(
+            "email", ImportService().import_email_templates, kwargs
+        )
 
     return import_email_templates

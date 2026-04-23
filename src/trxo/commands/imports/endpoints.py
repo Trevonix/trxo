@@ -53,7 +53,12 @@ def create_endpoints_import_command():
         sync: SyncOpt = False,
     ):
         """Import custom endpoints from JSON file (local mode) or Git repository (Git mode)"""
+        from trxo.utils.imports.cli_handler import CLIImportHandler
+
         kwargs = locals()
-        return ImportService().import_endpoints(**kwargs)
+        handler = CLIImportHandler()
+        return handler.handle_import(
+            "endpoints", ImportService().import_endpoints, kwargs
+        )
 
     return import_endpoints

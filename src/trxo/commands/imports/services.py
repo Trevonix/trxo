@@ -65,7 +65,12 @@ def create_services_import_command():
         src_realm: SrcRealmOpt = None,
     ):
         """Import services from JSON file or Git repository."""
+        from trxo.utils.imports.cli_handler import CLIImportHandler
+
         kwargs = locals()
-        return ImportService().import_services(**kwargs)
+        handler = CLIImportHandler()
+        return handler.handle_import(
+            "services", ImportService().import_services, kwargs
+        )
 
     return import_services
