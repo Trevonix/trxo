@@ -218,6 +218,27 @@ def show():
     display_config(current_project, config)
 
 
+@app.command("status")
+def status(
+    no_prompt: bool = typer.Option(
+        False, "--no-prompt", help="Do not prompt for missing credentials"
+    ),
+):
+    """Check current project status and validate connections"""
+    from .status import StatusChecker
+
+    current_project = config_store.get_current_project()
+
+    if not current_project:
+        error("No active project")
+        raise typer.Exit(1)
+
+    config = config_store.get_project_config(current_project)
+    checker = StatusChecker(project_name=current_project, config=config, no_prompt=no_prompt)
+    checker.run()
+    checker.display()
+
+
 @app.command("set-log-level")
 def set_log_level(
     level: str = typer.Argument(..., help="Log level (DEBUG, INFO, WARNING, ERROR)")
