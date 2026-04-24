@@ -101,8 +101,8 @@ class CLIExportHandler:
 
         # Build a dict containing the result to match what CLI utilities expect
         result_dict = {
-            "data": data,
             "metadata": metadata,
+            "data": data,
         }
 
         # 2. Handle View Mode

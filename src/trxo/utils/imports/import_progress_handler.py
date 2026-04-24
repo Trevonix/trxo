@@ -29,14 +29,14 @@ from rich.text import Text
 
 # Individual item success — catches "✔ ...", "Successfully imported X", etc.
 _ITEM_SUCCESS_RE = re.compile(
-    r"^(?:✔\s*|Successfully\s+(?:imported|processed|updated|created|deleted)\s+)"
+    r"^(?:✔\s*|Successfully\s+(?:imported|processed|updated|created|deleted|upserted)\s+|Upserted\s+)"
     r"(?P<item>.+)",
     re.IGNORECASE,
 )
 
 # Individual item failure
 _ITEM_FAILURE_RE = re.compile(
-    r"(?:Failed\s+to\s+(?:import|process|update|create|delete)\s+|✖\s*)"
+    r"(?:Failed\s+to\s+(?:import|process|update|create|delete|upsert)\s+|✖\s*)"
     r"(?P<item>.+)",
     re.IGNORECASE,
 )
@@ -51,7 +51,7 @@ _ITEM_WARNING_RE = re.compile(
 # Count hint buried in a stage message — e.g., "Processing 12 scripts..."
 _COUNT_RE = re.compile(
     r"\b(\d+)\s+(?:item|script|client|entit|object|mapping|journey"
-    r"|entri|privilege|connector|webhook|endpoint|template|agent)",
+    r"|entri|privilege|connector|webhook|endpoint|template|agent|polic)",
     re.IGNORECASE,
 )
 

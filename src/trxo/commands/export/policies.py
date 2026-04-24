@@ -10,6 +10,7 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     CommitMessageOpt,
+    GlobalPoliciesOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
     IdmUsernameOpt,
@@ -36,6 +37,7 @@ def create_policies_export_command():
 
     def export_policies(
         realm: RealmOpt = DEFAULT_REALM,
+        global_policies: GlobalPoliciesOpt = False,
         view: ViewOpt = False,
         view_columns: ViewColumnsOpt = None,
         version: VersionOpt = None,
@@ -60,6 +62,7 @@ def create_policies_export_command():
         """Export policies configuration from specified realm"""
         kwargs = locals()
         from trxo.utils.export.cli_handler import CLIExportHandler
+
         CLIExportHandler().handle_export("policies", ExportService().export_policies, kwargs)
 
     return export_policies

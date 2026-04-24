@@ -12,6 +12,7 @@ from trxo.commands.shared.options import (
     CherryPickOpt,
     DiffOpt,
     ForceImportOpt,
+    GlobalPoliciesOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
     IdmUsernameOpt,
@@ -56,6 +57,7 @@ def create_policies_import_command():
         branch: BranchOpt = None,
         realm: RealmOpt = DEFAULT_REALM,
         src_realm: SrcRealmOpt = None,
+        global_policies: GlobalPoliciesOpt = False,
     ):
         """
         Import policies from JSON file (local mode) or
