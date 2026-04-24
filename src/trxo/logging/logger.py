@@ -43,26 +43,24 @@ def setup_logging(
         if config is None:
             config = LogConfig()
 
-            # Default to DEBUG for all logs to ensure we capture everything
-            config.default_level = LogLevel.DEBUG
+        # Always try to read log level from user config as a base override
+        # unless specifically instructed otherwise (or if we're reconfiguring)
+        try:
+            import json
 
-            # Try to read log level from user config as an override
-            try:
-                import json
+            from trxo_lib.config.config_store import ConfigStore
 
-                from trxo_lib.config.config_store import ConfigStore
+            config_store = ConfigStore()
+            global_settings_file = config_store.base_dir / "settings.json"
 
-                config_store = ConfigStore()
-                global_settings_file = config_store.base_dir / "settings.json"
-
-                if global_settings_file.exists():
-                    with open(global_settings_file, "r", encoding="utf-8") as f:
-                        settings = json.load(f)
-                        user_level = settings.get("log_level")
-                        if user_level and user_level in [lev.value for lev in LogLevel]:
-                            config.default_level = LogLevel(user_level)
-            except Exception:
-                pass
+            if global_settings_file.exists():
+                with open(global_settings_file, "r", encoding="utf-8") as f:
+                    settings = json.load(f)
+                    user_level = settings.get("log_level")
+                    if user_level and user_level in [lev.value for lev in LogLevel]:
+                        config.default_level = LogLevel(user_level)
+        except Exception:
+            pass
 
         _log_config = config
 
