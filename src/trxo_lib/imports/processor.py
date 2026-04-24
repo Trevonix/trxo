@@ -15,6 +15,7 @@ from trxo_lib.exceptions import (
     TrxoValidationError,
     TrxoError,
 )
+from pathlib import Path
 from abc import abstractmethod
 from typing import Any, Dict, List, Optional
 
@@ -354,16 +355,34 @@ class BaseImporter(BaseCommand):
 
         # Setup Git manager with optional branch
         git_manager = self._setup_git_manager(branch)
+        repo_path = Path(git_manager.local_path)
 
-        # Load files from Git
-        all_items = self.file_loader.load_git_files(
-            git_manager, item_type, effective_realm, branch
-        )
+        # Discover files in Git repository
+        discovered_files = self.file_loader.discover_git_files(repo_path, item_type, effective_realm)
 
-        # Normalize Git export format
+        if not discovered_files:
+            self._handle_no_git_files_found(item_type, effective_realm, realm)
+            return []
+
+        # Load and combine data from discovered files
+        all_items = []
+        for file_path in discovered_files:
+            try:
+                self.logger.info(f"Loading from: {file_path.relative_to(repo_path)}")
+                
+                # Use custom loader if available (needed for split formats like policies)
+                if hasattr(self, "load_data_from_file"):
+                    items = self.load_data_from_file(str(file_path))
+                else:
+                    items = self.file_loader.load_from_git_file(file_path)
+                
+                all_items.extend(items)
+            except Exception as e:
+                self.logger.warning(f"Failed to load {file_path.name}: {e}")
+                continue
+
         # Normalize items so only valid objects with identifiers remain
         normalized_items = []
-
         for item in all_items:
             if not isinstance(item, dict):
                 continue
@@ -372,10 +391,6 @@ class BaseImporter(BaseCommand):
                 continue
 
             normalized_items.append(item)
-
-        if not normalized_items:
-            self._handle_no_git_files_found(item_type, effective_realm, realm)
-            return []
 
         return normalized_items
 

@@ -173,6 +173,8 @@ class FileLoader:
 
                     discovered_files.append(json_file)
                     logger.info(f"Found: {json_file.relative_to(repo_path)}")
+            else:
+                logger.info(f"DEBUG: Directory not found: {realm_component_dir}")
         else:
             # Search in all realms
             for realm_dir in repo_path.iterdir():

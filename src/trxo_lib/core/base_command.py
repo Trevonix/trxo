@@ -112,22 +112,25 @@ class BaseCommand(ABC):
                     base_url=am_base_url,
                 )
 
-            # Explicitly check for IDM if that's the target product
-            if self.product == "idm":
-                # Gather IDM credentials (prompt for password if needed)
-                self._idm_username, self._idm_password = (
-                    self.auth_manager.get_idm_credentials(
-                        current_project,
-                        idm_username=idm_username,
-                        idm_password=idm_password,
+            # Initialize IDM credentials if provided or if product is IDM
+            if self.product == "idm" or idm_username or idm_password or idm_base_url:
+                # Gather IDM credentials (no prompting here, logic is in auth_manager)
+                try:
+                    self._idm_username, self._idm_password = (
+                        self.auth_manager.get_idm_credentials(
+                            current_project,
+                            idm_username=idm_username,
+                            idm_password=idm_password,
+                        )
                     )
-                )
-                self._idm_base_url = self.auth_manager.get_idm_base_url(
-                    current_project, idm_base_url
-                )
-
-            # Note: We don't initialize both unless strictly necessary.
-            # Most commands target one product (AM or IDM).
+                    self._idm_base_url = self.auth_manager.get_idm_base_url(
+                        current_project, idm_base_url
+                    )
+                except (TrxoAuthError, TrxoConfigError):
+                    # If IDM is not the primary product, we can tolerate missing credentials
+                    # unless they are explicitly provided and failed.
+                    if self.product == "idm":
+                        raise
         else:
             token_or_session = self.auth_manager.get_token(current_project)
 
@@ -267,15 +270,17 @@ class BaseCommand(ABC):
         headers: Optional[Dict[str, str]] = None,
         data: Optional[str] = None,
         timeout: float = 30.0,
+        suppress_logs: bool = False,
     ) -> httpx.Response:
         """Make HTTP request with common error handling and comprehensive logging"""
         start_time = time.time()
         method_upper = method.upper()
         request_size = len(data.encode("utf-8")) if data else 0
 
-        # Log request start
-        self.logger.debug(f"Starting {method_upper} request to {url}")
-        self.logger.debug(f"Header accept version: {headers.get('Accept-API-Version')}")
+        # Log request start (only if not suppressed)
+        if not suppress_logs:
+            self.logger.debug(f"Starting {method_upper} request to {url}")
+            self.logger.debug(f"Header accept version: {headers.get('Accept-API-Version')}")
 
         try:
             with httpx.Client(timeout=timeout) as client:
@@ -296,19 +301,20 @@ class BaseCommand(ABC):
                 duration = time.time() - start_time
                 response_size = len(response.content) if response.content else 0
 
-                # Log successful API call
-                log_api_call(
-                    method=method_upper,
-                    url=url,
-                    status_code=response.status_code,
-                    duration=duration,
-                    request_size=request_size if request_size > 0 else None,
-                    response_size=response_size if response_size > 0 else None,
-                    request_headers=headers,
-                    response_headers=(
-                        dict(response.headers) if response.headers else None
-                    ),
-                )
+                # Log successful API call (only if not suppressed or if it's an actual error)
+                if not suppress_logs or response.status_code >= 500:
+                    log_api_call(
+                        method=method_upper,
+                        url=url,
+                        status_code=response.status_code,
+                        duration=duration,
+                        request_size=request_size if request_size > 0 else None,
+                        response_size=response_size if response_size > 0 else None,
+                        request_headers=headers,
+                        response_headers=(
+                            dict(response.headers) if response.headers else None
+                        ),
+                    )
 
                 response.raise_for_status()
                 return response
@@ -333,21 +339,22 @@ class BaseCommand(ABC):
             clean_error = f"{e.response.status_code} - {error_msg}"
 
             # Log failed API call
-            log_api_call(
-                method=method_upper,
-                url=url,
-                status_code=e.response.status_code,
-                duration=duration,
-                request_size=request_size if request_size > 0 else None,
-                response_size=len(e.response.content) if e.response.content else None,
-                request_headers=headers,
-                response_headers=(
-                    dict(e.response.headers) if e.response.headers else None
-                ),
-                error=clean_error,
-            )
+            if not suppress_logs or e.response.status_code >= 500:
+                log_api_call(
+                    method=method_upper,
+                    url=url,
+                    status_code=e.response.status_code,
+                    duration=duration,
+                    request_size=request_size if request_size > 0 else None,
+                    response_size=len(e.response.content) if e.response.content else None,
+                    request_headers=headers,
+                    response_headers=(
+                        dict(e.response.headers) if e.response.headers else None
+                    ),
+                    error=clean_error,
+                )
 
-            self.logger.error(f"HTTP error: {clean_error}")
+                self.logger.error(f"HTTP error: {clean_error}")
 
             # Raise generic exception with clean message
             # to avoid verbose string representation in callers

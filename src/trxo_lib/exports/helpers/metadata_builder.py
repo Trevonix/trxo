@@ -56,16 +56,24 @@ class MetadataBuilder:
         Returns:
             Number of items
         """
-        if (
-            isinstance(data, dict)
-            and "result" in data
-            and isinstance(data["result"], list)
-        ):
-            return len(data["result"])
+        if isinstance(data, dict):
+            if "result" in data and isinstance(data["result"], list):
+                return len(data["result"])
+
+            # Support for am/global structure
+            count = 0
+            has_split_structure = False
+            for key in ["am", "global"]:
+                if key in data and isinstance(data[key], list):
+                    count += len(data[key])
+                    has_split_structure = True
+
+            if has_split_structure:
+                return count
+
+            return 1
         elif isinstance(data, list):
             return len(data)
-        elif isinstance(data, dict):
-            return 1
         return 0
 
     @staticmethod
@@ -102,6 +110,8 @@ class MetadataBuilder:
             "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "version": version,
             "total_items": total_items,
+            "storage_mode": "local",  # Default, updated by handlers if needed
+            "component": export_type,
         }
 
         return metadata
