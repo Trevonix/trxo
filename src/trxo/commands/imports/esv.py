@@ -55,8 +55,13 @@ def create_esv_commands():
         idm_password: IdmPasswordOpt = None,
     ):
         """Import Environment Variables configuration from JSON file"""
+        from trxo.utils.imports.cli_handler import CLIImportHandler
+
         kwargs = locals()
-        return ImportService().import_esv_variables(**kwargs)
+        handler = CLIImportHandler()
+        return handler.handle_import(
+            "esv-variables", ImportService().import_esv_variables, kwargs
+        )
 
     def import_esv_secrets(
         cherry_pick: CherryPickOpt = None,
@@ -79,8 +84,13 @@ def create_esv_commands():
         idm_password: IdmPasswordOpt = None,
     ):
         """Import Environment Secrets configuration from JSON file"""
+        from trxo.utils.imports.cli_handler import CLIImportHandler
+
         kwargs = locals()
-        return ImportService().import_esv_secrets(**kwargs)
+        handler = CLIImportHandler()
+        return handler.handle_import(
+            "esv-secrets", ImportService().import_esv_secrets, kwargs
+        )
 
     return import_esv_variables, import_esv_secrets
 

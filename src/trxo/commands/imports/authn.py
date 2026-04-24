@@ -52,7 +52,10 @@ def create_authn_import_command():
         idm_password: IdmPasswordOpt = None,
     ):
         """Import authentication settings from file or Git repository."""
+        from trxo.utils.imports.cli_handler import CLIImportHandler
+
         kwargs = locals()
-        ImportService().import_authn(**kwargs)
+        handler = CLIImportHandler()
+        return handler.handle_import("authn", ImportService().import_authn, kwargs)
 
     return import_authn

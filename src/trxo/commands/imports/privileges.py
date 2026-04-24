@@ -53,7 +53,12 @@ def create_privileges_import_command():
         sync: SyncOpt = False,
     ):
         """Import Privileges from JSON file (local mode) or Git repository (Git mode)"""
+        from trxo.utils.imports.cli_handler import CLIImportHandler
+
         kwargs = locals()
-        return ImportService().import_privileges(**kwargs)
+        handler = CLIImportHandler()
+        return handler.handle_import(
+            "privileges", ImportService().import_privileges, kwargs
+        )
 
     return import_privileges

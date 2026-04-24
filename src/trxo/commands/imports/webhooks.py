@@ -61,7 +61,12 @@ def create_webhooks_import_command():
         rollback: RollbackOpt = False,
     ):
         """Import webhooks from JSON file to specified realm"""
+        from trxo.utils.imports.cli_handler import CLIImportHandler
+
         kwargs = locals()
-        return ImportService().import_webhooks(**kwargs)
+        handler = CLIImportHandler()
+        return handler.handle_import(
+            "webhooks", ImportService().import_webhooks, kwargs
+        )
 
     return import_webhooks

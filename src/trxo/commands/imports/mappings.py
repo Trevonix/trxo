@@ -59,7 +59,12 @@ def create_mappings_import_command():
 
         Updates existing mappings by name (PATCH) or adds new ones (PUT).
         """
+        from trxo.utils.imports.cli_handler import CLIImportHandler
+
         kwargs = locals()
-        return ImportService().import_mappings(**kwargs)
+        handler = CLIImportHandler()
+        return handler.handle_import(
+            "mappings", ImportService().import_mappings, kwargs
+        )
 
     return import_mappings

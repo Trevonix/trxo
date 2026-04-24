@@ -56,7 +56,12 @@ def create_connectors_import_command():
 
         Updates existing connectors by _id or creates new ones (upsert).
         """
+        from trxo.utils.imports.cli_handler import CLIImportHandler
+
         kwargs = locals()
-        return ImportService().import_connectors(**kwargs)
+        handler = CLIImportHandler()
+        return handler.handle_import(
+            "connectors", ImportService().import_connectors, kwargs
+        )
 
     return import_connectors
