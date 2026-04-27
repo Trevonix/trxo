@@ -115,6 +115,18 @@ class DiffManager:
                 new_data=new_data,
                 command_name=command_name,
                 realm=realm,
+                jwk_path=jwk_path,
+                sa_id=sa_id,
+                base_url=base_url,
+                project_name=project_name,
+                auth_mode=auth_mode,
+                onprem_username=onprem_username,
+                onprem_password=onprem_password,
+                onprem_realm=onprem_realm,
+                idm_base_url=idm_base_url,
+                idm_username=idm_username,
+                idm_password=idm_password,
+                am_base_url=am_base_url,
             )
 
             # Step 4: Add payloads to result and return

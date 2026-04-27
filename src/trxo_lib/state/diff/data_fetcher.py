@@ -13,6 +13,7 @@ from trxo_lib.exports.processor import BaseExporter
 from trxo_lib.exports.domains.oauth import OAuthExporter, process_oauth_response
 from trxo_lib.exports.domains.policies import process_policies_response
 from trxo_lib.exports.domains.saml import process_saml_response
+from trxo_lib.exports.domains.services import services_response_filter
 from trxo_lib.exports.domains.scripts import decode_script_response
 from trxo_lib.config.api_headers import get_headers
 from trxo_lib.config.constants import DEFAULT_REALM
@@ -206,9 +207,10 @@ class DataFetcher:
                 )
                 return result
 
-            if command_name == "saml":
-                response_filter = process_saml_response(self.exporter, realm)
-            elif command_name == "nodes":
+            # Prepare headers with authentication
+            # Headers are built inside export_data, we just provide the base ones
+            
+            if command_name == "nodes":
                 response_filter = _process_nodes_response(self.exporter, realm)
             elif command_name == "email_templates":
                 response_filter = _process_email_templates_response(
@@ -226,6 +228,21 @@ class DataFetcher:
                 exporter = OAuthExporter(realm=realm or DEFAULT_REALM)
                 self.exporter = exporter
                 response_filter = process_oauth_response(
+                    self.exporter, realm or DEFAULT_REALM
+                )
+            elif command_name == "services":
+                # For services, we need to pass scope and headers to the filter
+                original_filter = response_filter
+                response_filter = lambda data: original_filter(
+                    data,
+                    exporter=self.exporter,
+                    scope="realm",
+                    realm=realm or DEFAULT_REALM,
+                    headers=get_headers("services"),
+                )
+            elif command_name == "saml":
+                # For SAML, we need to initialize the filter with the exporter
+                response_filter = process_saml_response(
                     self.exporter, realm or DEFAULT_REALM
                 )
 
@@ -468,7 +485,7 @@ def get_command_api_endpoint(
         ),
         "services": (
             f"/am/json/realms/root/realms/{realm}/realm-config/services?_queryFilter=true",
-            None,
+            services_response_filter,
         ),
         "authn": (
             f"/am/json/realms/root/realms/{realm}/realm-config/authentication",
@@ -486,9 +503,8 @@ def get_command_api_endpoint(
             None,
         ),
         "saml": (
-            f"/am/json/realms/root/realms/{realm}"
-            "/realm-config/federation/entityproviders/saml2?_queryFilter=true",
-            None,
+            f"/am/json/realms/root/realms/{realm}/realm-config/saml2?_queryFilter=true",
+            process_saml_response,
         ),
         "policies": (
             f"/am/json/realms/root/realms/{realm}/policies?_queryFilter=true",

@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import typer
+from rich import box
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -58,10 +59,18 @@ class DiffPresenter:
             summary_lines.append(
                 f"Changes: Added {added}  •  Modified {modified}  •  Removed {removed}"
             )
-
+            
             panel_text = "\n".join(summary_lines)
             self.console.print()
-            self.console.print(Panel(panel_text, title=title, style="bold blue"))
+            self.console.print(
+                Panel(
+                    panel_text,
+                    title=title,
+                    style="bold blue",
+                    box=box.ROUNDED,
+                    expand=True,
+                )
+            )
 
             # Display key insights if available
             if diff_result.key_insights:

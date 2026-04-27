@@ -72,6 +72,15 @@ def main():
 
     sys.excepthook = _no_traceback_hook
 
+    if sys.platform == "win32":
+        # Enable UTF-8 support for console output symbols on Windows
+        import subprocess
+
+        try:
+            subprocess.run(["chcp", "65001"], capture_output=True, shell=True)
+        except Exception:
+            pass
+
     # Initialize logging early
     setup_logging()
     logger = get_logger("trxo.main")

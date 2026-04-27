@@ -15,6 +15,7 @@ from deepdiff import DeepDiff
 
 from trxo_lib.exports.domains.saml import SamlExporter
 from trxo_lib.exports.domains.services import ServicesExporter
+from trxo_lib.exports.domains.oauth import OAuthExporter
 from trxo_lib.logging import get_logger
 
 logger = get_logger(__name__)
@@ -122,18 +123,19 @@ class DiffEngine:
             "agentgroup",
         ]
 
-    def _fetch_current_services(self, realm: Optional[str]):
+    def _fetch_current_services(self, realm: Optional[str], **auth_params):
         logger.info("Fetching current services via ServicesExporter for diff")
         exporter = ServicesExporter()
         return exporter.export_as_dict(
             scope="realm",
             realm=realm,
+            **auth_params,
         )
 
-    def _fetch_current_saml(self, realm: Optional[str]):
+    def _fetch_current_saml(self, realm: Optional[str], **auth_params):
         logger.info("Fetching current saml via SamlExporter for diff")
         exporter = SamlExporter()
-        return exporter.export_as_dict(realm=realm)
+        return exporter.export_as_dict(realm=realm, **auth_params)
 
     def compare_data(
         self,
@@ -141,6 +143,7 @@ class DiffEngine:
         new_data: Dict[str, Any],
         command_name: str,
         realm: Optional[str] = None,
+        **auth_params,
     ) -> DiffResult:
         """
         Compare current server data with new data to be imported
@@ -157,13 +160,17 @@ class DiffEngine:
         try:
             logger.info(f"Comparing {command_name} data...")
 
-            # Auto-fetch current data if not provided
-            # Always fetch current data from server for services
-            if command_name == "services":
-                current_data = self._fetch_current_services(realm)
+            # Auto-fetch current data if not provided (or if we need 'full' config for certain domains)
+            # Services and SAML often need deeper fetches than the list endpoint
+            if command_name == "services" and (
+                not current_data or "result" not in current_data
+            ):
+                current_data = self._fetch_current_services(realm, **auth_params)
 
-            if command_name == "saml":
-                current_data = self._fetch_current_saml(realm)
+            if command_name == "saml" and (
+                not current_data or ("hosted" not in current_data and "data" not in current_data)
+            ):
+                current_data = self._fetch_current_saml(realm, **auth_params)
 
             if command_name == "authn":
                 logger.info(
@@ -270,23 +277,29 @@ class DiffEngine:
         if not data:
             return []
 
-        # Unwrap top-level "data"
+        # SAML: only diff hosted + remote (ignore metadata, scripts)
+        # This can be either in data or in data['data']
+        saml_container = data.get("data", data) if isinstance(data, dict) else {}
+        if (
+            isinstance(saml_container, dict)
+            and isinstance(saml_container.get("hosted"), list)
+            and isinstance(saml_container.get("remote"), list)
+        ):
+            return saml_container.get("hosted", []) + saml_container.get("remote", [])
+
+        # OAuth: can be in data or in data['data']
+        oauth_container = data.get("data", data) if isinstance(data, dict) else {}
+        if command_name in ("oauth", "OAuth2_Clients") and isinstance(oauth_container, dict):
+            # Check for clients list or dict
+            clients = oauth_container.get("clients") or oauth_container.get("data")
+            if isinstance(clients, list):
+                return clients
+            if isinstance(clients, dict):
+                return list(clients.values())
+
+        # Unwrap top-level "data" wrapper used in TRXO export files
         if isinstance(data, dict) and "data" in data:
             data = data["data"]
-
-            # SAML: only diff hosted + remote (ignore metadata, scripts)
-            if (
-                isinstance(data, dict)
-                and isinstance(data.get("hosted"), list)
-                and isinstance(data.get("remote"), list)
-            ):
-                return data.get("hosted", []) + data.get("remote", [])
-
-            # OAuth: data.data is a dict of clients (keyed by id)
-            if command_name == "oauth" and isinstance(data, dict) and "data" in data:
-                clients_dict = data.get("data", {})
-                if isinstance(clients_dict, dict) and len(clients_dict) > 0:
-                    return list(clients_dict.values())
 
         #  Handle result wrapper
         if isinstance(data, dict):
@@ -310,27 +323,13 @@ class DiffEngine:
                     if isinstance(val, dict):
                         return list(val.values())
 
-        #  OAuth: data.clients
-
-        #  OAuth: data.clients
-        if isinstance(data, dict) and isinstance(data.get("clients"), list):
-            return data["clients"]
-
         # authn: split composite config into item-wise sections
         if isinstance(data, dict) and "postauthprocess" in data:
             items = []
             for section_key, section_value in data.items():
-                # Skip metadata-like fields
                 if section_key in ("_id", "_type"):
                     continue
-
-                # Each section becomes its own diff item
-                items.append(
-                    {
-                        "_id": section_key,
-                        "value": section_value,
-                    }
-                )
+                items.append({"_id": section_key, "value": section_value})
             return items
 
         # objects / mappings
@@ -373,7 +372,7 @@ class DiffEngine:
 
     def _get_item_name(self, item: Dict[str, Any]) -> Optional[str]:
         """Get the display name of an item"""
-        name_fields = ["name", "displayName", "title", "_id", "id"]
+        name_fields = ["name", "displayName", "title", "entityId", "_id", "id"]
         for field in name_fields:
             if field in item and item[field]:
                 return str(item[field])

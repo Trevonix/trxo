@@ -182,7 +182,24 @@ class SamlImporter(BaseImporter):
         # Setup rollback manager if requested
         if rollback:
             self.rollback_manager = self._setup_rollback_manager(
-                rollback, storage_mode, realm, branch, token, api_base_url
+                rollback,
+                storage_mode,
+                realm,
+                branch,
+                token,
+                api_base_url,
+                jwk_path=jwk_path,
+                sa_id=sa_id,
+                base_url=base_url,
+                project_name=project_name,
+                auth_mode=auth_mode,
+                onprem_username=onprem_username,
+                onprem_password=onprem_password,
+                onprem_realm=onprem_realm,
+                idm_base_url=idm_base_url,
+                idm_username=idm_username,
+                idm_password=idm_password,
+                am_base_url=am_base_url,
             )
 
         ok = self.import_saml_data(
@@ -198,7 +215,6 @@ class SamlImporter(BaseImporter):
                 base_url=api_base_url,
                 file_path=str(file_path) if file_path else None,
                 realm=realm,
-                src_realm=src_realm,
                 jwk_path=jwk_path,
                 sa_id=sa_id,
                 project_name=project_name,
