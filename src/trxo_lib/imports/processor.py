@@ -540,10 +540,13 @@ class BaseImporter(BaseCommand):
                 git_mgr = self._setup_git_manager(branch)
 
             auth_kwargs = auth_params.copy()
-            auth_kwargs.setdefault("auth_mode", self.auth_mode)
-            auth_kwargs.setdefault("idm_username", self._idm_username)
-            auth_kwargs.setdefault("idm_password", self._idm_password)
-            auth_kwargs.setdefault("idm_base_url", self._idm_base_url)
+            # Use 'or' instead of setdefault so that None values from
+            # auth_params are overridden with the actual credentials
+            # stored on self (e.g. idm_username from config).
+            auth_kwargs["auth_mode"] = auth_kwargs.get("auth_mode") or self.auth_mode
+            auth_kwargs["idm_username"] = auth_kwargs.get("idm_username") or self._idm_username
+            auth_kwargs["idm_password"] = auth_kwargs.get("idm_password") or self._idm_password
+            auth_kwargs["idm_base_url"] = auth_kwargs.get("idm_base_url") or self._idm_base_url
             # 'base_url' is passed as a positional arg to create_baseline_snapshot;
             # remove it from auth_kwargs to avoid "multiple values for argument" error.
             auth_kwargs.pop("base_url", None)

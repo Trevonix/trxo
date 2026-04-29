@@ -232,7 +232,7 @@ class DataFetcher:
                 )
             elif command_name == "services":
                 # For services, we need to pass scope and headers to the filter
-                original_filter = response_filter
+                original_filter = response_filter or services_response_filter
                 response_filter = lambda data: original_filter(
                     data,
                     exporter=self.exporter,

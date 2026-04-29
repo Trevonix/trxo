@@ -143,15 +143,35 @@ class RollbackManager:
                 return False
 
             # ---------------------------------------------------------
-            # OAUTH AND SAML: ALSO CAPTURE SCRIPTS
+            # OAUTH AND SAML: ABSORB ALREADY FETCHED SCRIPTS AND SCAN FOR MORE
             # ---------------------------------------------------------
             if self.command_name in ("oauth", "saml"):
+                # Extract and merge any scripts already fetched by the exporter's filter
+                if isinstance(data, dict) and "scripts" in data:
+                    if "scripts" not in self.baseline_snapshot:
+                        self.baseline_snapshot["scripts"] = {}
+                    
+                    scripts_batch = data["scripts"]
+                    if isinstance(scripts_batch, list):
+                        for s in scripts_batch:
+                            sid = s.get("_id")
+                            if sid:
+                                self.baseline_snapshot["scripts"][str(sid)] = s
+                    elif isinstance(scripts_batch, dict):
+                         self.baseline_snapshot["scripts"].update(scripts_batch)
+
                 self._capture_scripts(data, token, base_url)
 
             # ---------------------------------------------------------
-            # THEMES / MANAGED OBJECTS (single-document)
+            # SINGLE-DOCUMENT CONFIGURATIONS (blob data)
             # ---------------------------------------------------------
-            if self.command_name in ["themes", "managed", "managed_objects"]:
+            if self.command_name in [
+                "themes",
+                "authn",
+                "authentication",
+                "managed", 
+                "managed_objects"
+            ]:
                 return self._snapshot_single_document(data, git_manager)
 
             # ---------------------------------------------------------
@@ -243,7 +263,22 @@ class RollbackManager:
             logger.error("Unexpected response for single-document baseline snapshot")
             return False
 
-        item_id = data.get("_id", "ui/themerealm")
+        # Use command-specific IDs for rollback tracking
+        default_id = "root"
+        if self.command_name == "themes":
+            default_id = "ui/themerealm"
+        elif self.command_name in ("authn", "authentication"):
+            default_id = "authn_settings"
+        elif self.command_name in ("managed", "managed_objects"):
+            default_id = "managed_objects"
+        elif self.command_name == "connectors":
+            default_id = "connectors"
+        elif self.command_name == "mappings":
+            default_id = "mappings"
+        elif self.command_name == "endpoints":
+            default_id = "endpoints"
+
+        item_id = data.get("_id", default_id)
         mapping = {item_id: data}
 
         self.baseline_snapshot.update(mapping)

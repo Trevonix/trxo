@@ -116,7 +116,7 @@ class OAuthExporter(BaseExporter):
         headers = {**headers, **self.build_auth_headers(token)}
 
         try:
-            response = self.make_http_request(url, "GET", headers)
+            response = self.make_http_request(url, "GET", headers, suppress_logs=True)
             script_data = response.json()
 
             # Decode script field if present (similar to scripts export)
@@ -132,12 +132,15 @@ class OAuthExporter(BaseExporter):
 
             return script_data
         except Exception as e:
-            # Handle 403 Forbidden gracefully (likely internal/protected scripts)
+            # Handle 403 Forbidden or 404 Not Found gracefully
             if "403" in str(e) or "Forbidden" in str(e):
-                # warning(f"Skipping script {script_id}: Access denied (likely internal)")
+                return {}
+            
+            if "404" in str(e) or "Not Found" in str(e):
+                warning(f"Script {script_id} not found in realm {self.realm} (referenced by OAuth client)")
                 return {}
 
-            error(f"Failed to fetch script {script_id}: {str(e)}")
+            warning(f"Failed to fetch script {script_id}: {str(e)}")
             return {}
 
     def fetch_oauth_client_data(
@@ -152,7 +155,7 @@ class OAuthExporter(BaseExporter):
         headers = get_headers("oauth")
         headers = {**headers, **self.build_auth_headers(token)}
         try:
-            response = self.make_http_request(url, "GET", headers)
+            response = self.make_http_request(url, "GET", headers, suppress_logs=True)
             data = response.json()
             data.pop("_rev", None)
             return data
@@ -171,7 +174,7 @@ class OAuthExporter(BaseExporter):
             "realm-config/services?_queryFilter=true"
         )
         list_url = self._construct_api_url(base_url, list_ep)
-        response = self.make_http_request(list_url, "GET", headers)
+        response = self.make_http_request(list_url, "GET", headers, suppress_logs=True)
         data = response.json()
         if not isinstance(data, dict) or not isinstance(data.get("result"), list):
             return []
