@@ -16,6 +16,7 @@ import httpx
 
 from trxo_lib.config.api_headers import get_headers
 from trxo_lib.config.constants import DEFAULT_REALM
+from trxo_lib.config.config_store import ConfigStore
 from trxo_lib.core.url import construct_api_url
 from trxo_lib.git import GitManager
 from trxo_lib.logging import get_logger
@@ -142,15 +143,35 @@ class RollbackManager:
                 return False
 
             # ---------------------------------------------------------
-            # OAUTH AND SAML: ALSO CAPTURE SCRIPTS
+            # OAUTH AND SAML: ABSORB ALREADY FETCHED SCRIPTS AND SCAN FOR MORE
             # ---------------------------------------------------------
             if self.command_name in ("oauth", "saml"):
+                # Extract and merge any scripts already fetched by the exporter's filter
+                if isinstance(data, dict) and "scripts" in data:
+                    if "scripts" not in self.baseline_snapshot:
+                        self.baseline_snapshot["scripts"] = {}
+                    
+                    scripts_batch = data["scripts"]
+                    if isinstance(scripts_batch, list):
+                        for s in scripts_batch:
+                            sid = s.get("_id")
+                            if sid:
+                                self.baseline_snapshot["scripts"][str(sid)] = s
+                    elif isinstance(scripts_batch, dict):
+                         self.baseline_snapshot["scripts"].update(scripts_batch)
+
                 self._capture_scripts(data, token, base_url)
 
             # ---------------------------------------------------------
-            # THEMES / MANAGED OBJECTS (single-document)
+            # SINGLE-DOCUMENT CONFIGURATIONS (blob data)
             # ---------------------------------------------------------
-            if self.command_name in ["themes", "managed", "managed_objects"]:
+            if self.command_name in [
+                "themes",
+                "authn",
+                "authentication",
+                "managed", 
+                "managed_objects"
+            ]:
                 return self._snapshot_single_document(data, git_manager)
 
             # ---------------------------------------------------------
@@ -242,44 +263,28 @@ class RollbackManager:
             logger.error("Unexpected response for single-document baseline snapshot")
             return False
 
-        item_id = data.get("_id", "ui/themerealm")
+        # Use command-specific IDs for rollback tracking
+        default_id = "root"
+        if self.command_name == "themes":
+            default_id = "ui/themerealm"
+        elif self.command_name in ("authn", "authentication"):
+            default_id = "authn_settings"
+        elif self.command_name in ("managed", "managed_objects"):
+            default_id = "managed_objects"
+        elif self.command_name == "connectors":
+            default_id = "connectors"
+        elif self.command_name == "mappings":
+            default_id = "mappings"
+        elif self.command_name == "endpoints":
+            default_id = "endpoints"
+
+        item_id = data.get("_id", default_id)
         mapping = {item_id: data}
 
         self.baseline_snapshot.update(mapping)
         self.raw_baseline_data = self.baseline_snapshot
 
-        if git_manager:
-            self.git_manager = git_manager
-            timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-            branch_name = f"baseline/{self.command_name}/{timestamp}"
-
-            logger.info(f"Creating baseline git branch: {branch_name}")
-            git_manager.ensure_branch(branch_name)
-
-            repo_path = git_manager.local_path
-            component = self.command_name
-
-            realm_dir = repo_path / (self.realm or "root")
-            comp_dir = realm_dir / component
-            comp_dir.mkdir(parents=True, exist_ok=True)
-
-            filename = f"{(self.realm or 'root')}_{component}.json"
-            file_path = comp_dir / filename
-            baseline_file_data = {"data": mapping}
-
-            file_path.write_text(
-                json.dumps(baseline_file_data, indent=2), encoding="utf-8"
-            )
-
-            rel = file_path.relative_to(repo_path)
-            commit_msg = (
-                f"Baseline snapshot for {self.command_name} "
-                f"({self.realm}) at {timestamp}"
-            )
-            git_manager.commit_and_push([str(rel)], commit_msg, smart_pull=False)
-            self.git_branch = branch_name
-
-        logger.info("Baseline snapshot created")
+        self._persist_baseline(mapping, git_manager)
         return True
 
     def _snapshot_nodes(self, data: Any, git_manager: Optional[GitManager]) -> bool:
@@ -295,10 +300,7 @@ class RollbackManager:
         self.baseline_snapshot.update(mapping)
         self.raw_baseline_data = self.baseline_snapshot
 
-        if git_manager:
-            self._persist_baseline_to_git(git_manager, mapping)
-
-        logger.info(f"Baseline snapshot created with {len(mapping)} nodes")
+        self._persist_baseline(mapping, git_manager)
         return True
 
     def _snapshot_saml(self, data: Any, git_manager: Optional[GitManager]) -> bool:
@@ -322,12 +324,7 @@ class RollbackManager:
         self.baseline_snapshot.update(mapping)
         self.raw_baseline_data = self.baseline_snapshot
 
-        if git_manager:
-            self._persist_baseline_to_git(git_manager, mapping)
-
-        logger.info(
-            f"Baseline snapshot created with {len(mapping)} SAML entity entries"
-        )
+        self._persist_baseline(mapping, git_manager)
         return True
 
     def _snapshot_email_templates(
@@ -376,10 +373,7 @@ class RollbackManager:
         self.baseline_snapshot.update(mapping)
         self.raw_baseline_data = self.baseline_snapshot
 
-        if git_manager:
-            self._persist_baseline_to_git(git_manager, mapping)
-
-        logger.info(f"Baseline snapshot created with {len(mapping)} email template(s)")
+        self._persist_baseline(mapping, git_manager)
         return True
 
     def _snapshot_generic(
@@ -496,11 +490,62 @@ class RollbackManager:
 
         self.raw_baseline_data = self.baseline_snapshot
 
+        self._persist_baseline(mapping, git_manager)
+        return True
+
+    def _persist_baseline(
+        self, mapping: Dict[str, Any], git_manager: Optional[GitManager] = None
+    ) -> None:
+        """Persist baseline to Git or local storage and log status."""
         if git_manager:
             self._persist_baseline_to_git(git_manager, mapping)
+            logger.info("Baseline snapshot created")
+        else:
+            path = self._persist_baseline_to_local(mapping)
+            if path:
+                logger.info(f"Baseline snapshot created (File: {path})")
+            else:
+                logger.info("Baseline snapshot created")
 
-        logger.info("Baseline snapshot created")
-        return True
+    def _persist_baseline_to_local(self, mapping: Dict[str, Any]) -> str:
+        """Saves baseline mapping to a local JSON file for rollback reference."""
+        try:
+            config_store = ConfigStore()
+
+            timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+            rollback_dir = config_store.base_dir / "rollback" / self.command_name
+            rollback_dir.mkdir(parents=True, exist_ok=True)
+
+            filename = f"baseline_{self.realm or 'root'}_{timestamp}.json"
+            file_path = rollback_dir / filename
+
+            if self.command_name == "mappings":
+                data_to_save = {"_id": "sync", "mappings": list(mapping.values())}
+            else:
+                data_to_save = mapping
+
+            baseline_file_data = {
+                "metadata": {
+                    "command": self.command_name,
+                    "realm": self.realm,
+                    "timestamp": timestamp,
+                    "type": "baseline",
+                },
+                "data": data_to_save,
+            }
+
+            # Include captured scripts if present
+            scripts = self.baseline_snapshot.get("scripts")
+            if scripts:
+                baseline_file_data["scripts"] = scripts
+
+            file_path.write_text(
+                json.dumps(baseline_file_data, indent=2), encoding="utf-8"
+            )
+            return str(file_path)
+        except Exception as e:
+            logger.warning(f"Failed to persist baseline snapshot locally: {e}")
+            return ""
 
     def _persist_baseline_to_git(
         self, git_manager: Any, mapping: Dict[str, Any]
@@ -531,13 +576,6 @@ class RollbackManager:
 
             filename = f"{(self.realm or 'root')}_{component}.json"
             file_path = comp_dir / filename
-
-            if self.command_name == "mappings":
-                baseline_file_data = {
-                    "data": {"_id": "sync", "mappings": list(mapping.values())}
-                }
-            else:
-                baseline_file_data = {"data": mapping}
 
             file_path.write_text(
                 json.dumps(baseline_file_data, indent=2), encoding="utf-8"

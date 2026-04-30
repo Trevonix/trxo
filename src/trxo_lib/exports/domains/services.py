@@ -57,6 +57,10 @@ def services_response_filter(data, *, exporter, scope, realm, headers):
                 detail_url, "GET", auth_headers
             )
             complete_service = detail_response.json()
+            
+            # The service detail endpoint often returns an empty string for root _id
+            if not complete_service.get("_id"):
+                complete_service["_id"] = service_id
 
             try:
                 nd_url = f"{detail_url}?_action=nextdescendents"

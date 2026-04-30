@@ -185,7 +185,7 @@ class RollbackUrlBuilder:
         if not api_endpoint.endswith("/"):
             api_endpoint += "/"
 
-        encoded_id = quote(str(item_id), safe="")
+        encoded_id = quote(str(item_id), safe="/")
         api_endpoint = f"{api_endpoint}{encoded_id}"
 
         return construct_api_url(base_url, api_endpoint)

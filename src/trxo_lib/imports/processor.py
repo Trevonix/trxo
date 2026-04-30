@@ -148,7 +148,24 @@ class BaseImporter(BaseCommand):
 
             # If rollback requested, create a baseline snapshot first
             rollback_manager = self._setup_rollback_manager(
-                rollback, storage_mode, realm, branch, token, api_base_url
+                rollback,
+                storage_mode,
+                realm,
+                branch,
+                token,
+                api_base_url,
+                jwk_path=jwk_path,
+                sa_id=sa_id,
+                base_url=base_url,
+                project_name=project_name,
+                auth_mode=auth_mode,
+                onprem_username=onprem_username,
+                onprem_password=onprem_password,
+                onprem_realm=onprem_realm,
+                idm_base_url=idm_base_url,
+                idm_username=idm_username,
+                idm_password=idm_password,
+                am_base_url=am_base_url,
             )
 
             self.rollback_manager = rollback_manager
@@ -504,6 +521,7 @@ class BaseImporter(BaseCommand):
         branch: Optional[str],
         token: str,
         api_base_url: str,
+        **auth_params,
     ) -> Optional[object]:
         """Setup rollback manager if requested"""
         if not rollback:
@@ -521,14 +539,23 @@ class BaseImporter(BaseCommand):
             if storage_mode == "git":
                 git_mgr = self._setup_git_manager(branch)
 
+            auth_kwargs = auth_params.copy()
+            # Use 'or' instead of setdefault so that None values from
+            # auth_params are overridden with the actual credentials
+            # stored on self (e.g. idm_username from config).
+            auth_kwargs["auth_mode"] = auth_kwargs.get("auth_mode") or self.auth_mode
+            auth_kwargs["idm_username"] = auth_kwargs.get("idm_username") or self._idm_username
+            auth_kwargs["idm_password"] = auth_kwargs.get("idm_password") or self._idm_password
+            auth_kwargs["idm_base_url"] = auth_kwargs.get("idm_base_url") or self._idm_base_url
+            # 'base_url' is passed as a positional arg to create_baseline_snapshot;
+            # remove it from auth_kwargs to avoid "multiple values for argument" error.
+            auth_kwargs.pop("base_url", None)
+
             created = rollback_manager.create_baseline_snapshot(
                 token,
                 api_base_url,
                 git_manager=git_mgr,
-                auth_mode=self.auth_mode,
-                idm_username=self._idm_username,
-                idm_password=self._idm_password,
-                idm_base_url=self._idm_base_url,
+                **auth_kwargs,
             )
 
             if not created:
@@ -679,6 +706,7 @@ class BaseImporter(BaseCommand):
         base_url: str,
         file_path: Optional[str] = None,
         realm: Optional[str] = None,
+        src_realm: Optional[str] = None,
         jwk_path: Optional[str] = None,
         sa_id: Optional[str] = None,
         project_name: Optional[str] = None,
@@ -692,6 +720,7 @@ class BaseImporter(BaseCommand):
         am_base_url: Optional[str] = None,
         branch: Optional[str] = None,
         force: bool = False,
+        **kwargs,
     ) -> Optional[Dict[str, Any]]:
         """Handle deletion of orphaned items in sync mode"""
         command_name = self.component_mapper.get_command_name(self.get_item_type())
