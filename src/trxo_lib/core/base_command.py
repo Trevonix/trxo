@@ -280,7 +280,8 @@ class BaseCommand(ABC):
         # Log request start (only if not suppressed)
         if not suppress_logs:
             self.logger.debug(f"Starting {method_upper} request to {url}")
-            self.logger.debug(f"Header accept version: {headers.get('Accept-API-Version')}")
+            accept_version = headers.get('Accept-API-Version') if headers else None
+            self.logger.debug(f"Header accept version: {accept_version}")
 
         try:
             with httpx.Client(timeout=timeout) as client:
