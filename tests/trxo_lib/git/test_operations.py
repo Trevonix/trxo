@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock
 
 import pytest
+from trxo_lib.exceptions.core import TrxoGitError
 
 from trxo_lib.git.operations import (
     commit_and_push,
@@ -84,7 +85,7 @@ def test_is_working_tree_clean_exception():
 
 
 def test_is_working_tree_clean_repo_none():
-    with pytest.raises(RuntimeError):
+    with pytest.raises(TrxoGitError):
         is_working_tree_clean(None)
 
 
@@ -115,12 +116,12 @@ def test_get_working_tree_status_exception():
     repo.untracked_files = []
     repo.is_dirty.side_effect = Exception("boom")
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(TrxoGitError):
         get_working_tree_status(repo)
 
 
 def test_get_working_tree_status_repo_none():
-    with pytest.raises(RuntimeError):
+    with pytest.raises(TrxoGitError):
         get_working_tree_status(None)
 
 
@@ -131,14 +132,14 @@ def test_validate_clean_state_for_operation_clean():
 
 def test_validate_clean_state_for_operation_uncommitted():
     repo = make_repo(dirty=True, changed=["a.txt"])
-    with pytest.raises(RuntimeError) as e:
+    with pytest.raises(TrxoGitError) as e:
         validate_clean_state_for_operation(repo, "export")
     assert "a.txt" in str(e.value)
 
 
 def test_validate_clean_state_for_operation_untracked():
     repo = make_repo(dirty=False, untracked=["u.txt"])
-    with pytest.raises(RuntimeError) as e:
+    with pytest.raises(TrxoGitError) as e:
         validate_clean_state_for_operation(repo, "export")
     assert "u.txt" in str(e.value)
 
@@ -157,7 +158,7 @@ def test_commit_and_push_no_changes():
 
 
 def test_commit_and_push_repo_none():
-    with pytest.raises(RuntimeError):
+    with pytest.raises(TrxoGitError):
         commit_and_push(None, ["a.txt"], "msg")
 
 
@@ -167,7 +168,7 @@ def test_commit_and_push_push_failure():
     origin.push.side_effect = Exception("non-fast-forward")
     repo.remote.return_value = origin
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(TrxoGitError):
         commit_and_push(repo, ["a.txt"], "msg")
 
 
@@ -175,5 +176,5 @@ def test_commit_and_push_generic_exception():
     repo = make_repo(staged=["a.txt"])
     repo.index.add.side_effect = Exception("boom")
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(TrxoGitError):
         commit_and_push(repo, ["a.txt"], "msg")

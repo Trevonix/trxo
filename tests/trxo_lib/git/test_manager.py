@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock
 
 import pytest
+from trxo_lib.exceptions.core import TrxoGitError
 
 from trxo_lib.config.constants import DEFAULT_EXPORT_BRANCH
 from trxo_lib.git.manager import (
@@ -83,7 +84,7 @@ def test_git_manager_get_current_branch():
 
 def test_git_manager_get_current_branch_without_repo():
     gm = GitManager("u", "t", "https://github.com/org/repo.git")
-    with pytest.raises(RuntimeError):
+    with pytest.raises(TrxoGitError):
         gm.get_current_branch()
 
 
@@ -122,7 +123,7 @@ def test_setup_git_for_export_failure(mocker):
         "trxo_lib.git.manager.validate_credentials", side_effect=Exception("boom")
     )
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(TrxoGitError):
         setup_git_for_export("u", "t", "https://github.com/org/repo.git")
 
 
@@ -153,7 +154,7 @@ def test_setup_git_for_import_branch_missing(mocker):
         return_value={"local": False, "remote": False},
     )
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(TrxoGitError):
         setup_git_for_import("u", "t", "https://github.com/org/repo.git", branch="nope")
 
 

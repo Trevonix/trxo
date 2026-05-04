@@ -2,6 +2,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
+from trxo_lib.exceptions.core import TrxoGitError
 from git import GitCommandError, InvalidGitRepositoryError
 
 from trxo_lib.git.repository import (
@@ -105,7 +106,7 @@ def test_clone_or_init_repo_clone_failure(tmp_path, mocker):
         side_effect=GitCommandError("x", 1, "boom"),
     )
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(TrxoGitError):
         clone_or_init_repo(tmp_path, "repo", "url", {})
 
 

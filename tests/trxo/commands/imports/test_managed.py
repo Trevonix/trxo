@@ -5,6 +5,8 @@ from trxo.commands.shared.options import SyncOpt
 
 from trxo.commands.imports.managed import create_managed_import_command
 from trxo_lib.imports.domains.managed import ManagedObjectsImporter
+from trxo_lib.exceptions.core import TrxoValidationError
+from trxo_lib.exceptions.core import TrxoValidationError
 
 
 def test_find_object_by_name_found():
@@ -176,7 +178,7 @@ def test_load_data_from_file_invalid(tmp_path):
     f = tmp_path / "m.json"
     f.write_text(json.dumps("bad"))
     imp = ManagedObjectsImporter()
-    with pytest.raises(ValueError):
+    with pytest.raises(TrxoValidationError):
         imp.load_data_from_file(str(f))
 
 

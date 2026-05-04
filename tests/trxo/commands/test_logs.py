@@ -5,7 +5,6 @@ from trxo.commands.logs import log_info, show_logs
 
 
 def test_show_logs_no_log_file(mocker):
-    mocker.patch("trxo.commands.logs.setup_logging")
     mocker.patch("trxo.commands.logs.get_logger")
 
     log_path = mocker.Mock()
@@ -20,7 +19,6 @@ def test_show_logs_no_log_file(mocker):
 
 
 def test_show_logs_with_lines(mocker, tmp_path):
-    mocker.patch("trxo.commands.logs.setup_logging")
     mocker.patch("trxo.commands.logs.get_logger")
 
     log_file = tmp_path / "trxo.log"
@@ -35,7 +33,6 @@ def test_show_logs_with_lines(mocker, tmp_path):
 
 
 def test_show_logs_with_level_filter(mocker, tmp_path):
-    mocker.patch("trxo.commands.logs.setup_logging")
     mocker.patch("trxo.commands.logs.get_logger")
 
     log_file = tmp_path / "trxo.log"
@@ -50,7 +47,6 @@ def test_show_logs_with_level_filter(mocker, tmp_path):
 
 
 def test_show_logs_no_matching_lines(mocker, tmp_path):
-    mocker.patch("trxo.commands.logs.setup_logging")
     mocker.patch("trxo.commands.logs.get_logger")
 
     log_file = tmp_path / "trxo.log"
@@ -65,7 +61,6 @@ def test_show_logs_no_matching_lines(mocker, tmp_path):
 
 
 def test_show_logs_exception(mocker):
-    mocker.patch("trxo.commands.logs.setup_logging")
     logger = mocker.patch("trxo.commands.logs.get_logger")
 
     mocker.patch(
@@ -83,7 +78,6 @@ def test_show_logs_exception(mocker):
 
 
 def test_log_info_success(mocker, tmp_path):
-    mocker.patch("trxo.commands.logs.setup_logging")
     logger = mocker.patch("trxo.commands.logs.get_logger")
 
     config = mocker.Mock()
@@ -107,7 +101,6 @@ def test_log_info_success(mocker, tmp_path):
 
 
 def test_log_info_no_log_file(mocker, tmp_path):
-    mocker.patch("trxo.commands.logs.setup_logging")
     logger = mocker.patch("trxo.commands.logs.get_logger")
 
     config = mocker.Mock()
@@ -130,7 +123,6 @@ def test_log_info_no_log_file(mocker, tmp_path):
 
 
 def test_log_info_exception(mocker):
-    mocker.patch("trxo.commands.logs.setup_logging")
     logger = mocker.patch("trxo.commands.logs.get_logger")
 
     mocker.patch(

@@ -1,7 +1,7 @@
 import json
 
 import pytest
-from trxo_lib.imports.processor import TrxoAbort
+from trxo_lib.exceptions.core import TrxoIOError
 
 from trxo.commands.imports.oauth import create_oauth_import_command
 from trxo_lib.imports.domains.oauth import OAuthImporter
@@ -72,7 +72,7 @@ def test_import_from_local_happy_path(mocker, tmp_path):
 def test_import_from_local_file_not_found_raises_abort(mocker):
     importer = OAuthImporter(realm=DEFAULT_REALM)
 
-    with pytest.raises(TrxoAbort):
+    with pytest.raises(TrxoIOError):
         importer._import_from_local("missing.json", force_import=False)
 
 

@@ -2,6 +2,7 @@ import json
 from unittest.mock import MagicMock
 
 import pytest
+from trxo_lib.exceptions.core import TrxoIOError
 
 from trxo_lib.imports.helpers.file_loader import FileLoader
 
@@ -33,7 +34,7 @@ def test_load_from_local_file_invalid_json(tmp_path):
     file = tmp_path / "data.json"
     file.write_text("{ invalid json")
 
-    with pytest.raises(ValueError):
+    with pytest.raises(TrxoIOError):
         FileLoader.load_from_local_file(str(file))
 
 

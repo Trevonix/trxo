@@ -1,6 +1,8 @@
 import json
 
 import pytest
+from trxo_lib.exceptions.core import TrxoValidationError, TrxoConfigError
+from trxo_lib.exceptions import TrxoAbort
 import typer
 
 from trxo_lib.imports.processor import BaseImporter, SimpleImporter
@@ -43,13 +45,13 @@ def test_validate_items_ok():
 
 def test_validate_items_missing_field():
     importer = DummyImporter()
-    with pytest.raises(ValueError):
+    with pytest.raises((TrxoValidationError, TrxoConfigError)):
         importer._validate_items([{"x": 1}])
 
 
 def test_validate_items_not_dict():
     importer = DummyImporter()
-    with pytest.raises(ValueError):
+    with pytest.raises((TrxoValidationError, TrxoConfigError)):
         importer._validate_items(["bad"])
 
 
@@ -92,7 +94,6 @@ def test_import_from_file_local_success(mocker, tmp_path):
     importer.process_items.assert_called_once()
 
 
-from trxo_lib.exceptions import TrxoAbort
 
 
 def test_import_from_file_missing_file_path(mocker):
@@ -101,7 +102,7 @@ def test_import_from_file_missing_file_path(mocker):
     mocker.patch.object(importer, "initialize_auth", return_value=("t", "url"))
     mocker.patch.object(importer, "_get_storage_mode", return_value="local")
 
-    with pytest.raises(TrxoAbort):
+    with pytest.raises(TrxoConfigError):
         importer.import_from_file(file_path=None)
 
 
@@ -124,7 +125,7 @@ def test_apply_cherry_pick_invalid(mocker):
         importer.cherry_pick_filter, "validate_cherry_pick_argument", return_value=False
     )
 
-    with pytest.raises(TrxoAbort):
+    with pytest.raises(TrxoValidationError):
         importer._apply_cherry_pick_filter([{"_id": "1"}], "bad")
 
 

@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock
 
 import pytest
+from trxo_lib.exceptions.core import TrxoGitError
 
 from trxo_lib.git.branches import (
     branch_exists,
@@ -152,7 +153,7 @@ def test_validate_branch_sync_for_operation_diverged_raises(mocker):
         },
     )
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(TrxoGitError):
         validate_branch_sync_for_operation(repo, "main", "export")
 
 

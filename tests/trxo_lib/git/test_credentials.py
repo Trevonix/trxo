@@ -2,6 +2,7 @@ from unittest.mock import MagicMock
 
 import httpx
 import pytest
+from trxo_lib.exceptions.core import TrxoGitError, TrxoValidationError
 
 from trxo_lib.git.credentials import build_secure_url, validate_credentials
 
@@ -47,7 +48,7 @@ def test_build_secure_url_non_https_unchanged():
 
 
 def test_validate_credentials_unsupported_url():
-    with pytest.raises(ValueError):
+    with pytest.raises(TrxoValidationError):
         validate_credentials("token", "https://gitlab.com/org/repo.git")
 
 
@@ -57,7 +58,7 @@ def test_validate_credentials_network_error(mocker):
         return_value=FakeClient(raise_exc=httpx.RequestError("boom")),
     )
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(TrxoGitError):
         validate_credentials("token", "https://github.com/org/repo.git")
 
 
@@ -67,7 +68,7 @@ def test_validate_credentials_404(mocker):
         return_value=FakeClient(response=FakeResponse(404)),
     )
 
-    with pytest.raises(PermissionError):
+    with pytest.raises(TrxoGitError):
         validate_credentials("token", "https://github.com/org/repo.git")
 
 
@@ -77,7 +78,7 @@ def test_validate_credentials_401(mocker):
         return_value=FakeClient(response=FakeResponse(401)),
     )
 
-    with pytest.raises(PermissionError):
+    with pytest.raises(TrxoGitError):
         validate_credentials("token", "https://github.com/org/repo.git")
 
 
@@ -87,7 +88,7 @@ def test_validate_credentials_unexpected_status(mocker):
         return_value=FakeClient(response=FakeResponse(500)),
     )
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(TrxoGitError):
         validate_credentials("token", "https://github.com/org/repo.git")
 
 
@@ -99,7 +100,7 @@ def test_validate_credentials_no_push_permission(mocker):
         ),
     )
 
-    with pytest.raises(PermissionError):
+    with pytest.raises(TrxoGitError):
         validate_credentials("token", "https://github.com/org/repo.git")
 
 
