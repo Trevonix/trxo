@@ -8,7 +8,7 @@ from trxo_lib.config.constants import DEFAULT_REALM
 @pytest.fixture
 def mock_exporter(mocker):
     exporter = mocker.Mock(spec=JourneyExporter)
-    exporter.export_data.return_value = {"trees": {"tree_1": {}}}
+    exporter.export_data.return_value = mocker.Mock()
     mocker.patch(
         "trxo_lib.exports.domains.journeys.JourneyExporter",
         return_value=exporter,
