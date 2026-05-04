@@ -1,5 +1,20 @@
-"""Unit tests for trxo.commands.export.themes."""
+from trxo.commands.export.themes import create_themes_export_command
 
 
-def test_export_themes_importable():
-    assert True
+def test_export_themes_with_realm(mocker):
+    exporter = mocker.Mock()
+    exporter.export_data.return_value.status_code = 200
+    exporter.export_data.return_value.data = {}
+    exporter.export_data.return_value.metadata = {}
+    mocker.patch(
+        "trxo_lib.exports.domains.themes.BaseExporter",
+        return_value=exporter,
+    )
+
+    export_themes = create_themes_export_command()
+    export_themes(realm="alpha")
+
+    exporter.export_data.assert_called_once()
+    kwargs = exporter.export_data.call_args.kwargs
+
+    assert kwargs["api_endpoint"] == "/openidm/config/ui/themerealm?_fields=realm/alpha"

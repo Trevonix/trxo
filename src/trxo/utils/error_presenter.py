@@ -68,6 +68,6 @@ def present_generic_error(exception: Exception, command_name: str = "") -> None:
         )
     )
     _console.print(
-        "[dim]Use --log-level DEBUG to see the full traceback in the logs.[/dim]"
+        "[dim]Use 'trxo config set-log-level DEBUG' to enable full traceback logging.[/dim]"
     )
     _console.print()

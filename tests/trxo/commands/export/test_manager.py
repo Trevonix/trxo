@@ -1,5 +1,5 @@
-"""Unit tests for trxo.commands.export.manager."""
+"""Tests for trxo.commands.export.manager"""
 
 
-def test_export_manager_importable():
+def test_manager_placeholder():
     assert True
