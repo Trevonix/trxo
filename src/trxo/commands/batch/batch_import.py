@@ -280,10 +280,6 @@ def create_batch_import_command():
                     if cmd_scope == "realm":
                         import_params["realm"] = cmd_realm
 
-                # if command in {"themes", "scripts", "services", "journeys",
-                #  "webhooks", "endpoints", "privileges"}:
-                #     import_params["realm"] = cmd_realm
-
                 # Execute the import command (handle sub-commands with dot notation)
                 if "." in command:
                     group, sub = command.split(".", 1)
@@ -299,13 +295,31 @@ def create_batch_import_command():
                 success(f"{command} imported successfully")
                 success_count += 1
 
-            except Exception as e:
-                error(f"Failed to import {command}: {e}")
-                failed_commands.append(command)
+            except (Exception, SystemExit) as e:
+                # Handle SystemExit separately to check exit code
+                is_error = True
+                if isinstance(e, SystemExit):
+                    if e.code == 0:
+                        is_error = False
+                    else:
+                        error_msg = f"Command exited with code {e.code}"
+                else:
+                    error_msg = str(e)
 
-                if not continue_on_error:
-                    error("Stopping batch import due to error")
-                    raise typer.Exit(1)
+                if is_error:
+                    error(f"Failed to import {command}: {error_msg}")
+                    failed_commands.append(command)
+
+                    if not continue_on_error:
+                        error("Stopping batch import due to error")
+                        # Re-raise SystemExit or wrap Exception in typer.Exit
+                        if isinstance(e, SystemExit):
+                            raise
+                        raise typer.Exit(1)
+                else:
+                    # Successful sys.exit(0)
+                    success(f"{command} imported successfully")
+                    success_count += 1
 
         # Summary
         info("\nBatch Import Summary:")
