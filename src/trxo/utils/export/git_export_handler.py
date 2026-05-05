@@ -73,6 +73,7 @@ class GitExportHandler:
         component = command_name
 
         # Extract from metadata if available
+        metadata_realm = None
         if isinstance(data, dict) and isinstance(data.get("metadata"), dict):
             metadata_realm = data["metadata"].get("realm")
             if metadata_realm:

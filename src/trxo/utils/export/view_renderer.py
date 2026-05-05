@@ -57,10 +57,10 @@ class ViewRenderer:
         # Get all available columns
         all_columns = list(items[0].keys())
 
-        info(
-            f"Available Fields: {all_columns}\n"
-            f"To select specific fields, use --view-columns {all_columns[0]},{all_columns[1]}"
-        )
+        hint = ""
+        if len(all_columns) > 1:
+            hint = f"\nTo select specific fields, use --view-columns {all_columns[0]},{all_columns[1]}"
+        info(f"Available Fields: {all_columns}{hint}")
         print()
 
         # Use selected or all columns
