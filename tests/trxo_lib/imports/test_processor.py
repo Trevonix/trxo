@@ -5,6 +5,7 @@ from trxo_lib.exceptions.core import TrxoValidationError, TrxoConfigError
 from trxo_lib.exceptions import TrxoAbort
 import typer
 
+from pathlib import Path
 from trxo_lib.imports.processor import BaseImporter, SimpleImporter
 
 
@@ -191,6 +192,46 @@ def test_handle_sync_deletions_passthrough(mocker):
     result = importer._handle_sync_deletions("t", "u")
 
     assert result == {"ok": True}
+
+
+def test_import_from_git_success(mocker):
+    importer = DummyImporter()
+    mocker.patch.object(importer, "_get_storage_mode", return_value="git")
+    mocker.patch.object(importer, "_setup_git_manager")
+    importer._setup_git_manager.return_value.local_path = "/repo"
+    
+    mocker.patch.object(importer.file_loader, "discover_git_files", return_value=[Path("/repo/f.json")])
+    mocker.patch.object(importer, "load_data_from_file", return_value=[{"_id": "1"}])
+    
+    res = importer._import_from_git("alpha", False)
+    assert len(res) == 1
+    assert res[0]["_id"] == "1"
+
+def test_setup_rollback_manager_success(mocker):
+    importer = DummyImporter()
+    mocker.patch("trxo_lib.imports.processor.get_command_name_from_item_type", return_value="dummy")
+    mock_mgr_class = mocker.patch("trxo_lib.state.rollback.RollbackManager")
+    mock_mgr = mock_mgr_class.return_value
+    mock_mgr.create_baseline_snapshot.return_value = True
+    
+    res = importer._setup_rollback_manager(True, "local", "alpha", None, "token", "url")
+    assert res == mock_mgr
+
+def test_execute_rollback_and_exit(mocker):
+    importer = DummyImporter()
+    mock_mgr = mocker.Mock()
+    mock_mgr.execute_rollback.return_value = {"rolled_back": [], "errors": []}
+    
+    with pytest.raises(TrxoAbort):
+        importer._execute_rollback_and_exit(mock_mgr, "token", "url", "item1")
+
+def test_perform_diff_analysis(mocker):
+    importer = DummyImporter()
+    mock_diff = mocker.patch("trxo_lib.state.diff.diff_manager.DiffManager")
+    mock_diff.return_value.perform_diff.return_value = {"diff": "ok"}
+    
+    res = importer._perform_diff_analysis()
+    assert res == {"diff": "ok"}
 
 
 def test_simple_importer_smoke():

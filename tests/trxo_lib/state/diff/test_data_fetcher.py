@@ -133,3 +133,71 @@ def test_fetch_from_git_happy_path(mocker, tmp_path):
     )
 
     assert result == {"x": 1}
+
+
+def test_process_nodes_response():
+    from trxo_lib.state.diff.data_fetcher import _process_nodes_response
+    filter_func = _process_nodes_response(None, "alpha")
+    data = {"result": [{"_id": "n1", "val": 1}, {"_id": "n2"}]}
+    res = filter_func(data)
+    assert len(res["nodes"]) == 2
+    assert res["nodes"]["n1"]["val"] == 1
+
+
+def test_process_email_templates_response():
+    from trxo_lib.state.diff.data_fetcher import _process_email_templates_response
+    filter_func = _process_email_templates_response(None, "alpha")
+    data = {"result": [{"_id": "e1"}]}
+    res = filter_func(data)
+    assert res["result"] == [{"_id": "e1"}]
+
+
+def test_fetch_nodes_direct_success(mocker):
+    from trxo_lib.state.diff.data_fetcher import _fetch_nodes_direct
+    mock_exporter = mocker.Mock()
+    mock_exporter._construct_api_url.return_value = "http://url"
+    mock_resp = mocker.Mock()
+    mock_resp.json.return_value = {"result": [{"_id": "n1"}]}
+    mock_exporter.make_http_request.return_value = mock_resp
+    
+    res = _fetch_nodes_direct(mock_exporter, "alpha", "base", {})
+    assert "nodes" in res
+    assert "n1" in res["nodes"]
+
+
+def test_fetch_data_nodes_special(mocker):
+    fetcher = DataFetcher()
+    mock_exporter = mocker.Mock()
+    fetcher.exporter = mock_exporter
+    mock_exporter.initialize_auth.return_value = ("token", "http://base")
+    mock_exporter.build_auth_headers.return_value = {"Authorization": "token"}
+    
+    mock_direct = mocker.patch("trxo_lib.state.diff.data_fetcher._fetch_nodes_direct")
+    mock_direct.return_value = {"nodes": {}}
+    res = fetcher.fetch_data("nodes", "/endpoint")
+    assert res == {"nodes": {}}
+
+
+def test_fetch_data_specialized_commands(mocker):
+    fetcher = DataFetcher()
+    mock_exporter = mocker.Mock()
+    fetcher.exporter = mock_exporter
+    mock_exporter.export_data.return_value = mocker.Mock(data={"data": {"ok": True}})
+    
+    # Test for OAuth
+    mock_oauth = mocker.patch("trxo_lib.state.diff.data_fetcher.OAuthExporter")
+    fetcher.fetch_data("oauth", "/endpoint")
+    assert mock_oauth.called
+
+
+def test_fetch_from_local_file_special_logic(tmp_path):
+    fetcher = DataFetcher()
+    file_path = tmp_path / "apps.json"
+    file_path.write_text(json.dumps({
+        "data": {
+            "applications": [{"_id": "app1"}]
+        }
+    }))
+    
+    res = fetcher._fetch_from_local_file(str(file_path), command_name="applications")
+    assert res == {"result": [{"_id": "app1"}]}

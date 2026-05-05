@@ -9,7 +9,7 @@ run fails and the user requested automatic rollback.
 
 import base64
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 import httpx
@@ -512,7 +512,7 @@ class RollbackManager:
         try:
             config_store = ConfigStore()
 
-            timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
             rollback_dir = config_store.base_dir / "rollback" / self.command_name
             rollback_dir.mkdir(parents=True, exist_ok=True)
 

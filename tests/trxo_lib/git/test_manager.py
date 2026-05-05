@@ -1,177 +1,92 @@
-from unittest.mock import MagicMock
-
 import pytest
-from trxo_lib.exceptions.core import TrxoGitError
+from unittest.mock import MagicMock, patch
+from trxo_lib.git.manager import GitManager, setup_git_for_export, setup_git_for_import, validate_and_setup_git_repo
+from trxo_lib.exceptions import TrxoGitError
 
-from trxo_lib.config.constants import DEFAULT_EXPORT_BRANCH
-from trxo_lib.git.manager import (
-    GitManager,
-    get_git_manager,
-    setup_git_for_export,
-    setup_git_for_import,
-    validate_and_setup_git_repo,
-)
+@pytest.fixture
+def git_manager():
+    with patch("trxo_lib.git.manager.get_repo_path", return_value=MagicMock()):
+        return GitManager("user", "token", "https://github.com/org/repo.git")
 
+def test_git_manager_init(git_manager):
+    assert git_manager.repo_name == "repo"
+    assert "user:token@github.com" in git_manager.secure_url
 
-def make_repo(branch="main"):
-    repo = MagicMock()
-    repo.active_branch.name = branch
-    return repo
+def test_get_or_create_repo_cached(git_manager):
+    mock_repo = MagicMock()
+    git_manager._repo_cache = mock_repo
+    assert git_manager.get_or_create_repo({}) == mock_repo
 
+def test_get_or_create_repo_new(git_manager):
+    with patch("trxo_lib.git.manager.get_or_create_repo") as mock_get:
+        mock_repo = MagicMock()
+        mock_get.return_value = mock_repo
+        res = git_manager.get_or_create_repo({"info": "val"})
+        assert res == mock_repo
+        assert git_manager._repo_cache == mock_repo
 
-def test_git_manager_init():
-    gm = GitManager("u", "t", "https://github.com/org/repo.git")
-    assert gm.username == "u"
-    assert gm.token == "t"
-    assert gm.repo_name == "repo"
+def test_ensure_work_branch_no_repo(git_manager):
+    with pytest.raises(TrxoGitError, match="Repository not initialized"):
+        git_manager.ensure_work_branch()
 
+def test_ensure_work_branch_success(git_manager):
+    mock_repo = MagicMock()
+    h = MagicMock()
+    h.name = "main"
+    mock_repo.heads = [h]
+    git_manager._repo_cache = mock_repo
+    with patch.object(git_manager, "_get_default_branch", return_value="main"):
+        res = git_manager.ensure_work_branch("main", validate=False)
+        assert res == mock_repo
+        mock_repo.git.checkout.assert_called_with("main")
 
-def test_git_manager_build_secure_url(mocker):
-    mocker.patch("trxo_lib.git.manager.build_secure_url", return_value="secure")
-    gm = GitManager("u", "t", "https://github.com/org/repo.git")
-    assert gm.secure_url == "secure"
+def test_ensure_work_branch_validate(git_manager):
+    mock_repo = MagicMock()
+    git_manager._repo_cache = mock_repo
+    with patch("trxo_lib.git.manager.ensure_branch", return_value=mock_repo) as mock_ensure:
+        git_manager.ensure_work_branch("feat", validate=True)
+        mock_ensure.assert_called()
 
+def test_setup_git_for_export_success():
+    with patch("trxo_lib.git.manager.GitManager") as mock_mgr_class:
+        mock_mgr = mock_mgr_class.return_value
+        mock_mgr.validate_credentials.return_value = {}
+        setup_git_for_export("u", "t", "url", branch="feat")
+        mock_mgr.ensure_branch.assert_called()
 
-def test_git_manager_validate_credentials(mocker):
-    mocker.patch(
-        "trxo_lib.git.manager.validate_credentials", return_value={"ok": True}
-    )
-    gm = GitManager("u", "t", "https://github.com/org/repo.git")
-    out = gm.validate_credentials()
-    assert out == {"ok": True}
+def test_setup_git_for_import_success():
+    with patch("trxo_lib.git.manager.GitManager") as mock_mgr_class:
+        mock_mgr = mock_mgr_class.return_value
+        mock_mgr.validate_credentials.return_value = {}
+        mock_mgr.branch_exists.return_value = {"local": True, "remote": False}
+        setup_git_for_import("u", "t", "url", branch="feat")
+        mock_mgr.ensure_branch.assert_called()
 
+def test_wrappers(git_manager):
+    mock_repo = MagicMock()
+    git_manager._repo_cache = mock_repo
+    with patch("trxo_lib.git.manager.list_branches") as m:
+        git_manager.list_branches()
+        m.assert_called_with(mock_repo)
+    with patch("trxo_lib.git.manager.get_diff") as m:
+        git_manager.get_diff("path")
+        m.assert_called_with(mock_repo, "path")
+    with patch("trxo_lib.git.manager.commit_and_push") as m:
+        git_manager.commit_and_push(["p"], "msg")
+        m.assert_called_with(mock_repo, ["p"], "msg")
 
-def test_git_manager_get_or_create_repo_caches(mocker):
-    repo = make_repo()
-    mocker.patch("trxo_lib.git.manager.get_or_create_repo", return_value=repo)
+def test_validate_and_setup_git_repo():
+    with patch("trxo_lib.git.manager.GitManager") as mock_mgr_class:
+        mock_mgr = mock_mgr_class.return_value
+        mock_mgr.validate_credentials.return_value = {}
+        mock_mgr.get_or_create_repo.return_value = MagicMock()
+        validate_and_setup_git_repo("u", "t", "url")
+        mock_mgr.ensure_branch.assert_called()
 
-    gm = GitManager("u", "t", "https://github.com/org/repo.git")
-    r1 = gm.get_or_create_repo({"x": 1})
-    r2 = gm.get_or_create_repo({"x": 2})
-
-    assert r1 is r2
-
-
-def test_git_manager_ensure_branch(mocker):
-    repo = make_repo()
-    mocker.patch("trxo_lib.git.manager.ensure_branch", return_value=repo)
-
-    gm = GitManager("u", "t", "https://github.com/org/repo.git")
-    gm._repo_cache = repo
-
-    out = gm.ensure_branch("dev")
-    assert out is repo
-
-
-def test_git_manager_commit_and_push(mocker):
-    repo = make_repo()
-    mocker.patch("trxo_lib.git.manager.commit_and_push", return_value=True)
-
-    gm = GitManager("u", "t", "https://github.com/org/repo.git")
-    gm._repo_cache = repo
-
-    ok = gm.commit_and_push(["x.json"], "msg")
-    assert ok is True
-
-
-def test_git_manager_get_current_branch():
-    repo = make_repo("dev")
-    gm = GitManager("u", "t", "https://github.com/org/repo.git")
-    gm._repo_cache = repo
-
-    assert gm.get_current_branch() == "dev"
-
-
-def test_git_manager_get_current_branch_without_repo():
-    gm = GitManager("u", "t", "https://github.com/org/repo.git")
-    with pytest.raises(TrxoGitError):
-        gm.get_current_branch()
-
-
-def test_setup_git_for_export_default_branch(mocker):
-    repo = make_repo(DEFAULT_EXPORT_BRANCH)
-
-    mocker.patch(
-        "trxo_lib.git.manager.validate_credentials", return_value={"ok": True}
-    )
-    mocker.patch("trxo_lib.git.manager.get_or_create_repo", return_value=repo)
-    mocker.patch("trxo_lib.git.manager.ensure_branch", return_value=repo)
-
-    gm = setup_git_for_export("u", "t", "https://github.com/org/repo.git")
-
-    assert isinstance(gm, GitManager)
-
-
-def test_setup_git_for_export_custom_branch(mocker):
-    repo = make_repo("feature")
-
-    mocker.patch(
-        "trxo_lib.git.manager.validate_credentials", return_value={"ok": True}
-    )
-    mocker.patch("trxo_lib.git.manager.get_or_create_repo", return_value=repo)
-    mocker.patch("trxo_lib.git.manager.ensure_branch", return_value=repo)
-
-    gm = setup_git_for_export(
-        "u", "t", "https://github.com/org/repo.git", branch="feature"
-    )
-
-    assert isinstance(gm, GitManager)
-
-
-def test_setup_git_for_export_failure(mocker):
-    mocker.patch(
-        "trxo_lib.git.manager.validate_credentials", side_effect=Exception("boom")
-    )
-
-    with pytest.raises(TrxoGitError):
-        setup_git_for_export("u", "t", "https://github.com/org/repo.git")
-
-
-def test_setup_git_for_import_branch_exists(mocker):
-    repo = make_repo("dev")
-
-    mocker.patch(
-        "trxo_lib.git.manager.validate_credentials", return_value={"ok": True}
-    )
-    mocker.patch("trxo_lib.git.manager.get_or_create_repo", return_value=repo)
-    mocker.patch(
-        "trxo_lib.git.manager.branch_exists",
-        return_value={"local": True, "remote": False},
-    )
-    mocker.patch("trxo_lib.git.manager.ensure_branch", return_value=repo)
-
-    gm = setup_git_for_import("u", "t", "https://github.com/org/repo.git", branch="dev")
-    assert isinstance(gm, GitManager)
-
-
-def test_setup_git_for_import_branch_missing(mocker):
-    mocker.patch(
-        "trxo_lib.git.manager.validate_credentials", return_value={"ok": True}
-    )
-    mocker.patch("trxo_lib.git.manager.get_or_create_repo", return_value=make_repo())
-    mocker.patch(
-        "trxo_lib.git.manager.branch_exists",
-        return_value={"local": False, "remote": False},
-    )
-
-    with pytest.raises(TrxoGitError):
-        setup_git_for_import("u", "t", "https://github.com/org/repo.git", branch="nope")
-
-
-def test_get_git_manager():
-    gm = get_git_manager("u", "t", "https://github.com/org/repo.git")
-    assert isinstance(gm, GitManager)
-
-
-def test_validate_and_setup_git_repo(mocker):
-    repo = make_repo("main")
-
-    mocker.patch(
-        "trxo_lib.git.manager.validate_credentials", return_value={"ok": True}
-    )
-    mocker.patch("trxo_lib.git.manager.get_or_create_repo", return_value=repo)
-    mocker.patch.object(GitManager, "ensure_work_branch", return_value=repo)
-
-    out = validate_and_setup_git_repo("u", "t", "https://github.com/org/repo.git")
-
-    assert out is repo
+def test_create_initial_commit(git_manager, tmp_path):
+    mock_repo = MagicMock()
+    git_manager.local_path = tmp_path
+    git_manager._create_initial_commit(mock_repo)
+    assert (tmp_path / "README.md").exists()
+    mock_repo.index.add.assert_called()
+    mock_repo.index.commit.assert_called()

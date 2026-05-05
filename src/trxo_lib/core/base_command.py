@@ -8,6 +8,7 @@ used by both import and export commands.
 from trxo_lib.exceptions import (
     TrxoAbort,
     TrxoAuthError,
+    TrxoConfigError,
     TrxoError,
     TrxoIOError,
     TrxoValidationError,
@@ -280,7 +281,7 @@ class BaseCommand(ABC):
         # Log request start (only if not suppressed)
         if not suppress_logs:
             self.logger.debug(f"Starting {method_upper} request to {url}")
-            accept_version = headers.get('Accept-API-Version') if headers else None
+            accept_version = headers.get("Accept-API-Version") if headers else None
             self.logger.debug(f"Header accept version: {accept_version}")
 
         try:
@@ -347,7 +348,9 @@ class BaseCommand(ABC):
                     status_code=e.response.status_code,
                     duration=duration,
                     request_size=request_size if request_size > 0 else None,
-                    response_size=len(e.response.content) if e.response.content else None,
+                    response_size=(
+                        len(e.response.content) if e.response.content else None
+                    ),
                     request_headers=headers,
                     response_headers=(
                         dict(e.response.headers) if e.response.headers else None
