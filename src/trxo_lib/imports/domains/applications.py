@@ -187,6 +187,7 @@ class ApplicationsImporter(BaseImporter):
         base_url: str,
         rollback_manager: Optional[object] = None,
         rollback_on_failure: bool = False,
+        continue_on_error: bool = False,
     ) -> None:
         extra_ok = 0
         extra_fail = 0
@@ -204,9 +205,17 @@ class ApplicationsImporter(BaseImporter):
                 base_url,
                 rollback_manager=rollback_manager,
                 rollback_on_failure=rollback_on_failure,
+                continue_on_error=continue_on_error,
             )
             extra_ok += script_imp.successful_updates
             extra_fail += script_imp.failed_updates
+            if not continue_on_error and script_imp.failed_updates > 0:
+                self.successful_updates = extra_ok
+                self.failed_updates = extra_fail
+                self._import_stopped_early = getattr(
+                    script_imp, "_import_stopped_early", False
+                )
+                return
 
         if self.include_am_dependencies and self._pending_providers:
             info(
@@ -230,7 +239,11 @@ class ApplicationsImporter(BaseImporter):
                         self._execute_rollback_and_exit(
                             rollback_manager, token, base_url, pid
                         )
-                    raise TrxoAbort(code=1)
+                    elif not continue_on_error:
+                        self.successful_updates = extra_ok
+                        self.failed_updates = extra_fail
+                        self._import_stopped_early = True
+                        return
 
         if self.include_am_dependencies and self._pending_clients:
             info(
@@ -254,7 +267,11 @@ class ApplicationsImporter(BaseImporter):
                         self._execute_rollback_and_exit(
                             rollback_manager, token, base_url, cid
                         )
-                    raise TrxoAbort(code=1)
+                    elif not continue_on_error:
+                        self.successful_updates = extra_ok
+                        self.failed_updates = extra_fail
+                        self._import_stopped_early = True
+                        return
 
         super().process_items(
             items,
@@ -262,6 +279,7 @@ class ApplicationsImporter(BaseImporter):
             base_url,
             rollback_manager=rollback_manager,
             rollback_on_failure=rollback_on_failure,
+            continue_on_error=continue_on_error,
         )
         self.successful_updates += extra_ok
         self.failed_updates += extra_fail

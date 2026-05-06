@@ -24,6 +24,7 @@ from trxo.commands.shared.options import (
     RollbackOpt,
     SaIdOpt,
     SyncOpt,
+    ContinueOnErrorOpt,
 )
 from trxo_lib.imports.service import ImportService
 

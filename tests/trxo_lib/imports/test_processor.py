@@ -95,6 +95,35 @@ def test_import_from_file_local_success(mocker, tmp_path):
     importer.process_items.assert_called_once()
 
 
+def test_process_items_stop_after_first_failure(mocker):
+    importer = DummyImporter()
+    mock_update = mocker.patch.object(
+        importer, "update_item", side_effect=[False, True]
+    )
+
+    importer.process_items(
+        [{"_id": "a"}, {"_id": "b"}], "t", "u", continue_on_error=False
+    )
+
+    assert importer.successful_updates == 0
+    assert importer.failed_updates == 1
+    assert importer._import_stopped_early is True
+    assert mock_update.call_count == 1
+
+
+def test_process_items_continue_after_failure(mocker):
+    importer = DummyImporter()
+    mocker.patch.object(importer, "update_item", side_effect=[False, True])
+
+    importer.process_items(
+        [{"_id": "a"}, {"_id": "b"}], "t", "u", continue_on_error=True
+    )
+
+    assert importer.successful_updates == 1
+    assert importer.failed_updates == 1
+    assert not importer._import_stopped_early
+
+
 
 
 def test_import_from_file_missing_file_path(mocker):

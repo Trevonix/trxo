@@ -142,6 +142,7 @@ class JourneyImporter(BaseImporter):
         rollback=False,
         sync=False,
         cherry_pick=None,
+        continue_on_error: bool = False,
     ):
         """
         Override: detect enriched vs legacy format and branch accordingly.
@@ -217,6 +218,7 @@ class JourneyImporter(BaseImporter):
                     rollback=rollback,
                     sync=sync,
                     cherry_pick=cherry_pick,
+                    continue_on_error=continue_on_error,
                 )
 
             # ── Enriched git file → same path as local enriched ───────────
@@ -270,6 +272,7 @@ class JourneyImporter(BaseImporter):
                         token=token,
                         base_url=api_base_url,
                     ),
+                    continue_on_error=continue_on_error,
                 )
                 if not ok:
                     if rollback:
@@ -324,6 +327,7 @@ class JourneyImporter(BaseImporter):
                 rollback=rollback,
                 sync=sync,
                 cherry_pick=cherry_pick,
+                continue_on_error=continue_on_error,
             )
 
         # ── Enriched format ───────────────────────────────────────────────
@@ -380,6 +384,7 @@ class JourneyImporter(BaseImporter):
                     token=token,
                     base_url=api_base_url,
                 ),
+                continue_on_error=continue_on_error,
             )
             if not ok:
                 if rollback:
@@ -596,6 +601,7 @@ class JourneyImporter(BaseImporter):
         base_url: str,
         cherry_pick_ids: Optional[str] = None,
         rollback_managers: Optional[Dict[str, Any]] = None,
+        continue_on_error: bool = False,
     ) -> bool:
         """
         Import an enriched journey export in dependency order:
@@ -645,7 +651,8 @@ class JourneyImporter(BaseImporter):
             )
 
         error_count = 0
-        fail_fast = bool(rollback_managers)
+        successful_steps = 0
+        fail_fast = bool(rollback_managers) or (not continue_on_error)
 
         # -- 1. Scripts -------------------------------------------------------
         scripts: Dict[str, Any] = data.get("scripts", {})
@@ -664,6 +671,7 @@ class JourneyImporter(BaseImporter):
                     if fail_fast:
                         return False
                 else:
+                    successful_steps += 1
                     self._track_enriched_rollback("scripts", script_id)
 
         # -- 2. Email templates -----------------------------------------------
@@ -683,6 +691,7 @@ class JourneyImporter(BaseImporter):
                     if fail_fast:
                         return False
                 else:
+                    successful_steps += 1
                     self._track_enriched_rollback("emailTemplates", name)
 
         # -- 3. SAML2 entities ------------------------------------------------
@@ -706,6 +715,7 @@ class JourneyImporter(BaseImporter):
                         if fail_fast:
                             return False
                     else:
+                        successful_steps += 1
                         # Determine location and AM _id for rollback URL
                         saml_loc = "hosted" if "hosted" in entity_entry else "remote"
                         # Extract the AM _id from entity config
@@ -734,6 +744,8 @@ class JourneyImporter(BaseImporter):
                     error_count += 1
                     if fail_fast:
                         return False
+                else:
+                    successful_steps += 1
 
         # -- 5. Inner nodes ---------------------------------------------------
         inner_nodes: Dict[str, Any] = data.get("innerNodes", {})
@@ -752,6 +764,7 @@ class JourneyImporter(BaseImporter):
                     if fail_fast:
                         return False
                 else:
+                    successful_steps += 1
                     n_type = (node_cfg.get("_type") or {}).get("_id")
                     self._track_enriched_rollback("nodes", node_id, node_type=n_type)
 
@@ -772,6 +785,7 @@ class JourneyImporter(BaseImporter):
                     if fail_fast:
                         return False
                 else:
+                    successful_steps += 1
                     n_type = (node_cfg.get("_type") or {}).get("_id")
                     self._track_enriched_rollback("nodes", node_id, node_type=n_type)
 
@@ -789,6 +803,7 @@ class JourneyImporter(BaseImporter):
                     if fail_fast:
                         return False
                 else:
+                    successful_steps += 1
                     self._track_enriched_rollback("themes", "ui/themerealm")
 
         # -- 8. Journeys (trees) ----------------------------------------------
@@ -804,6 +819,7 @@ class JourneyImporter(BaseImporter):
                     if fail_fast:
                         return False
                 else:
+                    successful_steps += 1
                     self._track_enriched_rollback("trees", tree_id)
         else:
             warning("No journeys found in export data")
@@ -820,10 +836,11 @@ class JourneyImporter(BaseImporter):
                 f"{len(cots)} circle(s) of trust, "
                 f"{len(themes)} theme(s)"
             )
-        else:
-            warning(f"Journey import completed with {error_count} error(s)")
+            return True
 
-        return error_count == 0
+        warning(f"Journey import completed with {error_count} error(s)")
+        return bool(continue_on_error and successful_steps > 0)
+
 
     # ── update_item (single journey PUT — used by both paths) ───────────
 

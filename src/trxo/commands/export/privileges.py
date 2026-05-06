@@ -27,6 +27,7 @@ from trxo.commands.shared.options import (
     VersionOpt,
     ViewColumnsOpt,
     ViewOpt,
+    ContinueOnErrorOpt,
 )
 
 from trxo_lib.exports.service import ExportService
@@ -57,6 +58,7 @@ def create_privileges_export_command():
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Export privileges configuration
 

@@ -29,6 +29,7 @@ from trxo.commands.shared.options import (
     VersionOpt,
     ViewColumnsOpt,
     ViewOpt,
+    ContinueOnErrorOpt,
 )
 from trxo_lib.config.constants import DEFAULT_REALM
 from trxo.utils.console import console, info, warning
@@ -61,6 +62,7 @@ def create_agents_export_command():
         no_version: NoVersionOpt = False,
         branch: BranchOpt = None,
         commit: CommitMessageOpt = None,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Export Identity Gateway Agents"""
         kwargs = locals()
@@ -89,6 +91,7 @@ def create_agents_export_command():
         no_version: NoVersionOpt = False,
         branch: BranchOpt = None,
         commit: CommitMessageOpt = None,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Export Java Agents"""
         kwargs = locals()
@@ -117,6 +120,7 @@ def create_agents_export_command():
         no_version: NoVersionOpt = False,
         branch: BranchOpt = None,
         commit: CommitMessageOpt = None,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Export Web Agents"""
         kwargs = locals()

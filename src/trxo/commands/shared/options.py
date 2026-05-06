@@ -139,6 +139,18 @@ CherryPickOpt = Annotated[
     ),
 ]
 
+ContinueOnErrorOpt = Annotated[
+    bool,
+    typer.Option(
+        ...,
+        "--continue-on-error/--stop-on-error",
+        help=(
+            "Continue after a per-item failure; exit successfully if at least one item "
+            "succeeds (imports). For exports, continue paginated fetches when a page fails."
+        ),
+    ),
+]
+
 GlobalPoliciesOpt = Annotated[
     bool,
     typer.Option(

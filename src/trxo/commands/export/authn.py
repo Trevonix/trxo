@@ -26,6 +26,7 @@ from trxo.commands.shared.options import (
     VersionOpt,
     ViewColumnsOpt,
     ViewOpt,
+    ContinueOnErrorOpt,
 )
 from trxo_lib.config.constants import DEFAULT_REALM
 from trxo_lib.exports.service import ExportService
@@ -56,6 +57,7 @@ def create_authn_export_command():
         no_version: NoVersionOpt = False,
         branch: BranchOpt = None,
         commit: CommitMessageOpt = None,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Export authentication settings (authn) from realm"""
         kwargs = locals()

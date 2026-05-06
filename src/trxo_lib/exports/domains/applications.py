@@ -72,6 +72,7 @@ def _export_applications_with_deps(
     idm_base_url: str | None,
     idm_username: str | None,
     idm_password: str | None,
+    continue_on_error: bool = False,
 ) -> None:
     """Export managed applications plus referenced OAuth2 clients/provider/scripts."""
     base = BaseExporter()
@@ -106,7 +107,11 @@ def _export_applications_with_deps(
         response = base.make_http_request(idm_url, "GET", idm_headers)
         raw_data = response.json()
         aggregated = base._handle_pagination(
-            raw_data, api_endpoint, idm_headers, idm_api_url
+            raw_data,
+            api_endpoint,
+            idm_headers,
+            idm_api_url,
+            continue_on_error=continue_on_error,
         )
         filtered_data = base.remove_rev_fields(aggregated)
 
@@ -255,6 +260,7 @@ class ApplicationsExportService:
                     idm_base_url=self.kwargs.get("idm_base_url"),
                     idm_username=self.kwargs.get("idm_username"),
                     idm_password=self.kwargs.get("idm_password"),
+                    continue_on_error=bool(self.kwargs.get("continue_on_error", False)),
                 )
                 return
 

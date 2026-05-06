@@ -28,6 +28,7 @@ from trxo.commands.shared.options import (
     VersionOpt,
     ViewColumnsOpt,
     ViewOpt,
+    ContinueOnErrorOpt,
 )
 from trxo.utils.console import console, info, warning
 
@@ -58,6 +59,7 @@ def create_esv_commands():
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Export Environment Secrets"""
         kwargs = locals()
@@ -85,6 +87,7 @@ def create_esv_commands():
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Export Environment Variables"""
         kwargs = locals()

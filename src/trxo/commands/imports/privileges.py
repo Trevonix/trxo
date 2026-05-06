@@ -24,6 +24,7 @@ from trxo.commands.shared.options import (
     RollbackOpt,
     SaIdOpt,
     SyncOpt,
+    ContinueOnErrorOpt,
 )
 from trxo_lib.imports.service import ImportService
 
@@ -51,6 +52,7 @@ def create_privileges_import_command():
         idm_password: IdmPasswordOpt = None,
         rollback: RollbackOpt = False,
         sync: SyncOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Import Privileges from JSON file (local mode) or Git repository (Git mode)"""
         from trxo.utils.imports.cli_handler import CLIImportHandler

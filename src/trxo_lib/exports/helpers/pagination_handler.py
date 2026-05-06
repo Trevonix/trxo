@@ -73,6 +73,7 @@ class PaginationHandler:
         http_requester,
         headers: Dict[str, str],
         api_base_url: str,
+        continue_on_error: bool = False,
     ) -> Dict[str, Any]:
         """
         Fetch all pages of a paginated response.
@@ -116,8 +117,15 @@ class PaginationHandler:
             )
 
             next_url = f"{api_base_url}{next_endpoint}"
-            next_response = http_requester.make_http_request(next_url, "GET", headers)
-            next_data = next_response.json()
+            try:
+                next_response = http_requester.make_http_request(
+                    next_url, "GET", headers
+                )
+                next_data = next_response.json()
+            except Exception:
+                if continue_on_error:
+                    break
+                raise
             next_items = (
                 next_data.get("result") if isinstance(next_data, dict) else None
             )

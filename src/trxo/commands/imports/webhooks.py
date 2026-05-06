@@ -29,6 +29,7 @@ from trxo.commands.shared.options import (
     SaIdOpt,
     SrcRealmOpt,
     SyncOpt,
+    ContinueOnErrorOpt,
 )
 from trxo_lib.config.constants import DEFAULT_REALM
 from trxo_lib.imports.service import ImportService

@@ -27,6 +27,7 @@ from trxo.commands.shared.options import (
     SrcRealmOpt,
     SyncOpt,
     WithDepsOpt,
+    ContinueOnErrorOpt,
 )
 from trxo_lib.config.constants import DEFAULT_REALM
 from trxo_lib.imports.service import ImportService
@@ -58,6 +59,7 @@ def create_applications_import_command():
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
         with_deps: WithDepsOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Import applications from file or Git repository."""
         from trxo.utils.imports.cli_handler import CLIImportHandler

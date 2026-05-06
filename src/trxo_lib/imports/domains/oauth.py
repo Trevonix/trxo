@@ -234,6 +234,7 @@ class OAuthImporter(BaseImporter):
         base_url: str,
         rollback_manager: Optional[object] = None,
         rollback_on_failure: bool = False,
+        continue_on_error: bool = False,
     ) -> None:
 
         # Process scripts first (scripts intentionally not rolled back)
@@ -250,7 +251,15 @@ class OAuthImporter(BaseImporter):
                 base_url,
                 rollback_manager=rollback_manager,
                 rollback_on_failure=rollback_on_failure,
+                continue_on_error=continue_on_error,
             )
+            if not continue_on_error and self.script_importer.failed_updates > 0:
+                self.successful_updates = self.script_importer.successful_updates
+                self.failed_updates = self.script_importer.failed_updates
+                self._import_stopped_early = getattr(
+                    self.script_importer, "_import_stopped_early", False
+                )
+                return
         if rollback_manager and isinstance(rollback_manager.baseline_snapshot, dict):
             if "data" in rollback_manager.baseline_snapshot:
                 flattened = {}
@@ -268,6 +277,7 @@ class OAuthImporter(BaseImporter):
             base_url,
             rollback_manager=rollback_manager,
             rollback_on_failure=rollback_on_failure,
+            continue_on_error=continue_on_error,
         )
 
     def update_item(self, item_data: Dict[str, Any], token: str, base_url: str) -> bool:

@@ -18,6 +18,7 @@ from trxo.commands.shared.options import (
     RollbackOpt,
     SaIdOpt,
     SyncOpt,
+    ContinueOnErrorOpt,
 )
 from trxo_lib.imports.service import ImportService
 
@@ -45,6 +46,7 @@ def create_managed_import_command():
         diff: DiffOpt = False,
         rollback: RollbackOpt = False,
         sync: SyncOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Import managed objects from JSON file or Git repository."""
         from trxo.utils.imports.cli_handler import CLIImportHandler

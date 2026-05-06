@@ -20,6 +20,7 @@ from trxo.commands.shared.options import (
     SaIdOpt,
     SrcRealmOpt,
     SyncOpt,
+    ContinueOnErrorOpt,
 )
 from trxo_lib.imports.service import ImportService
 
@@ -49,6 +50,7 @@ def create_journey_import_command():
         diff: DiffOpt = False,
         rollback: RollbackOpt = False,
         sync: SyncOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Import journeys from JSON file (local mode) or Git repository (Git mode)."""
         from trxo.utils.imports.cli_handler import CLIImportHandler
