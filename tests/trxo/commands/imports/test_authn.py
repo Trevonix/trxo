@@ -82,6 +82,7 @@ def test_import_authn_defaults(mocker):
     assert "force_import" in kwargs
     assert "branch" in kwargs
     assert "diff" in kwargs
+    assert "dry_run" in kwargs
 
 
 def test_import_authn_custom_args(mocker):
@@ -92,6 +93,7 @@ def test_import_authn_custom_args(mocker):
     import_authn(
         realm="alpha",
         diff=True,
+        dry_run=True,
         file="f",
         force_import=True,
         branch="b",
@@ -111,6 +113,7 @@ def test_import_authn_custom_args(mocker):
 
     assert kwargs["realm"] == "alpha"
     assert kwargs["diff"] is True
+    assert kwargs["dry_run"] is True
     assert kwargs["file"] == "f"
     assert kwargs["force_import"] is True
     assert kwargs["branch"] == "b"

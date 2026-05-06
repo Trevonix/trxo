@@ -11,6 +11,7 @@ from trxo.commands.shared.options import (
     BranchOpt,
     CherryPickOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
@@ -35,6 +36,7 @@ def create_privileges_import_command():
     def import_privileges(
         cherry_pick: CherryPickOpt = None,
         diff: DiffOpt = False,
+        dry_run: DryRunOpt = False,
         file: InputFileOpt = None,
         force_import: ForceImportOpt = False,
         branch: BranchOpt = None,

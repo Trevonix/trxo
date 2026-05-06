@@ -70,33 +70,32 @@ class BaseImporter(BaseCommand):
         sync: bool = False,
         cherry_pick: Optional[str] = None,
         continue_on_error: bool = False,
+        dry_run: bool = False,
     ) -> Any:
         """Main import workflow with Git and local storage support."""
         item_type = self.get_item_type()
         self.logger.info(f"Starting import operation: {item_type}")
         try:
-            # Initialize authentication
-            token, api_base_url = self.initialize_auth(
-                jwk_path=jwk_path,
-                sa_id=sa_id,
-                base_url=base_url,
-                project_name=project_name,
-                auth_mode=auth_mode,
-                onprem_username=onprem_username,
-                onprem_password=onprem_password,
-                onprem_realm=onprem_realm,
-                idm_base_url=idm_base_url,
-                idm_username=idm_username,
-                idm_password=idm_password,
-                am_base_url=am_base_url,
-            )
-            self.logger.debug(
-                f"Authentication initialized for {item_type} import, "
-                f"auth_mode: {self.auth_mode}"
-            )
-
             # Handle diff mode - show differences and exit
             if diff:
+                token, api_base_url = self.initialize_auth(
+                    jwk_path=jwk_path,
+                    sa_id=sa_id,
+                    base_url=base_url,
+                    project_name=project_name,
+                    auth_mode=auth_mode,
+                    onprem_username=onprem_username,
+                    onprem_password=onprem_password,
+                    onprem_realm=onprem_realm,
+                    idm_base_url=idm_base_url,
+                    idm_username=idm_username,
+                    idm_password=idm_password,
+                    am_base_url=am_base_url,
+                )
+                self.logger.debug(
+                    f"Authentication initialized for {item_type} import, "
+                    f"auth_mode: {self.auth_mode}"
+                )
                 return self._perform_diff_analysis(
                     file_path=file_path,
                     realm=realm,
@@ -146,6 +145,37 @@ class BaseImporter(BaseCommand):
                     return
 
             self.logger.info(f"Loaded {len(items_to_process)} {item_type} for import")
+
+            if dry_run:
+                self._log_dry_run_preview(items_to_process, item_type, sync=sync)
+                self.successful_updates = len(items_to_process)
+                self.failed_updates = 0
+                self._import_stopped_early = False
+                self.logger.warning(
+                    "Dry run enabled - skipping API upserts and sync deletions"
+                )
+                self.print_summary(continue_on_error=True)
+                return
+
+            # Initialize authentication only when API mutations may happen
+            token, api_base_url = self.initialize_auth(
+                jwk_path=jwk_path,
+                sa_id=sa_id,
+                base_url=base_url,
+                project_name=project_name,
+                auth_mode=auth_mode,
+                onprem_username=onprem_username,
+                onprem_password=onprem_password,
+                onprem_realm=onprem_realm,
+                idm_base_url=idm_base_url,
+                idm_username=idm_username,
+                idm_password=idm_password,
+                am_base_url=am_base_url,
+            )
+            self.logger.debug(
+                f"Authentication initialized for {item_type} import, "
+                f"auth_mode: {self.auth_mode}"
+            )
 
             # If rollback requested, create a baseline snapshot first
             rollback_manager = self._setup_rollback_manager(
@@ -209,6 +239,21 @@ class BaseImporter(BaseCommand):
         finally:
             # Clean up resources
             self.cleanup()
+
+    def _log_dry_run_preview(
+        self, items: List[Dict[str, Any]], item_type: str, sync: bool = False
+    ) -> None:
+        """Log a detailed dry-run preview without mutating server state."""
+        self.logger.info(
+            f"Dry run preview: {len(items)} {item_type} item(s) would be upserted"
+        )
+        for item in items:
+            item_id = self._get_item_identifier(item) or "<unknown>"
+            self.logger.info(f"[dry-run] Would upsert {item_type}: {item_id}")
+        if sync:
+            self.logger.info(
+                "[dry-run] Sync was requested; delete checks/actions are skipped in dry run"
+            )
 
     def process_items(
         self,

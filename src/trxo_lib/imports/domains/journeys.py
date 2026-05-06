@@ -143,6 +143,7 @@ class JourneyImporter(BaseImporter):
         sync=False,
         cherry_pick=None,
         continue_on_error: bool = False,
+        dry_run: bool = False,
     ):
         """
         Override: detect enriched vs legacy format and branch accordingly.
@@ -219,10 +220,35 @@ class JourneyImporter(BaseImporter):
                     sync=sync,
                     cherry_pick=cherry_pick,
                     continue_on_error=continue_on_error,
+                    dry_run=dry_run,
                 )
 
             # ── Enriched git file → same path as local enriched ───────────
             info("Detected enriched journey export (with dependency graph)")
+            if dry_run:
+                trees = payload.get("trees", {})
+                nodes = payload.get("nodes", {})
+                inner_nodes = payload.get("innerNodes", {})
+                scripts = payload.get("scripts", {})
+                email_templates = payload.get("emailTemplates", {})
+                saml2_entities = payload.get("saml2Entities", {})
+                cots = payload.get("saml2CirclesOfTrust", {})
+                themes = payload.get("themes", {})
+                self.logger.info(
+                    "Dry run preview (enriched journeys): "
+                    f"{len(trees)} journey(s), "
+                    f"{len(nodes)} root node(s), "
+                    f"{len(inner_nodes)} inner node(s), "
+                    f"{len(scripts)} script(s), "
+                    f"{len(email_templates)} email template(s), "
+                    f"{len(saml2_entities)} SAML2 entity(ies), "
+                    f"{len(cots)} circle(s) of trust, "
+                    f"{len(themes)} theme(s)"
+                )
+                self.logger.warning(
+                    "Dry run enabled - skipping enriched journey API imports"
+                )
+                return True
 
             token, api_base_url = self.initialize_auth(
                 jwk_path=jwk_path,
@@ -328,10 +354,35 @@ class JourneyImporter(BaseImporter):
                 sync=sync,
                 cherry_pick=cherry_pick,
                 continue_on_error=continue_on_error,
+                dry_run=dry_run,
             )
 
         # ── Enriched format ───────────────────────────────────────────────
         info("Detected enriched journey export (with dependency graph)")
+        if dry_run:
+            trees = payload.get("trees", {})
+            nodes = payload.get("nodes", {})
+            inner_nodes = payload.get("innerNodes", {})
+            scripts = payload.get("scripts", {})
+            email_templates = payload.get("emailTemplates", {})
+            saml2_entities = payload.get("saml2Entities", {})
+            cots = payload.get("saml2CirclesOfTrust", {})
+            themes = payload.get("themes", {})
+            self.logger.info(
+                "Dry run preview (enriched journeys): "
+                f"{len(trees)} journey(s), "
+                f"{len(nodes)} root node(s), "
+                f"{len(inner_nodes)} inner node(s), "
+                f"{len(scripts)} script(s), "
+                f"{len(email_templates)} email template(s), "
+                f"{len(saml2_entities)} SAML2 entity(ies), "
+                f"{len(cots)} circle(s) of trust, "
+                f"{len(themes)} theme(s)"
+            )
+            self.logger.warning(
+                "Dry run enabled - skipping enriched journey API imports"
+            )
+            return True
 
         token, api_base_url = self.initialize_auth(
             jwk_path=jwk_path,

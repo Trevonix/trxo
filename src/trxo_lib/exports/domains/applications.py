@@ -14,10 +14,10 @@ from typing import Any, Dict, List
 from trxo_lib.exports.domains.oauth import OAuthExporter
 from trxo_lib.config.api_headers import get_headers
 from trxo_lib.config.constants import DEFAULT_REALM, IGNORED_SCRIPT_IDS
-from trxo_lib.logging import error, info, success, warning
+from trxo_lib.logging import error, warning
 from trxo_lib.exports.helpers import MetadataBuilder
 
-from trxo_lib.exports.processor import BaseExporter
+from trxo_lib.exports.processor import BaseExporter, ExportResult
 
 
 def _collect_oidc_client_ids(applications: List[Dict[str, Any]]) -> List[str]:
@@ -73,7 +73,7 @@ def _export_applications_with_deps(
     idm_username: str | None,
     idm_password: str | None,
     continue_on_error: bool = False,
-) -> None:
+) -> ExportResult:
     """Export managed applications plus referenced OAuth2 clients/provider/scripts."""
     base = BaseExporter()
     oauth_gate: OAuthExporter | None = None
@@ -193,31 +193,11 @@ def _export_applications_with_deps(
         )
         metadata["with_deps"] = True
 
-        export_payload = {"metadata": metadata, "data": combined_data}
-
-        info("Exporting Applications (with OAuth2 clients and scripts)...")
-
-        file_path = base.save_response(
-            data=export_payload,
-            command_name="applications",
-            output_dir=output_dir,
-            output_file=output_file,
-            version=version,
-            no_version=no_version,
-            branch=branch,
-            commit_message=commit,
+        return ExportResult(
+            data=combined_data,
+            metadata=metadata,
+            status_code=response.status_code,
         )
-
-        storage_mode = base._get_storage_mode()
-        if storage_mode == "local" and file_path:
-            hash_value = base.hash_manager.create_hash(combined_data, "applications")
-            base.hash_manager.save_export_hash("applications", hash_value, file_path)
-
-        print()
-        if response.status_code == 200:
-            success("Applications (with dependencies) exported successfully")
-        else:
-            error(f"Export completed with unexpected status: {response.status_code}")
 
     except Exception as e:
         error(f"Export failed: {str(e)}")
@@ -240,7 +220,7 @@ class ApplicationsExportService:
             if view:
                 warning("--with-deps is ignored when using --view")
             else:
-                _export_applications_with_deps(
+                return _export_applications_with_deps(
                     realm=self.kwargs.get("realm"),
                     version=self.kwargs.get("version"),
                     no_version=self.kwargs.get("no_version"),
@@ -262,7 +242,6 @@ class ApplicationsExportService:
                     idm_password=self.kwargs.get("idm_password"),
                     continue_on_error=bool(self.kwargs.get("continue_on_error", False)),
                 )
-                return
 
         exporter = BaseExporter()
         headers = get_headers("applications")

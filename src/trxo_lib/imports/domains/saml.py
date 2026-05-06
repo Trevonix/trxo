@@ -65,6 +65,7 @@ class SamlImporter(BaseImporter):
         rollback: bool = False,
         cherry_pick: str = None,
         continue_on_error: bool = False,
+        dry_run: bool = False,
     ) -> Any:
         """
         Override import flow for SAML only.
@@ -96,6 +97,7 @@ class SamlImporter(BaseImporter):
                 sync=sync,
                 cherry_pick=cherry_pick,
                 continue_on_error=continue_on_error,
+                dry_run=dry_run,
             )
 
         storage_mode = self._get_storage_mode()
@@ -157,6 +159,30 @@ class SamlImporter(BaseImporter):
                     "Data integrity check failed: file content has changed since export.",
                     hint="Use --force-import to skip this check, or re-export the data.",
                 )
+
+        if dry_run:
+            if isinstance(raw, dict) and "data" in raw:
+                saml_data = raw["data"]
+            elif isinstance(raw, list):
+                saml_data = raw[0] if raw else {}
+            else:
+                saml_data = raw
+
+            hosted_count = len(saml_data.get("hosted", [])) if isinstance(saml_data, dict) else 0
+            remote_count = len(saml_data.get("remote", [])) if isinstance(saml_data, dict) else 0
+            metadata_count = len(saml_data.get("metadata", [])) if isinstance(saml_data, dict) else 0
+            scripts_count = len(saml_data.get("scripts", [])) if isinstance(saml_data, dict) else 0
+            self.logger.info(
+                "Dry run preview (saml): "
+                f"{hosted_count} hosted entity(ies), "
+                f"{remote_count} remote entity(ies), "
+                f"{metadata_count} metadata record(s), "
+                f"{scripts_count} script dependency(ies)"
+            )
+            self.logger.warning(
+                "Dry run enabled - skipping SAML API upserts and sync deletions"
+            )
+            return True
 
         # Initialize auth
         token, api_base_url = self.initialize_auth(
