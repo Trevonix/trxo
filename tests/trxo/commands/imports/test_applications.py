@@ -81,6 +81,7 @@ def test_import_applications_defaults(mocker):
     assert "force_import" in kwargs
     assert "branch" in kwargs
     assert "diff" in kwargs
+    assert "dry_run" in kwargs
     assert "rollback" in kwargs
 
 
@@ -94,6 +95,7 @@ def test_import_applications_custom_args(mocker):
         realm="alpha",
         force_import=True,
         diff=True,
+        dry_run=True,
         rollback=True,
         branch="b",
         jwk_path="k",
@@ -114,6 +116,7 @@ def test_import_applications_custom_args(mocker):
     assert kwargs["realm"] == "alpha"
     assert kwargs["force_import"] is True
     assert kwargs["diff"] is True
+    assert kwargs["dry_run"] is True
     assert kwargs["rollback"] is True
     assert kwargs["branch"] == "b"
     assert kwargs["jwk_path"] == "k"

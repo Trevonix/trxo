@@ -187,3 +187,14 @@ def test_print_summary(base_command):
     with patch.object(base_command, "logger"):
         with pytest.raises(TrxoAbort):
             base_command.print_summary()
+
+    base_command.successful_updates = 2
+    base_command.failed_updates = 1
+    setattr(base_command, "_import_stopped_early", False)
+    with patch.object(base_command, "logger"):
+        base_command.print_summary(continue_on_error=True)
+
+    setattr(base_command, "_import_stopped_early", True)
+    with patch.object(base_command, "logger"):
+        with pytest.raises(TrxoAbort):
+            base_command.print_summary(continue_on_error=True)

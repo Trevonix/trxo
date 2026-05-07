@@ -71,6 +71,7 @@ class BaseExporter(BaseCommand):
         Returns:
             ExportResult with data, metadata, file_path, and status_code.
         """
+        continue_on_error = kwargs.pop("continue_on_error", False)
         self.logger.info(f"Starting export operation: {command_name}")
         try:
             # Determine product type from endpoint for auth context and headers
@@ -120,7 +121,11 @@ class BaseExporter(BaseCommand):
 
             # Handle pagination automatically
             aggregated_data = self._handle_pagination(
-                raw_data, api_endpoint, headers, api_base_url
+                raw_data,
+                api_endpoint,
+                headers,
+                api_base_url,
+                continue_on_error=continue_on_error,
             )
 
             # Apply response filter if provided
@@ -160,16 +165,23 @@ class BaseExporter(BaseCommand):
         api_endpoint: str,
         headers: Dict[str, str],
         api_base_url: str,
+        continue_on_error: bool = False,
     ) -> Any:
         """Handle pagination if response is paginated"""
         if PaginationHandler.is_paginated(raw_data):
             try:
                 return PaginationHandler.fetch_all_pages(
-                    raw_data, api_endpoint, self, headers, api_base_url
+                    raw_data,
+                    api_endpoint,
+                    self,
+                    headers,
+                    api_base_url,
+                    continue_on_error=continue_on_error,
                 )
             except Exception:
-                # Fallback to first page if pagination fails
-                return raw_data
+                if continue_on_error:
+                    return raw_data
+                raise
         return raw_data
 
     def get_current_auth(self):

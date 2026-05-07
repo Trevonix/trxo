@@ -10,6 +10,7 @@ from trxo.commands.shared.options import (
     BaseUrlOpt,
     BranchOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
@@ -24,6 +25,7 @@ from trxo.commands.shared.options import (
     RollbackOpt,
     SaIdOpt,
     SrcRealmOpt,
+    ContinueOnErrorOpt,
 )
 from trxo_lib.config.constants import DEFAULT_REALM
 from trxo_lib.imports.service import ImportService
@@ -34,6 +36,7 @@ def create_authn_import_command():
         realm: RealmOpt = DEFAULT_REALM,
         src_realm: SrcRealmOpt = None,
         diff: DiffOpt = False,
+        dry_run: DryRunOpt = False,
         file: InputFileOpt = None,
         force_import: ForceImportOpt = False,
         branch: BranchOpt = None,
@@ -50,6 +53,7 @@ def create_authn_import_command():
         idm_base_url: IdmBaseUrlOpt = None,
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Import authentication settings from file or Git repository."""
         from trxo.utils.imports.cli_handler import CLIImportHandler

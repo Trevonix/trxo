@@ -12,6 +12,7 @@ from urllib.parse import quote
 
 import httpx
 
+from trxo_lib.exceptions import TrxoAbort
 from trxo_lib.config.api_headers import get_headers
 from trxo_lib.config.constants import DEFAULT_REALM
 from trxo_lib.logging import error, info, success, warning
@@ -63,6 +64,8 @@ class SamlImporter(BaseImporter):
         sync: bool = False,
         rollback: bool = False,
         cherry_pick: str = None,
+        continue_on_error: bool = False,
+        dry_run: bool = False,
     ) -> Any:
         """
         Override import flow for SAML only.
@@ -93,6 +96,8 @@ class SamlImporter(BaseImporter):
                 rollback=rollback,
                 sync=sync,
                 cherry_pick=cherry_pick,
+                continue_on_error=continue_on_error,
+                dry_run=dry_run,
             )
 
         storage_mode = self._get_storage_mode()
@@ -155,6 +160,30 @@ class SamlImporter(BaseImporter):
                     hint="Use --force-import to skip this check, or re-export the data.",
                 )
 
+        if dry_run:
+            if isinstance(raw, dict) and "data" in raw:
+                saml_data = raw["data"]
+            elif isinstance(raw, list):
+                saml_data = raw[0] if raw else {}
+            else:
+                saml_data = raw
+
+            hosted_count = len(saml_data.get("hosted", [])) if isinstance(saml_data, dict) else 0
+            remote_count = len(saml_data.get("remote", [])) if isinstance(saml_data, dict) else 0
+            metadata_count = len(saml_data.get("metadata", [])) if isinstance(saml_data, dict) else 0
+            scripts_count = len(saml_data.get("scripts", [])) if isinstance(saml_data, dict) else 0
+            self.logger.info(
+                "Dry run preview (saml): "
+                f"{hosted_count} hosted entity(ies), "
+                f"{remote_count} remote entity(ies), "
+                f"{metadata_count} metadata record(s), "
+                f"{scripts_count} script dependency(ies)"
+            )
+            self.logger.warning(
+                "Dry run enabled - skipping SAML API upserts and sync deletions"
+            )
+            return True
+
         # Initialize auth
         token, api_base_url = self.initialize_auth(
             jwk_path=jwk_path,
@@ -207,6 +236,7 @@ class SamlImporter(BaseImporter):
             token=token,
             base_url=api_base_url,
             cherry_pick_ids=cherry_pick,
+            continue_on_error=continue_on_error,
         )
 
         if ok and sync:
@@ -230,6 +260,8 @@ class SamlImporter(BaseImporter):
                 force=True,
             )
 
+        if not ok:
+            raise TrxoAbort(code=1)
         return ok
 
     def import_saml_data(
@@ -238,6 +270,7 @@ class SamlImporter(BaseImporter):
         token: str,
         base_url: str,
         cherry_pick_ids: Optional[str] = None,
+        continue_on_error: bool = False,
     ) -> bool:
         """
         Import SAML data including scripts, metadata, and entities.
@@ -253,6 +286,7 @@ class SamlImporter(BaseImporter):
         """
         success_count = 0
         error_count = 0
+        self._import_stopped_early = False
 
         # Parse cherry-pick IDs if provided
         selected_entity_ids = None
@@ -303,6 +337,9 @@ class SamlImporter(BaseImporter):
                     if hasattr(self, "rollback_manager") and self.rollback_manager:
                         error("Failure detected. Stopping import for rollback.")
                         return False
+                    if not continue_on_error:
+                        self._import_stopped_early = True
+                        break
 
         # Step 4: Upsert remote entities
         if remote_entities:
@@ -315,6 +352,9 @@ class SamlImporter(BaseImporter):
                     success_count += 1
                 else:
                     error_count += 1
+                    if not continue_on_error:
+                        self._import_stopped_early = True
+                        break
 
         # Print summary
         total = success_count + error_count
@@ -323,7 +363,11 @@ class SamlImporter(BaseImporter):
         else:
             warning("No SAML entities to import")
 
-        return error_count == 0
+        if getattr(self, "_import_stopped_early", False):
+            return False
+        if error_count == 0:
+            return True
+        return bool(continue_on_error and success_count > 0)
 
     def _filter_entities(
         self, entities: List[Dict[str, Any]], selected_ids: Optional[List[str]]

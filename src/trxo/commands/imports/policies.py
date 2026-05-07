@@ -11,6 +11,7 @@ from trxo.commands.shared.options import (
     BranchOpt,
     CherryPickOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     GlobalPoliciesOpt,
     IdmBaseUrlOpt,
@@ -27,6 +28,7 @@ from trxo.commands.shared.options import (
     SaIdOpt,
     SrcRealmOpt,
     SyncOpt,
+    ContinueOnErrorOpt,
 )
 from trxo_lib.config.constants import DEFAULT_REALM
 from trxo_lib.imports.service import ImportService
@@ -51,6 +53,7 @@ def create_policies_import_command():
         idm_password: IdmPasswordOpt = None,
         force_import: ForceImportOpt = False,
         diff: DiffOpt = False,
+        dry_run: DryRunOpt = False,
         sync: SyncOpt = False,
         rollback: RollbackOpt = False,
         cherry_pick: CherryPickOpt = None,

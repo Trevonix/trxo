@@ -48,6 +48,9 @@ _ITEM_WARNING_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Aggregate summary lines emitted by library-level summary (not per-item events)
+_AGGREGATE_SUMMARY_RE = re.compile(r"^[✔✖]\s*\d+\s+\w+", re.IGNORECASE)
+
 # Count hint buried in a stage message — e.g., "Processing 12 scripts..."
 _COUNT_RE = re.compile(
     r"\b(\d+)\s+(?:item|script|client|entit|object|mapping|journey"
@@ -202,7 +205,11 @@ class ImportProgressHandler(logging.Handler):
             return
 
         # ── Classify and render ───────────────────────────────────────────────
-        if level >= logging.ERROR or _ITEM_FAILURE_RE.search(msg):
+        if _AGGREGATE_SUMMARY_RE.search(msg):
+            # Keep visible for operator context, but do not count as item events.
+            self._print_stage(msg)
+
+        elif _ITEM_FAILURE_RE.search(msg):
             self._print_item(msg, "error")
             self.failure_count += 1
             self._advance()
@@ -215,6 +222,11 @@ class ImportProgressHandler(logging.Handler):
             self._print_item(msg, "success")
             self.success_count += 1
             self._advance()
+
+        elif level >= logging.ERROR:
+            # Errors like transport/API status can accompany a per-item failure line.
+            # Render them, but do not treat as additional failed items.
+            self._print_stage(msg)
 
         else:
             # Stage message (loading, auth, git, cherry-pick, etc.)

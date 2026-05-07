@@ -68,7 +68,7 @@ def test_handle_pagination_success(exporter, mocker):
     assert out == {"items": []}
 
 
-def test_handle_pagination_failure_fallback(exporter, mocker):
+def test_handle_pagination_failure_stop_on_error(exporter, mocker):
     mocker.patch(
         "trxo_lib.exports.processor.PaginationHandler.is_paginated",
         return_value=True,
@@ -79,7 +79,24 @@ def test_handle_pagination_failure_fallback(exporter, mocker):
     )
 
     raw = {"page": 1}
-    out = exporter._handle_pagination(raw, "/e", {}, "https://api")
+    with pytest.raises(Exception, match="boom"):
+        exporter._handle_pagination(raw, "/e", {}, "https://api")
+
+
+def test_handle_pagination_failure_continue_on_error_fallback(exporter, mocker):
+    mocker.patch(
+        "trxo_lib.exports.processor.PaginationHandler.is_paginated",
+        return_value=True,
+    )
+    mocker.patch(
+        "trxo_lib.exports.processor.PaginationHandler.fetch_all_pages",
+        side_effect=Exception("boom"),
+    )
+
+    raw = {"page": 1}
+    out = exporter._handle_pagination(
+        raw, "/e", {}, "https://api", continue_on_error=True
+    )
 
     assert out == raw
 

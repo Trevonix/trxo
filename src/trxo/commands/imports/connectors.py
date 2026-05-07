@@ -11,6 +11,7 @@ from trxo.commands.shared.options import (
     BranchOpt,
     CherryPickOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
@@ -24,6 +25,7 @@ from trxo.commands.shared.options import (
     RollbackOpt,
     SaIdOpt,
     SyncOpt,
+    ContinueOnErrorOpt,
 )
 from trxo_lib.imports.service import ImportService
 
@@ -34,6 +36,7 @@ def create_connectors_import_command():
     def import_connectors(
         cherry_pick: CherryPickOpt = None,
         diff: DiffOpt = False,
+        dry_run: DryRunOpt = False,
         file: InputFileOpt = None,
         force_import: ForceImportOpt = False,
         branch: BranchOpt = None,
@@ -51,6 +54,7 @@ def create_connectors_import_command():
         idm_password: IdmPasswordOpt = None,
         rollback: RollbackOpt = False,
         sync: SyncOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Import IDM connectors from JSON file (local mode) or Git repository (Git mode).
 

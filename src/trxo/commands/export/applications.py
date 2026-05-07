@@ -30,6 +30,7 @@ from trxo.commands.shared.options import (
     ViewColumnsOpt,
     ViewOpt,
     WithDepsOpt,
+    ContinueOnErrorOpt,
 )
 from trxo_lib.config.constants import DEFAULT_REALM
 from trxo_lib.exports.service import ExportService
@@ -61,6 +62,7 @@ def create_applications_export_command():
         idm_username: IdmUsernameOpt = None,
         idm_password: IdmPasswordOpt = None,
         with_deps: WithDepsOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Export custom applications configuration"""
         kwargs = locals()

@@ -28,6 +28,7 @@ from trxo.commands.shared.options import (
     VersionOpt,
     ViewColumnsOpt,
     ViewOpt,
+    ContinueOnErrorOpt,
 )
 
 from trxo_lib.exports.service import ExportService

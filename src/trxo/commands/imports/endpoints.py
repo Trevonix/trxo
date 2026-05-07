@@ -11,6 +11,7 @@ from trxo.commands.shared.options import (
     BranchOpt,
     CherryPickOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
@@ -24,6 +25,7 @@ from trxo.commands.shared.options import (
     RollbackOpt,
     SaIdOpt,
     SyncOpt,
+    ContinueOnErrorOpt,
 )
 from trxo_lib.imports.service import ImportService
 
@@ -35,6 +37,7 @@ def create_endpoints_import_command():
         cherry_pick: CherryPickOpt = None,
         force_import: ForceImportOpt = False,
         diff: DiffOpt = False,
+        dry_run: DryRunOpt = False,
         branch: BranchOpt = None,
         file: InputFileOpt = None,
         jwk_path: JwkPathOpt = None,
@@ -51,6 +54,7 @@ def create_endpoints_import_command():
         idm_password: IdmPasswordOpt = None,
         rollback: RollbackOpt = False,
         sync: SyncOpt = False,
+        continue_on_error: ContinueOnErrorOpt = False,
     ):
         """Import custom endpoints from JSON file (local mode) or Git repository (Git mode)"""
         from trxo.utils.imports.cli_handler import CLIImportHandler

@@ -73,15 +73,17 @@ def test_export_applications_with_deps_success(mock_oauth_class, mock_base_class
     mock_oauth.extract_script_ids.return_value = []
     mock_oauth.fetch_oauth_provider_data.return_value = {"_id": "p1"}
     
-    _export_applications_with_deps(
+    result = _export_applications_with_deps(
         realm="alpha", version=None, no_version=False, branch=None, commit=None,
         jwk_path=None, sa_id=None, base_url=None, project_name=None,
         output_dir=None, output_file=None, auth_mode=None,
         onprem_username=None, onprem_password=None, onprem_realm=None, am_base_url=None,
         idm_base_url=None, idm_username=None, idm_password=None
     )
-    
-    mock_base.save_response.assert_called_once()
+
+    assert result.status_code == 200
+    assert isinstance(result.metadata, dict)
+    assert result.metadata.get("with_deps") is True
 
 @patch("trxo_lib.exports.domains.applications.BaseExporter")
 @patch("trxo_lib.exports.domains.applications.OAuthExporter")
@@ -96,9 +98,6 @@ def test_export_applications_with_deps_onprem(mock_oauth_class, mock_base_class)
     mock_base.make_http_request.return_value.status_code = 400
     mock_base._handle_pagination.return_value = {"result": []}
     mock_base.remove_rev_fields.return_value = {"result": []}
-    mock_base._get_storage_mode.return_value = "local"
-    mock_base.save_response.return_value = "/path/to/file"
-    
     mock_oauth = mock_oauth_class.return_value
     mock_oauth.initialize_auth.return_value = ("am-token", "http://am.com")
     mock_oauth.fetch_oauth_provider_data.return_value = {"_id": "p1"}

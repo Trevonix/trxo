@@ -100,6 +100,15 @@ DiffOpt = Annotated[
     ),
 ]
 
+DryRunOpt = Annotated[
+    bool,
+    typer.Option(
+        ...,
+        "--dry-run",
+        help="Validate and preview import actions without making API changes",
+    ),
+]
+
 RollbackOpt = Annotated[
     bool,
     typer.Option(
@@ -136,6 +145,18 @@ CherryPickOpt = Annotated[
         ...,
         "--cherry-pick",
         help="Comma-separated IDs of specific items to import",
+    ),
+]
+
+ContinueOnErrorOpt = Annotated[
+    bool,
+    typer.Option(
+        ...,
+        "--continue-on-error/--stop-on-error",
+        help=(
+            "Continue after a per-item failure; exit successfully if at least one item "
+            "succeeds (imports). For exports, continue paginated fetches when a page fails."
+        ),
     ),
 ]
 

@@ -14,6 +14,7 @@ from trxo.commands.shared.options import (
     BranchOpt,
     CherryPickOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
@@ -29,6 +30,7 @@ from trxo.commands.shared.options import (
     SaIdOpt,
     SrcRealmOpt,
     SyncOpt,
+    ContinueOnErrorOpt,
 )
 from trxo_lib.config.constants import DEFAULT_REALM
 from trxo_lib.imports.service import ImportService
@@ -43,6 +45,7 @@ def create_webhooks_import_command():
         cherry_pick: CherryPickOpt = None,
         sync: SyncOpt = False,
         diff: DiffOpt = False,
+        dry_run: DryRunOpt = False,
         file: InputFileOpt = None,
         force_import: ForceImportOpt = False,
         branch: BranchOpt = None,

@@ -12,6 +12,7 @@ from trxo.commands.shared.options import (
     BranchOpt,
     CherryPickOpt,
     DiffOpt,
+    DryRunOpt,
     ForceImportOpt,
     IdmBaseUrlOpt,
     IdmPasswordOpt,
@@ -27,6 +28,7 @@ from trxo.commands.shared.options import (
     SaIdOpt,
     SrcRealmOpt,
     SyncOpt,
+    ContinueOnErrorOpt,
 )
 from trxo_lib.config.constants import DEFAULT_REALM
 from trxo_lib.imports.service import ImportService
@@ -48,6 +50,7 @@ def create_saml_import_command():
         onprem_realm: OnPremRealmOpt = "root",
         force_import: ForceImportOpt = False,
         diff: DiffOpt = False,
+        dry_run: DryRunOpt = False,
         branch: BranchOpt = None,
         cherry_pick: CherryPickOpt = None,
         rollback: RollbackOpt = False,

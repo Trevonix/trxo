@@ -392,25 +392,36 @@ class BaseCommand(ABC):
             "failed": self.failed_updates,
         }
 
-    def print_summary(self) -> None:
+    def print_summary(self, continue_on_error: bool = False) -> None:
         """Evaluate operation summary and raise TrxoAbort on failures.
 
-        This is a thin wrapper around get_summary() kept for backward
-        compatibility with existing callers. It logs instead of printing.
+        When continue_on_error is True and at least one item succeeded, failures are
+        logged but do not abort (partial success). Stopping early (--stop-on-error)
+        after a failure still aborts even if some items succeeded earlier.
         """
         summary = self.get_summary()
         item_type = summary["item_type"]
+        successful = summary["successful"]
+        failed = summary["failed"]
 
-        if summary["successful"] > 0:
-            self.logger.info(
-                f"Successfully processed {summary['successful']} {item_type}"
-            )
+        if successful > 0:
+            self.logger.info(f"Successfully processed {successful} {item_type}")
 
-        if summary["failed"] > 0:
-            self.logger.error(f"Failed to process {summary['failed']} {item_type}")
+        if failed > 0:
+            self.logger.error(f"Failed to process {failed} {item_type}")
+            if (
+                continue_on_error
+                and successful > 0
+                and not getattr(self, "_import_stopped_early", False)
+            ):
+                self.logger.warning(
+                    f"Partial success: {successful} succeeded, {failed} failed "
+                    f"(--continue-on-error)."
+                )
+                return
             raise TrxoAbort(code=1)
 
-        if summary["successful"] == 0:
+        if successful == 0:
             self.logger.warning(f"No {item_type} were processed")
             raise TrxoAbort(code=1)
 

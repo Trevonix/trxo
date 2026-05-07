@@ -95,6 +95,82 @@ def test_import_from_file_local_success(mocker, tmp_path):
     importer.process_items.assert_called_once()
 
 
+def test_import_from_file_dry_run_skips_mutations(mocker, tmp_path):
+    importer = DummyImporter()
+
+    data_file = tmp_path / "data.json"
+    data_file.write_text(json.dumps([{"_id": "1"}, {"_id": "2"}]))
+
+    mocker.patch.object(importer, "_get_storage_mode", return_value="local")
+    mocker.patch.object(importer, "load_data_from_file", return_value=[{"_id": "1"}, {"_id": "2"}])
+    mocker.patch.object(importer, "validate_import_hash", return_value=True)
+    mocker.patch.object(importer, "initialize_auth")
+    mocker.patch.object(importer, "process_items")
+    mocker.patch.object(importer, "_handle_sync_deletions")
+    mocker.patch.object(importer, "print_summary")
+    mocker.patch.object(importer, "cleanup")
+
+    importer.import_from_file(file_path=str(data_file), dry_run=True, sync=True)
+
+    importer.initialize_auth.assert_not_called()
+    importer.process_items.assert_not_called()
+    importer._handle_sync_deletions.assert_not_called()
+    importer.print_summary.assert_called_once_with(continue_on_error=True)
+    assert importer.successful_updates == 2
+    assert importer.failed_updates == 0
+
+
+def test_import_from_file_dry_run_applies_cherry_pick_before_summary(mocker, tmp_path):
+    importer = DummyImporter()
+
+    data_file = tmp_path / "data.json"
+    data_file.write_text(json.dumps([{"_id": "1"}, {"_id": "2"}]))
+
+    mocker.patch.object(importer, "_get_storage_mode", return_value="local")
+    mocker.patch.object(importer, "load_data_from_file", return_value=[{"_id": "1"}, {"_id": "2"}])
+    mocker.patch.object(importer, "validate_import_hash", return_value=True)
+    mocker.patch.object(importer, "initialize_auth")
+    mocker.patch.object(importer, "print_summary")
+    mocker.patch.object(importer, "cleanup")
+    mocker.patch.object(importer.cherry_pick_filter, "validate_cherry_pick_argument", return_value=True)
+    mocker.patch.object(importer.cherry_pick_filter, "apply_filter", return_value=[{"_id": "2"}])
+
+    importer.import_from_file(file_path=str(data_file), dry_run=True, cherry_pick="2")
+
+    importer.initialize_auth.assert_not_called()
+    assert importer.successful_updates == 1
+    assert importer.failed_updates == 0
+
+
+def test_process_items_stop_after_first_failure(mocker):
+    importer = DummyImporter()
+    mock_update = mocker.patch.object(
+        importer, "update_item", side_effect=[False, True]
+    )
+
+    importer.process_items(
+        [{"_id": "a"}, {"_id": "b"}], "t", "u", continue_on_error=False
+    )
+
+    assert importer.successful_updates == 0
+    assert importer.failed_updates == 1
+    assert importer._import_stopped_early is True
+    assert mock_update.call_count == 1
+
+
+def test_process_items_continue_after_failure(mocker):
+    importer = DummyImporter()
+    mocker.patch.object(importer, "update_item", side_effect=[False, True])
+
+    importer.process_items(
+        [{"_id": "a"}, {"_id": "b"}], "t", "u", continue_on_error=True
+    )
+
+    assert importer.successful_updates == 1
+    assert importer.failed_updates == 1
+    assert not importer._import_stopped_early
+
+
 
 
 def test_import_from_file_missing_file_path(mocker):

@@ -49,6 +49,9 @@ def test_process_items_with_deps():
     
     with patch("trxo_lib.imports.domains.applications.ScriptImporter") as mock_script_imp:
         with patch("trxo_lib.imports.domains.applications.OAuthImporter") as mock_oauth_imp:
+            mock_script = mock_script_imp.return_value
+            mock_script.successful_updates = 1
+            mock_script.failed_updates = 0
             mock_oauth = mock_oauth_imp.return_value
             importer.process_items([], "token", "url")
             
