@@ -29,7 +29,7 @@ from rich.text import Text
 
 # Individual item success — catches "✔ ...", "Successfully imported X", etc.
 _ITEM_SUCCESS_RE = re.compile(
-    r"^(?:✔\s*|Successfully\s+(?:imported|processed|updated|created|deleted|upserted)\s+|"
+    r"^(?:✔\s*|Successfully\s+(?:imported|processed|updated|created|deleted|upserted|PUT)\s+|"
     r"(?:Created|Updated|Upserted|Deleted|Processed)\s+)"
     r"(?P<item>.+)",
     re.IGNORECASE,
@@ -49,13 +49,20 @@ _ITEM_WARNING_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Generic errors that accompany item failures (should not count as separate items)
+_GENERIC_ERROR_RE = re.compile(
+    r"^(?:✖\s*)(?:HTTP error|Request error|SSL error|Connect error|Request timeout)",
+    re.IGNORECASE,
+)
+
 # Aggregate summary lines emitted by library-level summary (not per-item events)
 _AGGREGATE_SUMMARY_RE = re.compile(r"^[✔✖]\s*\d+\s+\w+", re.IGNORECASE)
 
 # Count hint buried in a stage message — e.g., "Processing 12 scripts..."
 _COUNT_RE = re.compile(
     r"\b(\d+)\s+(?:item|script|client|entit|object|mapping|journey"
-    r"|entri|privilege|connector|webhook|endpoint|template|agent|polic)",
+    r"|entri|privilege|connector|webhook|endpoint|template|agent|polic"
+    r"|servic|them|application|authn|managed|sync)",
     re.IGNORECASE,
 )
 
@@ -74,7 +81,9 @@ _SUPPRESS_RE = re.compile(
     r"|Successfully processed \d+ "
     r"|Failed to process \d+ "
     r"|✔ \d+ "
-    r"|No \w+ were processed)",
+    r"|No \w+ were processed"
+    r"|✔ \S+ imported successfully"
+    r"|✖ Failed to import \S+)",
     re.IGNORECASE,
 )
 
@@ -196,14 +205,22 @@ class ImportProgressHandler(logging.Handler):
 
     def _process_record(self, level: int, msg: str) -> None:
         """Route a log record to the appropriate Rich renderer."""
+        msg = msg.strip()
+        if not msg:
+            return
+
         # ── Try to parse a total count hint ──────────────────────────────────
-        if self.total_hint is None:
-            m = _COUNT_RE.search(msg)
-            if m:
-                count = int(m.group(1))
-                if count > 0:
-                    self.total_hint = count
-                    self._progress.update(self._task_id, total=count)
+        m_count = _COUNT_RE.search(msg)
+        if m_count:
+            count = int(m_count.group(1))
+            # Heuristic: if the message mentions the command name, it's a "high confidence" hint.
+            # e.g., "Importing 27 journey(s)" when command_name is "journeys"
+            cmd_root = self.command_name.lower().split(".")[0].rstrip("s")
+            is_relevant = cmd_root in msg.lower()
+
+            if self.total_hint is None or (is_relevant and count != self.total_hint):
+                self.total_hint = count
+                self._progress.update(self._task_id, total=count)
 
         # ── Suppress internal noise ───────────────────────────────────────────
         if _SUPPRESS_RE.search(msg):
@@ -214,6 +231,11 @@ class ImportProgressHandler(logging.Handler):
             # Keep visible for operator context, but do not count as item events.
             self._print_stage(msg)
 
+        elif _GENERIC_ERROR_RE.search(msg):
+            # Contextual error lines (e.g. HTTP status) that accompany a failure line.
+            # Print them but do not count as an additional failed item.
+            self._print_stage(msg)
+
         elif _ITEM_FAILURE_RE.search(msg):
             self._print_item(msg, "error")
             self.failure_count += 1
@@ -222,8 +244,25 @@ class ImportProgressHandler(logging.Handler):
         elif level == logging.WARNING or _ITEM_WARNING_RE.search(msg):
             self._print_item(msg, "warning")
             self.warning_count += 1
+            self._advance()  # Advance progress bar for skipped/warned items
 
         elif _ITEM_SUCCESS_RE.search(msg):
+            # Check for bulk success summary (e.g. "✔ Journey import completed successfully — 27 journey(s)")
+            # or "✔ SAML import completed: 22/22 successful"
+            m_bulk = re.search(
+                r"(?:(?P<count1>\d+)\s+(?:journey|item|script|template|entity|agent|privilege|object)s?|(?P<count2>\d+)/\d+\s+successful)",
+                msg,
+                re.IGNORECASE,
+            )
+            if m_bulk and ("completed" in msg.lower() or "successful" in msg.lower()):
+                count_str = m_bulk.group("count1") or m_bulk.group("count2")
+                count = int(count_str)
+                # If this summary count matches or exceeds our hint, sync progress to it.
+                if self.total_hint and count >= self.total_hint:
+                    self.success_count = count
+                    self._progress.update(self._task_id, completed=count)
+                    return
+
             self._print_item(msg, "success")
             self.success_count += 1
             self._advance()
