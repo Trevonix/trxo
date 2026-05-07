@@ -26,7 +26,7 @@ from rich.text import Text
 
 # Individual item success — catches "✔ ...", "Successfully imported X", etc.
 _ITEM_SUCCESS_RE = re.compile(
-    r"^(?:✔\s*|Successfully\s+(?:imported|processed|updated|created|deleted|upserted|PUT)\s+|"
+    r"^(?:✔\s*|Successfully\s+(?:imported|processed|updated|created|deleted|upserted)\s+|"
     r"(?:Created|Updated|Upserted|Deleted|Processed)\s+)"
     r"(?P<item>.+)",
     re.IGNORECASE,
@@ -67,9 +67,7 @@ _SUPPRESS_RE = re.compile(
     r"|Successfully processed \d+ "
     r"|Failed to process \d+ "
     r"|✔ \d+ "
-    r"|No \w+ were processed"
-    r"|✔ \S+ imported successfully"
-    r"|✖ Failed to import \S+)",
+    r"|No \w+ were processed)",
     re.IGNORECASE,
 )
 
@@ -243,4 +241,3 @@ class ImportProgressHandler(logging.Handler):
         if not clean:
             return
         self.console.print(Text(f"  · {clean}", style="dim"))
-
