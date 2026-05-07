@@ -142,4 +142,3 @@ class CLIImportHandler:
             sys.exit(1)
         finally:
             progress_handler.detach()
-            progress_handler.print_summary()
