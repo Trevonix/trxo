@@ -29,7 +29,8 @@ from rich.text import Text
 
 # Individual item success — catches "✔ ...", "Successfully imported X", etc.
 _ITEM_SUCCESS_RE = re.compile(
-    r"^(?:✔\s*|Successfully\s+(?:imported|processed|updated|created|deleted|upserted)\s+|Upserted\s+)"
+    r"^(?:✔\s*|Successfully\s+(?:imported|processed|updated|created|deleted|upserted)\s+|"
+    r"(?:Created|Updated|Upserted|Deleted|Processed)\s+)"
     r"(?P<item>.+)",
     re.IGNORECASE,
 )
@@ -66,7 +67,11 @@ _SUPPRESS_RE = re.compile(
     r"|API call"
     r"|Data integrity verified"  # hash check — not useful noise
     r"|\[DEBUG\]"
-    r"|Processing \d+ )",  # covered separately via _COUNT_RE
+    r"|Processing \d+ "
+    r"|Successfully processed \d+ "
+    r"|Failed to process \d+ "
+    r"|✔ \d+ "
+    r"|No \w+ were processed)",
     re.IGNORECASE,
 )
 
